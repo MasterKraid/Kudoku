@@ -27,6 +27,7 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useLingui } from '@lingui/react/macro';
 import { PasswordTextField } from '@/base/components/inputs/PasswordTextField.tsx';
@@ -291,6 +292,155 @@ const ManageAccounts = ({ currentUserId }: { currentUserId: number }) => {
     );
 };
 
+interface GitHubStatus {
+    isLinked: boolean;
+    githubUsername?: string;
+    repoName?: string;
+    repoUrl?: string;
+    backupIntervalHours?: number;
+    lastBackupAt?: number;
+    autoBackupEnabled?: boolean;
+}
+
+const GitHubAccountSection = ({ currentUserId }: { currentUserId: number }) => {
+    const [status, setStatus] = useState<GitHubStatus | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const fetchStatus = () => {
+        setLoading(true);
+        requestManager
+            .getClient()
+            .get('/api/v1/backup/github/status')
+            .then(async (res) => {
+                const data = await res.json();
+                setStatus(data);
+            })
+            .catch((err) => {
+                makeToast('Failed to load GitHub status', 'error', getErrorMessage(err));
+            })
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchStatus();
+    }, [currentUserId]);
+
+    const handleLink = async () => {
+        if (!token.trim()) return;
+        setSubmitting(true);
+        try {
+            const res = await requestManager.getClient().post('/api/v1/backup/github/link', { token: token.trim() });
+            const data = await res.json();
+            setStatus(data);
+            setToken('');
+            makeToast('GitHub account linked successfully! Backup repository initialized.', 'success');
+        } catch (err: any) {
+            makeToast('Failed to link GitHub', 'error', getErrorMessage(err));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleUnlink = async () => {
+        try {
+            await Confirmation.show({
+                title: 'Unlink GitHub Account',
+                message: 'Are you sure you want to unlink your GitHub account from Tsundoku backups?',
+            });
+        } catch {
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await requestManager.getClient().post('/api/v1/backup/github/unlink');
+            setStatus({ isLinked: false });
+            makeToast('GitHub account unlinked', 'info');
+        } catch (err: any) {
+            makeToast('Failed to unlink GitHub', 'error', getErrorMessage(err));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <Stack sx={{ py: 4, alignItems: 'center' }}>
+                <CircularProgress size={32} />
+            </Stack>
+        );
+    }
+
+    if (status?.isLinked) {
+        return (
+            <Stack sx={{ pt: 2, gap: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                    Your account is linked to GitHub for automated backups.
+                </Typography>
+                <ListItem disableGutters>
+                    <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: 'secondary.main', fontWeight: 700 }}>GH</Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                        primary={`@${status.githubUsername}`}
+                        secondary={
+                            <Typography
+                                component="a"
+                                href={status.repoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                variant="caption"
+                                sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                            >
+                                {status.repoName}
+                            </Typography>
+                        }
+                    />
+                </ListItem>
+                <Typography variant="caption" color="text.secondary">
+                    Manage backup interval and synchronization in Settings &gt; Backup &gt; Github Backups.
+                </Typography>
+                <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={handleUnlink}
+                    disabled={submitting}
+                >
+                    Unlink GitHub Account
+                </Button>
+            </Stack>
+        );
+    }
+
+    return (
+        <Stack sx={{ pt: 2, gap: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+                Link your GitHub Personal Access Token to enable automated backups into your own private repository.
+            </Typography>
+            <PasswordTextField
+                label="GitHub Personal Access Token"
+                placeholder="ghp_..."
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                disabled={submitting}
+                size="small"
+                fullWidth
+                helperText="Requires 'repo' scope to create private backup repository."
+            />
+            <Button
+                variant="contained"
+                onClick={handleLink}
+                disabled={submitting || !token.trim()}
+            >
+                {submitting ? 'Linking...' : 'Link GitHub Account'}
+            </Button>
+        </Stack>
+    );
+};
+
 export const UserAccountsDialog = ({
     user,
     open,
@@ -302,7 +452,7 @@ export const UserAccountsDialog = ({
 }) => {
     const { t } = useLingui();
     const { isAuthRequired, refreshToken } = AuthManager.useSession();
-    const [tab, setTab] = useState<'switch' | 'manage'>('switch');
+    const [tab, setTab] = useState<'switch' | 'manage' | 'github'>('switch');
     const isAdmin = user.role === 'ADMIN';
     // without a required login, there is nothing to sign out of, unless a personal account is in use
     const canSignOut = !!isAuthRequired || !!refreshToken;
@@ -341,14 +491,15 @@ export const UserAccountsDialog = ({
                         </Button>
                     )}
                 </Stack>
-                {isAdmin && (
-                    <Tabs value={tab} onChange={(_, newTab) => setTab(newTab)} variant="fullWidth" sx={{ mt: 2 }}>
-                        <Tab value="switch" label={t`Switch account`} />
-                        <Tab value="manage" label={t`Manage accounts`} />
-                    </Tabs>
-                )}
+                <Tabs value={tab} onChange={(_, newTab) => setTab(newTab)} variant="fullWidth" sx={{ mt: 2 }}>
+                    <Tab value="switch" label={t`Switch`} />
+                    {isAdmin && <Tab value="manage" label={t`Manage`} />}
+                    <Tab value="github" label="GitHub" />
+                </Tabs>
                 {tab === 'manage' && isAdmin ? (
                     <ManageAccounts currentUserId={user.id} />
+                ) : tab === 'github' ? (
+                    <GitHubAccountSection currentUserId={user.id} />
                 ) : (
                     <SwitchAccount currentUserId={user.id} onDone={onClose} />
                 )}

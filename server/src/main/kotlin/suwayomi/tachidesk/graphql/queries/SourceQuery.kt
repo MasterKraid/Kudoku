@@ -9,6 +9,7 @@ package suwayomi.tachidesk.graphql.queries
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDeprecated
 import com.expediagroup.graphql.server.extensions.getValueFromDataLoader
+import eu.kanade.tachiyomi.source.local.LocalSource
 import graphql.schema.DataFetchingEnvironment
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Op
@@ -16,7 +17,10 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import suwayomi.tachidesk.graphql.directives.RequireAuth
@@ -31,6 +35,7 @@ import suwayomi.tachidesk.graphql.queries.filter.andFilterWithCompareEntity
 import suwayomi.tachidesk.graphql.queries.filter.andFilterWithCompareEnum
 import suwayomi.tachidesk.graphql.queries.filter.andFilterWithCompareString
 import suwayomi.tachidesk.graphql.queries.filter.applyOps
+import suwayomi.tachidesk.graphql.server.currentUserId
 import suwayomi.tachidesk.graphql.server.primitives.Cursor
 import suwayomi.tachidesk.graphql.server.primitives.Order
 import suwayomi.tachidesk.graphql.server.primitives.OrderBy
@@ -43,7 +48,9 @@ import suwayomi.tachidesk.graphql.server.primitives.lessNotUnique
 import suwayomi.tachidesk.graphql.types.SourceNodeList
 import suwayomi.tachidesk.graphql.types.SourceType
 import suwayomi.tachidesk.manga.model.dataclass.ContentWarning
+import suwayomi.tachidesk.manga.model.table.ExtensionTable
 import suwayomi.tachidesk.manga.model.table.SourceTable
+import suwayomi.tachidesk.manga.model.table.UserExtensionTable
 import suwayomi.tachidesk.server.JavalinSetup.future
 import java.util.concurrent.CompletableFuture
 
@@ -140,6 +147,7 @@ class SourceQuery {
 
     @RequireAuth
     fun sources(
+        dataFetchingEnvironment: DataFetchingEnvironment,
         condition: SourceCondition? = null,
         filter: SourceFilter? = null,
         @GraphQLDeprecated(
@@ -160,9 +168,22 @@ class SourceQuery {
         offset: Int? = null,
     ): CompletableFuture<SourceNodeList> =
         future {
+            val userId = dataFetchingEnvironment.currentUserId()
             val (queryResults, resultsAsType) =
                 suspendTransaction {
+                    val installedPkgs = UserExtensionTable.getInstalledPkgNames(userId)
+                    val installedExtensionIds = ExtensionTable
+                        .select(ExtensionTable.id)
+                        .where { (ExtensionTable.pkgName inList installedPkgs) or (ExtensionTable.name eq LocalSource.EXTENSION_NAME) }
+                        .map { it[ExtensionTable.id] }
+
                     val res = SourceTable.selectAll()
+
+                    if (installedExtensionIds.isNotEmpty()) {
+                        res.adjustWhere { (SourceTable.extension inList installedExtensionIds) or (SourceTable.id eq LocalSource.ID) }
+                    } else {
+                        res.adjustWhere { SourceTable.id eq LocalSource.ID }
+                    }
 
                     res.applyOps(condition, filter)
 

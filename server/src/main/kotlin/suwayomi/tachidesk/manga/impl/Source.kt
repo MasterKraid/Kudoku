@@ -10,6 +10,7 @@ package suwayomi.tachidesk.manga.impl
 import androidx.preference.Preference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.local.LocalSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.sourcePreferences
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -35,17 +36,23 @@ import suwayomi.tachidesk.manga.model.dataclass.SourceDataClass
 import suwayomi.tachidesk.manga.model.table.ExtensionTable
 import suwayomi.tachidesk.manga.model.table.SourceMetaTable
 import suwayomi.tachidesk.manga.model.table.SourceTable
+import suwayomi.tachidesk.manga.model.table.UserExtensionTable
 import uy.kohesive.injekt.injectLazy
 import xyz.nulldev.androidcompat.androidimpl.CustomContext
 
 object Source {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun getSourceList(): List<SourceDataClass> {
+    suspend fun getSourceList(userId: Int? = null): List<SourceDataClass> {
         return suspendTransaction {
+            val userPkgs = userId?.let { UserExtensionTable.getInstalledPkgNames(it) }
             SourceTable.selectAll().mapNotNull {
                 val catalogueSource = getSourceOrNull(it[SourceTable.id].value) ?: return@mapNotNull null
                 val sourceExtension = ExtensionTable.selectAll().where { ExtensionTable.id eq it[SourceTable.extension] }.first()
+                val pkgName = sourceExtension[ExtensionTable.pkgName]
+                if (userPkgs != null && it[SourceTable.id].value != LocalSource.ID && !userPkgs.contains(pkgName)) {
+                    return@mapNotNull null
+                }
 
                 SourceDataClass(
                     id = it[SourceTable.id].value.toString(),

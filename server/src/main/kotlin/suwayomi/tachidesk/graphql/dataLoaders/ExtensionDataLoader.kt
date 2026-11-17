@@ -15,6 +15,7 @@ import org.jetbrains.exposed.v1.core.Slf4jSqlDebugLogger
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.graphql.server.currentUserId
 import suwayomi.tachidesk.graphql.types.ExtensionType
 import suwayomi.tachidesk.manga.model.table.ExtensionTable
 import suwayomi.tachidesk.manga.model.table.SourceTable
@@ -25,6 +26,7 @@ class ExtensionDataLoader : KotlinDataLoader<String, ExtensionType> {
 
     override fun getDataLoader(graphQLContext: GraphQLContext): DataLoader<String, ExtensionType> =
         DataLoaderFactory.newDataLoader { ids ->
+            val userId = graphQLContext.currentUserId()
             future {
                 transaction {
                     addLogger(Slf4jSqlDebugLogger)
@@ -32,7 +34,7 @@ class ExtensionDataLoader : KotlinDataLoader<String, ExtensionType> {
                         ExtensionTable
                             .selectAll()
                             .where { ExtensionTable.pkgName inList ids }
-                            .map { ExtensionType(it) }
+                            .map { ExtensionType(it, userId) }
                             .associateBy { it.pkgName }
                     ids.map { extensions[it] }
                 }
@@ -45,6 +47,7 @@ class ExtensionForSourceDataLoader : KotlinDataLoader<Long, ExtensionType> {
 
     override fun getDataLoader(graphQLContext: GraphQLContext): DataLoader<Long, ExtensionType> =
         DataLoaderFactory.newDataLoader { ids ->
+            val userId = graphQLContext.currentUserId()
             future {
                 transaction {
                     addLogger(Slf4jSqlDebugLogger)
@@ -60,7 +63,7 @@ class ExtensionForSourceDataLoader : KotlinDataLoader<Long, ExtensionType> {
                                     buildMap {
                                         triples.forEach {
                                             if (!containsKey(it.second)) {
-                                                put(it.second, ExtensionType(it.third))
+                                                put(it.second, ExtensionType(it.third, userId))
                                             }
                                         }
                                     }

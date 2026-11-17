@@ -15,6 +15,7 @@ import suwayomi.tachidesk.manga.model.dataclass.ExtensionDataClass
 import suwayomi.tachidesk.server.JavalinSetup.Attribute
 import suwayomi.tachidesk.server.JavalinSetup.future
 import suwayomi.tachidesk.server.JavalinSetup.getAttribute
+import suwayomi.tachidesk.server.user.idOrNull
 import suwayomi.tachidesk.server.user.requireUser
 import suwayomi.tachidesk.server.util.handler
 import suwayomi.tachidesk.server.util.pathParam
@@ -34,10 +35,11 @@ object ExtensionController {
                 }
             },
             behaviorOf = { ctx ->
-                ctx.getAttribute(Attribute.TachideskUser).requireUser()
+                val user = ctx.getAttribute(Attribute.TachideskUser)
+                val userId = user.idOrNull ?: 1
                 ctx.future {
                     future {
-                        ExtensionsList.getExtensionList()
+                        ExtensionsList.getExtensionList(userId)
                     }.thenApply {
                         ctx.json(it)
                     }
@@ -59,10 +61,10 @@ object ExtensionController {
                 }
             },
             behaviorOf = { ctx, pkgName ->
-                ctx.getAttribute(Attribute.TachideskUser).requireUser()
+                val userId = ctx.getAttribute(Attribute.TachideskUser).requireUser()
                 ctx.future {
                     future {
-                        Extension.installExtension(pkgName)
+                        Extension.installExtension(pkgName, userId = userId)
                     }
                 }
             },
@@ -87,7 +89,7 @@ object ExtensionController {
                 }
             },
             behaviorOf = { ctx ->
-                ctx.getAttribute(Attribute.TachideskUser).requireUser()
+                val userId = ctx.getAttribute(Attribute.TachideskUser).requireUser()
                 val uploadedFile = ctx.uploadedFile("file")!!
                 logger.debug { "Uploaded extension file name: " + uploadedFile.filename() }
 
@@ -96,6 +98,7 @@ object ExtensionController {
                         Extension.installExternalExtension(
                             uploadedFile.content(),
                             uploadedFile.filename(),
+                            userId = userId,
                         )
                     }
                 }
@@ -118,10 +121,10 @@ object ExtensionController {
                 }
             },
             behaviorOf = { ctx, pkgName ->
-                ctx.getAttribute(Attribute.TachideskUser).requireUser()
+                val userId = ctx.getAttribute(Attribute.TachideskUser).requireUser()
                 ctx.future {
                     future {
-                        Extension.updateExtension(pkgName)
+                        Extension.updateExtension(pkgName, userId = userId)
                     }
                 }
             },
@@ -144,8 +147,8 @@ object ExtensionController {
                 }
             },
             behaviorOf = { ctx, pkgName ->
-                ctx.getAttribute(Attribute.TachideskUser).requireUser()
-                Extension.uninstallExtension(pkgName)
+                val userId = ctx.getAttribute(Attribute.TachideskUser).requireUser()
+                Extension.uninstallExtension(pkgName, userId = userId)
                 ctx.status(200)
             },
             withResults = {

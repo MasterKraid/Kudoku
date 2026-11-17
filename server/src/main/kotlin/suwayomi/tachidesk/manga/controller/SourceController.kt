@@ -40,8 +40,8 @@ object SourceController {
             behaviorOf = { ctx ->
                 ctx.future {
                     future {
-                        ctx.getAttribute(Attribute.TachideskUser).requireUser()
-                        ctx.json(Source.getSourceList())
+                        val userId = ctx.getAttribute(Attribute.TachideskUser).requireUser()
+                        ctx.json(Source.getSourceList(userId = userId))
                     }
                 }
             },

@@ -54,6 +54,7 @@ import suwayomi.tachidesk.manga.impl.util.storage.ImageResponse.getImageResponse
 import suwayomi.tachidesk.manga.impl.util.storage.ImageResponse.saveImage
 import suwayomi.tachidesk.manga.model.table.ExtensionTable
 import suwayomi.tachidesk.manga.model.table.SourceTable
+import suwayomi.tachidesk.manga.model.table.UserExtensionTable
 import suwayomi.tachidesk.server.ApplicationDirs
 import suwayomi.tachidesk.server.database.dbSuspendTransaction
 import suwayomi.tachidesk.server.database.dbTransaction
@@ -105,8 +106,28 @@ object Extension {
     suspend fun installExtension(
         pkgName: String,
         isUpdate: Boolean = false,
+        userId: Int = 1,
     ): String {
-        logger.debug { "Installing $pkgName" }
+        logger.debug { "Installing $pkgName for user $userId" }
+
+        if (!isUpdate && UserExtensionTable.isInstalled(userId, pkgName)) {
+            throw Exception("Extension \"$pkgName\" already installed")
+        }
+
+        // Check if extension is ALREADY downloaded/cached on the system
+        val systemInstalled = transaction {
+            ExtensionTable
+                .select(ExtensionTable.isInstalled, ExtensionTable.apkName)
+                .where { ExtensionTable.pkgName eq pkgName }
+                .firstOrNull()
+        }
+
+        if (systemInstalled != null && systemInstalled[ExtensionTable.isInstalled] && !isUpdate) {
+            // Reusing existing cached extension on server!
+            UserExtensionTable.install(userId, pkgName)
+            return pkgName
+        }
+
         val extension =
             transaction {
                 ExtensionTable
@@ -119,7 +140,7 @@ object Extension {
 
         return when {
             jarUrl != null -> {
-                installExtension(isUpdate = isUpdate) {
+                installExtension(isUpdate = isUpdate, userId = userId) {
                     val jar = fetchExtensionFile(jarUrl)
                     val manifest = extractAndParseAndroidManifest(jar)
                     ExtensionPackage.Jar(jar, manifest)
@@ -127,7 +148,7 @@ object Extension {
             }
 
             apkUrl != null -> {
-                installExtension(isUpdate = isUpdate) {
+                installExtension(isUpdate = isUpdate, userId = userId) {
                     val apk = fetchExtensionFile(apkUrl)
                     val packageInfo = getPackageInfo(apk)
                     ExtensionPackage.Apk(apk, packageInfo)
@@ -163,10 +184,11 @@ object Extension {
     suspend fun installExternalExtension(
         inputStream: InputStream,
         extensionName: String,
+        userId: Int = 1,
     ): String =
         when {
             extensionName.endsWith(".jar") -> {
-                installExtension(isExternal = true) {
+                installExtension(isExternal = true, userId = userId) {
                     val jar = copyToExtensionsRoot(inputStream, extensionName)
                     val manifest = extractAndParseAndroidManifest(jar)
                     ExtensionPackage.Jar(jar, manifest)
@@ -174,7 +196,7 @@ object Extension {
             }
 
             extensionName.endsWith(".apk") -> {
-                installExtension(isExternal = true) {
+                installExtension(isExternal = true, userId = userId) {
                     val apk = copyToExtensionsRoot(inputStream, extensionName)
                     val packageInfo = getPackageInfo(apk)
                     ExtensionPackage.Apk(apk, packageInfo)
@@ -372,6 +394,7 @@ object Extension {
     suspend fun installExtension(
         isExternal: Boolean = false,
         isUpdate: Boolean = false,
+        userId: Int = 1,
         fetchPackage: suspend () -> ExtensionPackage,
     ): String {
         val extPackage = fetchPackage()
@@ -493,6 +516,7 @@ object Extension {
                     }
 
                     removeDeletionOnStartupRequest(jarFile)
+                    UserExtensionTable.install(userId, pkgName)
                 } catch (e: Throwable) {
                     unload(apkName = apkName)
 
@@ -762,11 +786,18 @@ object Extension {
         preferences.edit().putStringSet(FILES_TO_DELETE, filesToDeleteOnStartup).apply()
     }
 
-    fun uninstallExtension(pkgName: String) {
-        logger.debug { "Uninstalling $pkgName" }
+    fun uninstallExtension(pkgName: String, userId: Int = 1) {
+        logger.debug { "Uninstalling $pkgName for user $userId" }
+
+        UserExtensionTable.uninstall(userId, pkgName)
+        val remainingUsers = UserExtensionTable.countUsersWithPkg(pkgName)
+        if (remainingUsers > 0) {
+            logger.debug { "Extension $pkgName is still installed for other users, keeping system cache" }
+            return
+        }
 
         transaction {
-            val extensionRecord = ExtensionTable.selectAll().where { ExtensionTable.pkgName eq pkgName }.first()
+            val extensionRecord = ExtensionTable.selectAll().where { ExtensionTable.pkgName eq pkgName }.firstOrNull() ?: return@transaction
             val extensionId = extensionRecord[ExtensionTable.id].value
 
             val sources = SourceTable.selectAll().where { SourceTable.extension eq extensionId }.map { it[SourceTable.id].value }
@@ -789,7 +820,7 @@ object Extension {
         }
     }
 
-    suspend fun updateExtension(pkgName: String): String {
+    suspend fun updateExtension(pkgName: String, userId: Int = 1): String {
         val targetExtension =
             checkNotNull(ExtensionsList.updateMap[pkgName]) {
                 "Extension update information for \"$pkgName\" missing. Refetch the extensions"
@@ -797,7 +828,7 @@ object Extension {
 
         logger.debug { "Updating $pkgName to ${targetExtension.versionName}" }
 
-        val result = installExtension(pkgName, true)
+        val result = installExtension(pkgName, true, userId = userId)
 
         ExtensionsList.updateMap.remove(pkgName)
 

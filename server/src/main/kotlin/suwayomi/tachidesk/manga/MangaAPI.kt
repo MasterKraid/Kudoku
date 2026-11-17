@@ -19,6 +19,7 @@ import suwayomi.tachidesk.manga.controller.BackupController
 import suwayomi.tachidesk.manga.controller.CategoryController
 import suwayomi.tachidesk.manga.controller.DownloadController
 import suwayomi.tachidesk.manga.controller.ExtensionController
+import suwayomi.tachidesk.manga.controller.GitHubBackupController
 import suwayomi.tachidesk.manga.controller.MangaController
 import suwayomi.tachidesk.manga.controller.SourceController
 import suwayomi.tachidesk.manga.controller.TrackController
@@ -111,6 +112,15 @@ object MangaAPI {
 
             get("export", BackupController.protobufExport)
             get("export/file", BackupController.protobufExportFile)
+
+            path("github") {
+                get("status", GitHubBackupController.status)
+                post("link", GitHubBackupController.link)
+                post("unlink", GitHubBackupController.unlink)
+                post("settings", GitHubBackupController.updateSettings)
+                post("backup", GitHubBackupController.backupNow)
+                post("sync", GitHubBackupController.checkSync)
+            }
         }
 
         path("downloads") {

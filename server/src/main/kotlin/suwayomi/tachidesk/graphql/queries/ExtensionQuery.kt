@@ -32,6 +32,7 @@ import suwayomi.tachidesk.graphql.queries.filter.andFilterWithCompare
 import suwayomi.tachidesk.graphql.queries.filter.andFilterWithCompareEnum
 import suwayomi.tachidesk.graphql.queries.filter.andFilterWithCompareString
 import suwayomi.tachidesk.graphql.queries.filter.applyOps
+import suwayomi.tachidesk.graphql.server.currentUserId
 import suwayomi.tachidesk.graphql.server.primitives.Cursor
 import suwayomi.tachidesk.graphql.server.primitives.Order
 import suwayomi.tachidesk.graphql.server.primitives.OrderBy
@@ -192,6 +193,7 @@ class ExtensionQuery {
 
     @RequireAuth
     fun extensions(
+        dataFetchingEnvironment: DataFetchingEnvironment,
         condition: ExtensionCondition? = null,
         filter: ExtensionFilter? = null,
         @GraphQLDeprecated(
@@ -211,6 +213,7 @@ class ExtensionQuery {
         last: Int? = null,
         offset: Int? = null,
     ): ExtensionNodeList {
+        val userId = dataFetchingEnvironment.graphQlContext.currentUserId()
         val queryResults =
             transaction {
                 val res = ExtensionTable.selectAll()
@@ -244,7 +247,7 @@ class ExtensionQuery {
 
         val getAsCursor: (ExtensionType) -> Cursor = (order?.firstOrNull()?.by ?: ExtensionOrderBy.PKG_NAME)::asCursor
 
-        val resultsAsType = queryResults.results.map { ExtensionType(it) }
+        val resultsAsType = queryResults.results.map { ExtensionType(it, userId) }
 
         return ExtensionNodeList(
             resultsAsType,

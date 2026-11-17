@@ -26,6 +26,7 @@ import suwayomi.tachidesk.manga.model.dataclass.ContentWarning
 import suwayomi.tachidesk.manga.model.dataclass.ExtensionDataClass
 import suwayomi.tachidesk.manga.model.dataclass.ExtensionInfo
 import suwayomi.tachidesk.manga.model.table.ExtensionTable
+import suwayomi.tachidesk.manga.model.table.UserExtensionTable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 
@@ -71,18 +72,21 @@ object ExtensionsList {
         return lastFetchedExtensions
     }
 
-    suspend fun getExtensionList(): List<ExtensionDataClass> {
+    suspend fun getExtensionList(userId: Int? = null): List<ExtensionDataClass> {
         fetchExtensionsCached()
-        return extensionTableAsDataClass()
+        return extensionTableAsDataClass(userId)
     }
 
     // sourceId -> the extension (across all configured repos) that provides it, for extensions not installed yet
     suspend fun getExtensionBySourceId(): Map<Long, ExtensionInfo> =
         fetchExtensionsCached().flatMap { extension -> extension.sources.map { it.id to extension } }.toMap()
 
-    fun extensionTableAsDataClass() =
+    fun extensionTableAsDataClass(userId: Int? = null) =
         transaction {
+            val userInstalledPkgs = userId?.let { UserExtensionTable.getInstalledPkgNames(it) }
             ExtensionTable.selectAll().filter { it[ExtensionTable.name] != LocalSource.EXTENSION_NAME }.map {
+                val pkg = it[ExtensionTable.pkgName]
+                val installed = if (userInstalledPkgs != null) userInstalledPkgs.contains(pkg) else it[ExtensionTable.isInstalled]
                 ExtensionDataClass(
                     repo = it[ExtensionTable.storeIndexUrl],
                     apkName = it[ExtensionTable.apkName].orEmpty(),
@@ -93,8 +97,8 @@ object ExtensionsList {
                     versionCode = it[ExtensionTable.versionCode].toInt(),
                     lang = it[ExtensionTable.lang],
                     isNsfw = it[ExtensionTable.contentWarning] >= ContentWarning.MIXED.ordinal,
-                    installed = it[ExtensionTable.isInstalled],
-                    hasUpdate = it[ExtensionTable.hasUpdate],
+                    installed = installed,
+                    hasUpdate = if (installed) it[ExtensionTable.hasUpdate] else false,
                     obsolete = it[ExtensionTable.isObsolete],
                 )
             }

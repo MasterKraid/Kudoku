@@ -8,7 +8,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
+import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { fromEvent } from 'file-selector';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -93,6 +97,90 @@ export function Backup() {
         mutateSettings({ variables: { input: { settings } } }).catch((e) =>
             makeToast(t`Failed to save changes`, 'error', getErrorMessage(e)),
         );
+    };
+
+    const [gitHubStatus, setGitHubStatus] = useState<{
+        isLinked: boolean;
+        githubUsername?: string;
+        repoName?: string;
+        repoUrl?: string;
+        backupIntervalHours?: number;
+        lastBackupAt?: number;
+        autoBackupEnabled?: boolean;
+    } | null>(null);
+    const [isBackingUp, setIsBackingUp] = useState(false);
+    const [isCheckingSync, setIsCheckingSync] = useState(false);
+
+    const loadGitHubStatus = () => {
+        requestManager
+            .getClient()
+            .get('/api/v1/backup/github/status')
+            .then(async (res) => {
+                const data = await res.json();
+                setGitHubStatus(data);
+            })
+            .catch(() => {});
+    };
+
+    useEffect(() => {
+        loadGitHubStatus();
+    }, []);
+
+    const updateGitHubSettings = async (interval: number, autoEnabled: boolean) => {
+        try {
+            const res = await requestManager.getClient().post('/api/v1/backup/github/settings', {
+                intervalHours: interval,
+                autoBackupEnabled: autoEnabled,
+            });
+            const data = await res.json();
+            setGitHubStatus(data);
+            makeToast('GitHub backup settings updated', 'success');
+        } catch (e) {
+            makeToast('Failed to update GitHub settings', 'error', getErrorMessage(e));
+        }
+    };
+
+    const triggerGitHubBackup = async () => {
+        setIsBackingUp(true);
+        makeToast('Pushing backup to GitHub...', 'info');
+        try {
+            const res = await requestManager.getClient().post('/api/v1/backup/github/backup-now');
+            const data = await res.json();
+            if (data.success) {
+                makeToast('Backup successfully pushed to GitHub!', 'success');
+                loadGitHubStatus();
+            } else {
+                makeToast('Backup to GitHub failed', 'error', data.message);
+            }
+        } catch (e) {
+            makeToast('Backup to GitHub failed', 'error', getErrorMessage(e));
+        } finally {
+            setIsBackingUp(false);
+        }
+    };
+
+    const checkGitHubSync = async () => {
+        setIsCheckingSync(true);
+        makeToast('Checking sync with GitHub...', 'info');
+        try {
+            const res = await requestManager.getClient().post('/api/v1/backup/github/check-sync');
+            const data = await res.json();
+            if (data.success) {
+                if (data.actionTaken === 'RESTORED') {
+                    makeToast(data.message || 'Restored newer backup from GitHub!', 'success');
+                    refetch().catch(() => {});
+                } else {
+                    makeToast(data.message || 'Already up to date with GitHub!', 'info');
+                }
+                loadGitHubStatus();
+            } else {
+                makeToast('GitHub sync check failed', 'error', data.message);
+            }
+        } catch (e) {
+            makeToast('GitHub sync check failed', 'error', getErrorMessage(e));
+        } finally {
+            setIsCheckingSync(false);
+        }
     };
 
     useEffect(() => {
@@ -301,6 +389,80 @@ export function Backup() {
                         </ListItemIcon>
                     ) : null}
                 </ListItemButton>
+                {gitHubStatus?.isLinked && (
+                    <List
+                        subheader={
+                            <ListSubheader component="div" id="github-backups">
+                                Github Backups
+                            </ListSubheader>
+                        }
+                    >
+                        <ListItemButton
+                            component="a"
+                            href={gitHubStatus.repoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <ListItemText
+                                primary={gitHubStatus.repoName}
+                                secondary={`GitHub Repository (@${gitHubStatus.githubUsername}) • 3 Folders: Current, Past Week, Archived`}
+                            />
+                            <OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                        </ListItemButton>
+
+                        <ListItem>
+                            <ListItemText
+                                primary="Automatic GitHub Backups"
+                                secondary="Automatically upload backups at the configured interval"
+                            />
+                            <Switch
+                                edge="end"
+                                checked={gitHubStatus.autoBackupEnabled ?? true}
+                                onChange={(e) =>
+                                    updateGitHubSettings(
+                                        gitHubStatus.backupIntervalHours ?? 24,
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                        </ListItem>
+
+                        <NumberSetting
+                            settingTitle="Backup rate (hours)"
+                            settingValue={`${gitHubStatus.backupIntervalHours ?? 24} hours`}
+                            value={gitHubStatus.backupIntervalHours ?? 24}
+                            defaultValue={24}
+                            minValue={1}
+                            maxValue={168}
+                            stepSize={1}
+                            valueUnit="Hour"
+                            showSlider
+                            handleUpdate={(interval: number) =>
+                                updateGitHubSettings(interval, gitHubStatus.autoBackupEnabled ?? true)
+                            }
+                        />
+
+                        <ListItemButton onClick={triggerGitHubBackup} disabled={isBackingUp}>
+                            <ListItemText
+                                primary="Backup Now"
+                                secondary={
+                                    gitHubStatus.lastBackupAt && gitHubStatus.lastBackupAt > 0
+                                        ? `Last backup: ${new Date(gitHubStatus.lastBackupAt).toLocaleString()}`
+                                        : 'No backup uploaded yet'
+                                }
+                            />
+                            {isBackingUp ? <CircularProgress size={20} /> : null}
+                        </ListItemButton>
+
+                        <ListItemButton onClick={checkGitHubSync} disabled={isCheckingSync}>
+                            <ListItemText
+                                primary="Check Sync"
+                                secondary="Checks if GitHub's Current backup is newer than memory and updates database"
+                            />
+                            {isCheckingSync ? <CircularProgress size={20} /> : null}
+                        </ListItemButton>
+                    </List>
+                )}
                 <List
                     subheader={
                         <ListSubheader component="div" id="backup-settings">

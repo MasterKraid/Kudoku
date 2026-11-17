@@ -3,6 +3,7 @@
 package suwayomi.tachidesk.graphql.mutations
 
 import eu.kanade.tachiyomi.source.local.LocalSource
+import graphql.schema.DataFetchingEnvironment
 import io.javalin.http.UploadedFile
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -10,6 +11,7 @@ import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import suwayomi.tachidesk.graphql.directives.RequireAuth
+import suwayomi.tachidesk.graphql.server.currentUserId
 import suwayomi.tachidesk.graphql.types.ExtensionStoreType
 import suwayomi.tachidesk.graphql.types.ExtensionType
 import suwayomi.tachidesk.manga.impl.extension.Extension
@@ -51,40 +53,45 @@ class ExtensionMutation {
     private suspend fun updateExtensions(
         ids: List<String>,
         patch: UpdateExtensionPatch,
+        userId: Int = 1,
     ) {
         val extensions =
             transaction {
                 ExtensionTable
                     .selectAll()
                     .where { ExtensionTable.pkgName inList ids }
-                    .map { ExtensionType(it) }
+                    .map { ExtensionType(it, userId) }
             }
 
         if (patch.update == true) {
             extensions.filter { it.hasUpdate }.forEach {
-                Extension.updateExtension(it.pkgName)
+                Extension.updateExtension(it.pkgName, userId = userId)
             }
         }
 
         if (patch.install == true) {
             extensions.filterNot { it.isInstalled }.forEach {
-                Extension.installExtension(it.pkgName)
+                Extension.installExtension(it.pkgName, userId = userId)
             }
         }
 
         if (patch.uninstall == true) {
             extensions.filter { it.isInstalled }.forEach {
-                Extension.uninstallExtension(it.pkgName)
+                Extension.uninstallExtension(it.pkgName, userId = userId)
             }
         }
     }
 
     @RequireAuth
-    fun updateExtension(input: UpdateExtensionInput): CompletableFuture<UpdateExtensionPayload?> {
+    fun updateExtension(
+        dataFetchingEnvironment: DataFetchingEnvironment,
+        input: UpdateExtensionInput,
+    ): CompletableFuture<UpdateExtensionPayload?> {
         val (clientMutationId, id, patch) = input
+        val userId = dataFetchingEnvironment.currentUserId()
 
         return future {
-            updateExtensions(listOf(id), patch)
+            updateExtensions(listOf(id), patch, userId = userId)
 
             val extension =
                 transaction {
@@ -92,7 +99,7 @@ class ExtensionMutation {
                         .selectAll()
                         .where { ExtensionTable.pkgName eq id }
                         .firstOrNull()
-                        ?.let { ExtensionType(it) }
+                        ?.let { ExtensionType(it, userId) }
                 }
 
             UpdateExtensionPayload(
@@ -103,18 +110,22 @@ class ExtensionMutation {
     }
 
     @RequireAuth
-    fun updateExtensions(input: UpdateExtensionsInput): CompletableFuture<UpdateExtensionsPayload?> {
+    fun updateExtensions(
+        dataFetchingEnvironment: DataFetchingEnvironment,
+        input: UpdateExtensionsInput,
+    ): CompletableFuture<UpdateExtensionsPayload?> {
         val (clientMutationId, ids, patch) = input
+        val userId = dataFetchingEnvironment.currentUserId()
 
         return future {
-            updateExtensions(ids, patch)
+            updateExtensions(ids, patch, userId = userId)
 
             val extensions =
                 transaction {
                     ExtensionTable
                         .selectAll()
                         .where { ExtensionTable.pkgName inList ids }
-                        .map { ExtensionType(it) }
+                        .map { ExtensionType(it, userId) }
                 }
 
             UpdateExtensionsPayload(
@@ -135,8 +146,12 @@ class ExtensionMutation {
     )
 
     @RequireAuth
-    fun fetchExtensions(input: FetchExtensionsInput): CompletableFuture<FetchExtensionsPayload?> {
+    fun fetchExtensions(
+        dataFetchingEnvironment: DataFetchingEnvironment,
+        input: FetchExtensionsInput,
+    ): CompletableFuture<FetchExtensionsPayload?> {
         val (clientMutationId) = input
+        val userId = dataFetchingEnvironment.currentUserId()
 
         return future {
             ExtensionsList.fetchExtensions()
@@ -146,7 +161,7 @@ class ExtensionMutation {
                     ExtensionTable
                         .selectAll()
                         .where { ExtensionTable.name neq LocalSource.EXTENSION_NAME }
-                        .map { ExtensionType(it) }
+                        .map { ExtensionType(it, userId) }
                 }
 
             val extensionStores =
@@ -175,18 +190,22 @@ class ExtensionMutation {
     )
 
     @RequireAuth
-    fun installExternalExtension(input: InstallExternalExtensionInput): CompletableFuture<InstallExternalExtensionPayload?> {
+    fun installExternalExtension(
+        dataFetchingEnvironment: DataFetchingEnvironment,
+        input: InstallExternalExtensionInput,
+    ): CompletableFuture<InstallExternalExtensionPayload?> {
         val (clientMutationId, extensionFile) = input
+        val userId = dataFetchingEnvironment.currentUserId()
 
         return future {
-            val pkgName = Extension.installExternalExtension(extensionFile.content(), extensionFile.filename())
+            val pkgName = Extension.installExternalExtension(extensionFile.content(), extensionFile.filename(), userId = userId)
 
             val dbExtension =
                 transaction { ExtensionTable.selectAll().where { ExtensionTable.pkgName eq pkgName }.first() }
 
             InstallExternalExtensionPayload(
                 clientMutationId,
-                extension = ExtensionType(dbExtension),
+                extension = ExtensionType(dbExtension, userId),
             )
         }
     }

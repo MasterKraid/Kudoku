@@ -17,9 +17,12 @@ import suwayomi.tachidesk.graphql.server.primitives.Edge
 import suwayomi.tachidesk.graphql.server.primitives.Node
 import suwayomi.tachidesk.graphql.server.primitives.NodeList
 import suwayomi.tachidesk.graphql.server.primitives.PageInfo
+import suwayomi.tachidesk.graphql.types.SourceNodeList.Companion.toNodeList
+import suwayomi.tachidesk.graphql.types.SourceType
 import suwayomi.tachidesk.manga.impl.extension.Extension
 import suwayomi.tachidesk.manga.model.dataclass.ContentWarning
 import suwayomi.tachidesk.manga.model.table.ExtensionTable
+import suwayomi.tachidesk.manga.model.table.UserExtensionTable
 import java.util.concurrent.CompletableFuture
 
 class ExtensionType(
@@ -49,7 +52,7 @@ class ExtensionType(
     val hasUpdate: Boolean,
     val isObsolete: Boolean,
 ) : Node {
-    constructor(row: ResultRow) : this(
+    constructor(row: ResultRow, userId: Int? = null) : this(
         storeIndexUrl = row[ExtensionTable.storeIndexUrl],
         repo = row[ExtensionTable.storeIndexUrl],
         apkName = row[ExtensionTable.apkName].orEmpty(),
@@ -65,13 +68,17 @@ class ExtensionType(
         lang = row[ExtensionTable.lang],
         isNsfw = row[ExtensionTable.contentWarning] >= ContentWarning.MIXED.ordinal,
         contentWarning = ContentWarning.valueOf(row[ExtensionTable.contentWarning]),
-        isInstalled = row[ExtensionTable.isInstalled],
-        hasUpdate = row[ExtensionTable.hasUpdate],
+        isInstalled = if (userId != null) UserExtensionTable.isInstalled(userId, row[ExtensionTable.pkgName]) else row[ExtensionTable.isInstalled],
+        hasUpdate = if (userId != null) (UserExtensionTable.isInstalled(userId, row[ExtensionTable.pkgName]) && row[ExtensionTable.hasUpdate]) else row[ExtensionTable.hasUpdate],
         isObsolete = row[ExtensionTable.isObsolete],
     )
 
     fun source(dataFetchingEnvironment: DataFetchingEnvironment): CompletableFuture<SourceNodeList> =
-        dataFetchingEnvironment.getValueFromDataLoader<String, SourceNodeList>("SourcesForExtensionDataLoader", pkgName)
+        if (!isInstalled) {
+            CompletableFuture.completedFuture(emptyList<SourceType>().toNodeList())
+        } else {
+            dataFetchingEnvironment.getValueFromDataLoader<String, SourceNodeList>("SourcesForExtensionDataLoader", pkgName)
+        }
 
     fun extensionStore(dataFetchingEnvironment: DataFetchingEnvironment): CompletableFuture<ExtensionStoreType?> =
         dataFetchingEnvironment.getValueFromDataLoader<String, ExtensionStoreType?>("ExtensionStoreDataLoader", storeIndexUrl.orEmpty())
