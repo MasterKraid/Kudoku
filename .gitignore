@@ -31,3 +31,5 @@ HANDOFF.md
 .env
 .env.*
 !.env.template
+*.mv.db*
+.UPSTREAM_MERGE_PENDING
