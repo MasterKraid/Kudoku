@@ -17,7 +17,6 @@ import {
     READING_MODE_VALUES,
 } from '@/features/reader/settings/ReaderSettings.constants.tsx';
 import { ReaderSettingReadingMode } from '@/features/reader/settings/layout/components/ReaderSettingReadingMode.tsx';
-import { ButtonSelectInput } from '@/base/components/inputs/ButtonSelectInput.tsx';
 import type { IReaderSettingsWithDefaultFlag, ReadingMode } from '@/features/reader/Reader.types.ts';
 
 export const ReaderDefaultLayoutSettings = ({
@@ -54,17 +53,6 @@ export const ReaderDefaultLayoutSettings = ({
                             updateSetting('readingMode', value);
                             setSelectedProfile(value);
                         }}
-                    />
-                </Stack>
-            )}
-            {profiles.length > 1 && (
-                <Stack sx={{ px: 2 }}>
-                    <ButtonSelectInput
-                        label="Profile layout settings"
-                        value={activeProfile}
-                        values={profiles}
-                        setValue={(profile) => setSelectedProfile(profile)}
-                        valueToDisplayData={READING_MODE_VALUE_TO_DISPLAY_DATA}
                     />
                 </Stack>
             )}

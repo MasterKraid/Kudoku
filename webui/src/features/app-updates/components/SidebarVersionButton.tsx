@@ -40,14 +40,9 @@ export const SidebarVersionButton = ({
         return null;
     }
 
-    const latest = updateData?.checkForServerUpdates?.find((channel) => channel.channel === about.buildType)?.tag;
-    const isUpdateAvailable = !!latest && latest !== about.version;
-
-    const label = isUpdateAvailable ? t`Update available` : t`Version ${about.version}`;
-    const title = isUpdateAvailable
-        ? `${about.version} → ${latest}${about.isDocker ? ` (${t`pull the new Docker image`})` : ''}`
-        : about.version;
-    const Icon = isUpdateAvailable ? SystemUpdateAltIcon : InfoOutlinedIcon;
+    const label = `Version ${about.version}`;
+    const title = about.version;
+    const Icon = InfoOutlinedIcon;
 
     return (
         <ButtonBase
@@ -64,15 +59,13 @@ export const SidebarVersionButton = ({
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                 textAlign: 'start',
                 borderRadius: '10px',
-                color: isUpdateAvailable ? theme.palette.success.main : theme.palette.text.secondary,
-                border: `1px solid ${isUpdateAvailable ? alpha(theme.palette.success.main, 0.5) : 'transparent'}`,
-                backgroundColor: isUpdateAvailable ? alpha(theme.palette.success.main, 0.12) : 'transparent',
+                color: theme.palette.text.secondary,
+                border: '1px solid transparent',
+                backgroundColor: 'transparent',
                 transition:
                     'background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms cubic-bezier(0.2, 0, 0, 1)',
                 '&:hover': {
-                    backgroundColor: isUpdateAvailable
-                        ? alpha(theme.palette.success.main, 0.2)
-                        : theme.palette.action.hover,
+                    backgroundColor: theme.palette.action.hover,
                 },
                 '&:active': { transform: 'scale(0.98)' },
             })}
@@ -83,11 +76,6 @@ export const SidebarVersionButton = ({
                     <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 600, fontFamily: 'monospace' }}>
                         {label}
                     </Typography>
-                    {isUpdateAvailable && (
-                        <Typography noWrap variant="caption" sx={{ lineHeight: 1.2, opacity: 0.85 }}>
-                            {about.isDocker ? t`Pull ${latest}` : `${about.version} → ${latest}`}
-                        </Typography>
-                    )}
                 </Stack>
             )}
         </ButtonBase>
