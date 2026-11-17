@@ -44,16 +44,42 @@ This document records all manual fixes, database updates, and runtime defenses i
   - `MangaDetails.tsx`: Rewrites `mangak.org` to `mangak.io`.
   - `Mangas.ts`: Automatically maps `res.mbbcdn.com` to `rx.resmk.org/covers/*.webp`.
 
+### D. Comick (`source: 4972933717624256217`)
+- **Issue**:
+  - Legacy manga records had hash paths (e.g. Manga 241: `/comic/4gd9_8d9#`) and dead cover URLs (`https://meo.comick.pictures/rBZwB-s.jpg#`).
+  - Comick retired old numeric IDs and redirected them to full text slugs (`maoyuu-maou-yuusha-kono-watashi-no-mono-tonare-yuusha-yo-kotowaru`).
+- **Database Fix**:
+  - `url`: Updated to the canonical slug (`maoyuu-maou-yuusha-kono-watashi-no-mono-tonare-yuusha-yo-kotowaru`).
+  - `thumbnail_url`: Updated to live image CDN (`https://meo.comick.pictures/Z8pM23.png`).
+
+### E. Kappa Beast (`source: 2598579144085032375`)
+- **Issue**:
+  - Kappa Beast migrated from legacy WordPress (`/manga/...` with dead `wp-content/uploads/` thumbnails) to Strapi/Payload CMS (`/series/<slug>#<documentId>` and `https://strapi.kappabeast.com/uploads/...`).
+  - Affected titles: 525, 526, 550, 569.
+- **Database Fix**:
+  - `url` and `thumbnail_url` updated to the Strapi API document IDs and live cover uploads (e.g. Manga 526: `ano-toki-tasukete-itadaita-monster-musume-desu-isekai-ossan-kyoushi-totsuzen-no-moteki-ni-konwaku-suru#gq9zi3f1ll1xbc04y7hlctyz`, cover: `https://strapi.kappabeast.com/uploads/monster_v4_1931251411.jpg`).
+
+### F. MangaNato / Mangakakalot CDN (`avt.mgicdn.com`)
+- **Issue**:
+  - `avt.mgicdn.com` was decommissioned and redirected to spam domain `spinzywheel.com`, causing Tsundoku's backend thumbnail proxy to return HTTP 500 (`spinzywheel.com: Name or service not known`).
+  - Affected titles: 24, 155, 25, 43, 186, 23, 229, 81, 128, 183, 216, 226.
+- **Database Fix**:
+  - Migrated all 12 titles to permanent, high-resolution MangaDex cover art.
+
 ---
 
-## 3. Why Updating APKs Will NOT Break This
-1. **Separation of Concerns**:
-   - APK updates in Tsundoku / Suwayomi only update the extension JAR/APK in `/data/extensions/` and the `suwayomi.extension` metadata table.
-   - APK updates do **not** mutate existing `suwayomi.manga.real_url` or `thumbnail_url` records in PostgreSQL.
-2. **Defensive Runtime Normalization**:
-   - The WebUI contains runtime guards in `MangaDetails.tsx` and `Mangas.ts`. Even if an old APK or cached state outputs a legacy domain or missing slash, the frontend catches and rewrites it before rendering or opening in an external tab.
-3. **Database Snapshot Safe**:
-   - A full dump snapshot is taken and saved at `db_snapshots/` prior to any major operation.
+## 3. How Extensions & Relative URLs Protect Against Future Domain Migrations
+1. **Relative Paths vs Hardcoded Absolute Domains**:
+   - In Tachiyomi/Mihon architecture, extension APKs declare an internal `baseUrl` (e.g., `override val baseUrl = "https://kagane.moe"`).
+   - When an extension updates upstream, it updates this `baseUrl` constant inside the APK.
+   - If the database stores a **relative path** (e.g., `/series/<UUID>` for Kagane or `/manga/<slug>` for Mangakakalot):
+     - The extension automatically prepends its *current* `baseUrl` when fetching chapters and details.
+     - When an APK updates its domain (e.g., from `.com` to `.xyz`), it immediately points to `.xyz` without any manual database edit!
+   - Storing hardcoded absolute URLs (`https://old-domain.com/...`) is what caused issues when domains expired. Cleaning them to relative paths ensures future APK updates adapt automatically.
+2. **WebUI Runtime Fallbacks**:
+   - In `webui`, `originUrl` dynamically resolves relative paths against the extension's live `source.baseUrl`.
+3. **WebUI Serve Directory Invariant**:
+   - Tsundoku serves WebUI from `/tmp/Tachidesk/webUI-serve` at runtime (copied from `/data/webUI` or built bundle). When updating frontend assets without a full container rebuild, assets must be placed into both `/tmp/Tachidesk/webUI-serve` and `/data/webUI`.
 
 ---
 
