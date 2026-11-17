@@ -332,10 +332,6 @@ msgstr "{currentAutoUpdateIntervalHours}h"
 msgid "{currentDownloadAheadLimit, plural, one {# Chapter} other {# Chapters}}"
 msgstr "{currentDownloadAheadLimit, plural, one {# Chapter} other {# Chapters}}"
 
-#: src/features/chapter/components/ChapterList.tsx
-msgid "{decimalChapterCount, plural, one {incl. # decimal chapter} other {incl. # decimal chapters}}"
-msgstr "{decimalChapterCount, plural, one {incl. # decimal chapter} other {incl. # decimal chapters}}"
-
 #: src/features/manga/components/MangaBadges.tsx
 msgid "{displayedChapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{displayedChapterCount, plural, one {# chapter} other {# chapters}}"
@@ -357,6 +353,9 @@ msgid "{libraryMangaCount, plural, one {# entry in library} other {# entries in 
 msgstr "{libraryMangaCount, plural, one {# entry in library} other {# entries in library}}"
 
 #: src/features/chapter/components/ChapterList.tsx
+msgid "{missingChapterCount, plural, one {(# missing)} other {(# missing)}}"
+msgstr "{missingChapterCount, plural, one {(# missing)} other {(# missing)}}"
+
 #: src/features/chapter/components/MissingChaptersInfoSeparator.tsx
 msgid "{missingChapterCount, plural, one {Missing # chapter} other {Missing # chapters}}"
 msgstr "{missingChapterCount, plural, one {Missing # chapter} other {Missing # chapters}}"
@@ -399,7 +398,8 @@ msgstr "A migration is already in progress"
 msgid "A preview focused web frontend built with svelte"
 msgstr "A preview focused web frontend built with svelte"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
+#: src/features/library/screens/LibrarySettings.tsx
 msgid "A—Z"
 msgstr "A—Z"
 
@@ -566,6 +566,14 @@ msgstr "and"
 #: src/features/settings/screens/Settings.tsx
 msgid "Appearance"
 msgstr "Appearance"
+
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Applied default sort rule to all categories"
+msgstr "Applied default sort rule to all categories"
+
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Apply default sort to all categories"
+msgstr "Apply default sort to all categories"
 
 #: src/features/reader/settings/general/components/ReaderSettingSafeAreaInset.tsx
 msgid "Apply safe area padding"
@@ -882,6 +890,7 @@ msgstr "Can't migrate an entry to itself"
 #: src/features/category/components/CategorySelect.tsx
 #: src/features/category/components/CreateOrEditCategoryDialog.tsx
 #: src/features/downloads/components/DownloadQueueChapterCard.tsx
+#: src/features/library/screens/LibrarySettings.tsx
 #: src/features/library/screens/LibraryShare.tsx
 #: src/features/manga/components/details/MangaNotes.tsx
 #: src/features/migration/components/MigrationBulkSearchOptionsDialog.tsx
@@ -1073,6 +1082,10 @@ msgstr "Cleared the cache"
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Cleared WebView cookies and cache"
 msgstr "Cleared WebView cookies and cache"
+
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Clears category-specific sort overrides so all categories use the default sort rule"
+msgstr "Clears category-specific sort overrides so all categories use the default sort rule"
 
 #: src/features/reader/hotkeys/settings/ReaderHotkeysSettings.tsx
 msgid "Click key to remove binding"
@@ -1620,6 +1633,14 @@ msgstr "Default"
 msgid "Default category when adding new manga to the library"
 msgstr "Default category when adding new manga to the library"
 
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Default sort rule"
+msgstr "Default sort rule"
+
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Default sorting"
+msgstr "Default sorting"
+
 #: src/base/components/AppbarSearch.tsx
 #: src/base/components/settings/MutableListSetting.tsx
 #: src/features/category/components/CategorySettingsCard.tsx
@@ -2030,6 +2051,10 @@ msgstr "Failed to connect to KOReader Sync server."
 msgid "Failed to disconnect from KOReader Sync server."
 msgstr "Failed to disconnect from KOReader Sync server."
 
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Failed to reset category sort rules"
+msgstr "Failed to reset category sort rules"
+
 #: src/features/backup/screens/Backup.tsx
 #: src/features/browse/extensions/Extensions.tsx
 #: src/features/browse/screens/BrowseSettings.tsx
@@ -2062,6 +2087,10 @@ msgstr "Failed to disconnect from KOReader Sync server."
 #: src/features/tracker/screens/TrackingSettings.tsx
 msgid "Failed to save changes"
 msgstr "Failed to save changes"
+
+#: src/features/library/components/LibraryOptionsPanel.tsx
+msgid "Failed to set default sort"
+msgstr "Failed to set default sort"
 
 #: src/features/settings/Settings.constants.ts
 msgid "Features and changes in this version might not be completely ready yet and can cause bugs.\n"
@@ -2605,11 +2634,11 @@ msgstr "Last used"
 msgid "Latest"
 msgstr "Latest"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Latest fetched chapter"
 msgstr "Latest fetched chapter"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Latest uploaded chapter"
 msgstr "Latest uploaded chapter"
 
@@ -3407,14 +3436,6 @@ msgstr "Prompt"
 msgid "Publishing finished"
 msgstr "Publishing finished"
 
-#: src/features/app-updates/components/SidebarVersionButton.tsx
-msgid "Pull {latest}"
-msgstr "Pull {latest}"
-
-#: src/features/app-updates/components/SidebarVersionButton.tsx
-msgid "pull the new Docker image"
-msgstr "pull the new Docker image"
-
 #: src/features/settings/screens/Appearance.tsx
 msgid "Pure black dark mode"
 msgstr "Pure black dark mode"
@@ -3432,7 +3453,7 @@ msgstr "Queued"
 msgid "Quick settings"
 msgstr "Quick settings"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Random"
 msgstr "Random"
 
@@ -3463,11 +3484,11 @@ msgstr "Reading mode"
 msgid "Recent searches"
 msgstr "Recent searches"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Recently added"
 msgstr "Recently added"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Recently read"
 msgstr "Recently read"
 
@@ -3614,6 +3635,10 @@ msgstr "Retry all"
 msgid "Retry errored pages"
 msgstr "Retry errored pages"
 
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Reverse the sorting order across categories by default"
+msgstr "Reverse the sorting order across categories by default"
+
 #: src/features/reader/overlay/progress-bar/settings/components/ReaderSettingProgressBarPosition.tsx
 #: src/features/reader/settings/general/components/ReaderSettingSafeAreaInset.tsx
 msgid "Right"
@@ -3658,6 +3683,10 @@ msgstr "Save dynamic color theme"
 #: src/features/source/browse/components/SourceOptions.tsx
 msgid "Save search"
 msgstr "Save search"
+
+#: src/features/library/components/LibraryOptionsPanel.tsx
+msgid "Saved as default sort for all categories"
+msgstr "Saved as default sort for all categories"
 
 #: src/features/theme/components/CreateThemeDialog.tsx
 msgid "Saved theme changes"
@@ -3883,6 +3912,10 @@ msgstr "Server was updated to version {version} ({0})"
 msgid "Set as active theme"
 msgstr "Set as active theme"
 
+#: src/features/library/components/LibraryOptionsPanel.tsx
+msgid "Set as default for all categories"
+msgstr "Set as default for all categories"
+
 #: src/features/category/components/CategorySelect.tsx
 msgid "Set categories"
 msgstr "Set categories"
@@ -4089,6 +4122,10 @@ msgstr "Something went wrong\n"
 #: src/features/library/components/LibraryOptionsPanel.tsx
 msgid "Sort"
 msgstr "Sort"
+
+#: src/features/library/screens/LibrarySettings.tsx
+msgid "Sort descending"
+msgstr "Sort descending"
 
 #: src/features/browse/screens/Browse.tsx
 #: src/features/browse/screens/BrowseSettings.tsx
@@ -4496,7 +4533,7 @@ msgstr "Toggle stretch image"
 msgid "Top"
 msgstr "Top"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Total chapters"
 msgstr "Total chapters"
 
@@ -4665,7 +4702,7 @@ msgstr "Unread"
 msgid "Unread badges"
 msgstr "Unread badges"
 
-#: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/library/Library.constants.ts
 msgid "Unread chapters"
 msgstr "Unread chapters"
 
@@ -4682,7 +4719,6 @@ msgstr "Update"
 msgid "Update all"
 msgstr "Update all"
 
-#: src/features/app-updates/components/SidebarVersionButton.tsx
 #: src/features/app-updates/components/VersionInfo.tsx
 #: src/features/app-updates/components/VersionUpdateInfoDialog.tsx
 msgid "Update available"
@@ -4791,11 +4827,6 @@ msgstr "Veronica"
 #: src/features/extension/info/components/Meta.tsx
 msgid "Version"
 msgstr "Version"
-
-#. placeholder {0}: about.version
-#: src/features/app-updates/components/SidebarVersionButton.tsx
-msgid "Version {0}"
-msgstr "Version {0}"
 
 #: src/features/reader/settings/layout/components/ReaderSettingTapZoneInvertMode.tsx
 msgid "Vertical"

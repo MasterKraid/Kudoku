@@ -60,7 +60,7 @@ export default defineConfig(({ command }) => ({
     },
     plugins: [
         react({
-            plugins: [['@lingui/swc-plugin', {}]],
+            plugins: [['@lingui/swc-plugin', { descriptorFields: 'message' }]],
         }),
         lingui({
             failOnCompileError: true,
