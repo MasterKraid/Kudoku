@@ -31,8 +31,8 @@ import { LoadingPlaceholder } from '@/base/components/feedback/LoadingPlaceholde
 import { EmptyViewAbsoluteCentered } from '@/base/components/feedback/EmptyViewAbsoluteCentered.tsx';
 import { defaultPromiseErrorHandler } from '@/lib/DefaultPromiseErrorHandler.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
-import type { MetadataThemeSettings } from '@/features/theme/AppTheme.types.ts';
-import { ThemeMode } from '@/features/theme/AppTheme.types.ts';
+import type { MetadataThemeSettings, TopBarPlatformConfig } from '@/features/theme/AppTheme.types.ts';
+import { DEFAULT_TOP_BAR_SETTINGS, ThemeMode } from '@/features/theme/AppTheme.types.ts';
 import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { AppStorage } from '@/lib/storage/AppStorage.ts';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
@@ -40,6 +40,11 @@ import { MANGA_GRID_WIDTH, SERVER_SETTINGS_METADATA_DEFAULT } from '@/features/s
 import { MUI_THEME_MODE_KEY } from '@/lib/mui/MUI.constants.ts';
 import { getISOLanguage } from '@/lib/ISOLanguageUtil.ts';
 import Typography from '@mui/material/Typography';
+import Tab from '@mui/material/Tab';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import { TabsMenu } from '@/base/components/tabs/TabsMenu.tsx';
+import { useState } from 'react';
 
 export const Appearance = () => {
     const { t } = useLingui();
@@ -50,12 +55,49 @@ export const Appearance = () => {
     useAppTitle(t`Appearance`);
 
     const {
-        settings: { mangaThumbnailBackdrop, mangaDynamicColorSchemes, mangaGridItemWidth, locale },
+        settings: { mangaThumbnailBackdrop, mangaDynamicColorSchemes, mangaGridItemWidth, locale, topBarSettings: rawTopBarSettings },
         request: { loading, error, refetch },
     } = useMetadataServerSettings();
     const updateMetadataSetting = createUpdateMetadataServerSettings<keyof MetadataThemeSettings>((e) =>
         makeToast(t`Failed to save changes`, 'error', getErrorMessage(e)),
     );
+
+    const isMobileWidth = MediaQuery.useIsMobileWidth();
+    const isTouch = MediaQuery.useIsTouchDevice();
+    const isCurrentDeviceMobile = isMobileWidth || isTouch;
+    const [selectedPlatform, setSelectedPlatform] = useState<'desktop' | 'mobile'>(
+        isCurrentDeviceMobile ? 'mobile' : 'desktop',
+    );
+
+    const topBarSettings = rawTopBarSettings ?? DEFAULT_TOP_BAR_SETTINGS;
+    const currentPlatformConfig = topBarSettings[selectedPlatform] ?? DEFAULT_TOP_BAR_SETTINGS[selectedPlatform];
+
+    const updatePlatformConfig = <K extends keyof TopBarPlatformConfig>(key: K, value: TopBarPlatformConfig[K]) => {
+        const updated = {
+            ...topBarSettings,
+            [selectedPlatform]: {
+                ...currentPlatformConfig,
+                [key]: value,
+            },
+        };
+        updateMetadataSetting('topBarSettings', updated).catch((e) =>
+            makeToast(t`Failed to save changes`, 'error', getErrorMessage(e)),
+        );
+    };
+
+    const applyPreset = (libHeight: number, catHeight: number) => {
+        const updated = {
+            ...topBarSettings,
+            [selectedPlatform]: {
+                ...currentPlatformConfig,
+                libraryBarHeight: libHeight,
+                categoryBarHeight: catHeight,
+            },
+        };
+        updateMetadataSetting('topBarSettings', updated).catch((e) =>
+            makeToast(t`Failed to save changes`, 'error', getErrorMessage(e)),
+        );
+    };
 
     const isDarkMode = MediaQuery.getThemeMode(actualThemeMode) === ThemeMode.DARK;
 
@@ -218,6 +260,126 @@ export const Appearance = () => {
                         onChange={(e) => updateMetadataSetting('mangaDynamicColorSchemes', e.target.checked)}
                     />
                 </ListItem>
+            </List>
+            <List
+                subheader={
+                    <ListSubheader component="div" id="appearance-top-bar">
+                        {t`Top Bar`}
+                    </ListSubheader>
+                }
+            >
+                <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
+                    <ListItemText
+                        primary={t`Target platform`}
+                        secondary={t`Configure top bar dimensions and auto-hide behavior independently for Desktop and Mobile devices`}
+                    />
+                    <TabsMenu
+                        value={selectedPlatform}
+                        onChange={(_, val) => setSelectedPlatform(val)}
+                        sx={{ bgcolor: 'action.hover', borderRadius: 1 }}
+                    >
+                        <Tab
+                            value="desktop"
+                            label={
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                    <span>{t`Desktop`}</span>
+                                    {!isCurrentDeviceMobile && (
+                                        <Chip size="small" label={t`Active`} color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                    )}
+                                </Stack>
+                            }
+                            sx={{ flexGrow: 1 }}
+                        />
+                        <Tab
+                            value="mobile"
+                            label={
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                    <span>{t`Mobile`}</span>
+                                    {isCurrentDeviceMobile && (
+                                        <Chip size="small" label={t`Active`} color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                    )}
+                                </Stack>
+                            }
+                            sx={{ flexGrow: 1 }}
+                        />
+                    </TabsMenu>
+                </ListItem>
+
+                <ListItem sx={{ gap: 1, flexWrap: 'wrap' }}>
+                    <ListItemText primary={t`Height presets`} />
+                    <Stack direction="row" spacing={1}>
+                        <Chip
+                            clickable
+                            label={t`Default`}
+                            variant={currentPlatformConfig.libraryBarHeight === (selectedPlatform === 'desktop' ? 56 : 48) ? 'filled' : 'outlined'}
+                            onClick={() => applyPreset(selectedPlatform === 'desktop' ? 56 : 48, selectedPlatform === 'desktop' ? 48 : 40)}
+                        />
+                        <Chip
+                            clickable
+                            label={t`Compact`}
+                            variant={currentPlatformConfig.libraryBarHeight === 44 ? 'filled' : 'outlined'}
+                            onClick={() => applyPreset(44, 36)}
+                        />
+                        <Chip
+                            clickable
+                            label={t`Ultra-compact`}
+                            variant={currentPlatformConfig.libraryBarHeight === 38 ? 'filled' : 'outlined'}
+                            onClick={() => applyPreset(38, 30)}
+                        />
+                    </Stack>
+                </ListItem>
+
+                <NumberSetting
+                    settingTitle={t`Library bar height`}
+                    settingValue={`px: ${currentPlatformConfig.libraryBarHeight}`}
+                    value={currentPlatformConfig.libraryBarHeight}
+                    defaultValue={selectedPlatform === 'desktop' ? 56 : 48}
+                    minValue={32}
+                    maxValue={72}
+                    stepSize={2}
+                    valueUnit="px"
+                    showSlider
+                    handleUpdate={(val) => updatePlatformConfig('libraryBarHeight', val)}
+                />
+
+                <NumberSetting
+                    settingTitle={t`Category bar height`}
+                    settingValue={`px: ${currentPlatformConfig.categoryBarHeight}`}
+                    value={currentPlatformConfig.categoryBarHeight}
+                    defaultValue={selectedPlatform === 'desktop' ? 48 : 40}
+                    minValue={24}
+                    maxValue={56}
+                    stepSize={2}
+                    valueUnit="px"
+                    showSlider
+                    handleUpdate={(val) => updatePlatformConfig('categoryBarHeight', val)}
+                />
+
+                <ListItem>
+                    <ListItemText
+                        primary={t`Auto hide on scroll`}
+                        secondary={t`Automatically slides the top bars out of view when scrolling down and restores them on scroll up`}
+                    />
+                    <Switch
+                        edge="end"
+                        checked={currentPlatformConfig.autoHide}
+                        onChange={(e) => updatePlatformConfig('autoHide', e.target.checked)}
+                    />
+                </ListItem>
+
+                {selectedPlatform === 'desktop' && (
+                    <ListItem>
+                        <ListItemText
+                            primary={t`Show on hover`}
+                            secondary={t`When the top bar is hidden, moving your cursor to the top edge smoothly reveals it`}
+                        />
+                        <Switch
+                            edge="end"
+                            checked={currentPlatformConfig.showOnHover}
+                            onChange={(e) => updatePlatformConfig('showOnHover', e.target.checked)}
+                        />
+                    </ListItem>
+                )}
             </List>
         </List>
     );

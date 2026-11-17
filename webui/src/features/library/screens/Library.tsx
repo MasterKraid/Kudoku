@@ -53,6 +53,8 @@ import { useMetadataServerSettings } from '@/features/settings/services/ServerSe
 import { GET_MANGAS_COUNT } from '@/lib/graphql/manga/MangaQuery.ts';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
 import { useAppAction } from '@/features/navigation-bar/hooks/useAppAction.ts';
+import { useTopBarConfig } from '@/features/navigation-bar/hooks/useTopBarConfig.ts';
+import { useNavBarContext } from '@/features/navigation-bar/NavbarContext.tsx';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { SearchParam } from '@/base/Base.types.ts';
 import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';
@@ -76,6 +78,8 @@ export function Library() {
     const {
         settings: { showTabSize, swipeBetweenCategories },
     } = useMetadataServerSettings();
+    const { config: topBarConfig } = useTopBarConfig();
+    const { isTopBarHidden } = useNavBarContext();
 
     const {
         data: categoriesResponse,
@@ -341,11 +345,36 @@ export function Library() {
 
     return (
         <TabsWrapper {...(swipeBetweenCategories ? swipeHandlers : undefined)}>
-            <OffsetComponent>
-                <TabsMenu value={activeTab.id} onChange={(e, newTab) => handleTabChange(newTab)}>
+            <OffsetComponent
+                sx={{
+                    transform: isTopBarHidden
+                        ? `translateY(-${topBarConfig.libraryBarHeight + topBarConfig.categoryBarHeight + 10}px)`
+                        : 'translateY(0)',
+                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+            >
+                <TabsMenu
+                    value={activeTab.id}
+                    onChange={(e, newTab) => handleTabChange(newTab)}
+                    sx={{
+                        minHeight: `${topBarConfig.categoryBarHeight}px !important`,
+                        height: `${topBarConfig.categoryBarHeight}px`,
+                        '& .MuiTabs-scroller': {
+                            minHeight: `${topBarConfig.categoryBarHeight}px !important`,
+                            height: `${topBarConfig.categoryBarHeight}px`,
+                        },
+                    }}
+                >
                     {tabs.map((tab) => (
                         <Tab
-                            sx={{ flexGrow: 1, maxWidth: 'unset' }}
+                            sx={{
+                                flexGrow: 1,
+                                maxWidth: 'unset',
+                                minHeight: `${topBarConfig.categoryBarHeight}px !important`,
+                                height: `${topBarConfig.categoryBarHeight}px`,
+                                py: 0,
+                                fontSize: topBarConfig.categoryBarHeight <= 36 ? '0.8125rem' : '0.875rem',
+                            }}
                             key={tab.id}
                             label={
                                 <TitleWithSizeTag>
@@ -381,7 +410,7 @@ export function Library() {
             ))}
             {selectionFab}
             {!query && isSortedByTitle && (
-                <LibraryLetterIndex titles={titles} gridHandleRef={gridHandleRef} topOffset={48} />
+                <LibraryLetterIndex titles={titles} gridHandleRef={gridHandleRef} topOffset={topBarConfig.categoryBarHeight} />
             )}
             <LibraryScrollFab contentKey={filterKey + mangas.length} isRaised={isSelectModeActive} />
         </TabsWrapper>

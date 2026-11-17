@@ -177,7 +177,15 @@ export class Mangas {
     }
 
     static getThumbnailUrl(manga: Partial<MangaThumbnailInfo>): string {
-        const url = UrlUtil.addParams(manga.thumbnailUrl ?? '', {
+        let rawThumb = manga.thumbnailUrl ?? '';
+        if (rawThumb.includes('yuzuki.kagane.org')) {
+            rawThumb = rawThumb.replace('https://yuzuki.kagane.org', 'https://kagane.moe');
+        }
+        if (rawThumb.includes('res.mbbcdn.com')) {
+            const fn = rawThumb.split('/').pop()?.split('#')[0]?.replace('.png', '.webp');
+            if (fn) rawThumb = `https://rx.resmk.org/covers/${fn}`;
+        }
+        const url = UrlUtil.addParams(rawThumb, {
             fetchedAt: manga.thumbnailUrlLastFetched,
             sourceId: manga.sourceId,
         });

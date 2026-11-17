@@ -26,6 +26,7 @@ import type { SortSettings } from '@/features/migration/Migration.types.ts';
 import type { ISourceMetadata } from '@/features/source/Source.types.ts';
 import type { LibraryOptions } from '@/features/library/Library.types.ts';
 import type { MetadataThemeSettings } from '@/features/theme/AppTheme.types.ts';
+import { DEFAULT_TOP_BAR_SETTINGS } from '@/features/theme/AppTheme.types.ts';
 import type { TapZoneInvertMode } from '@/features/reader/tap-zones/TapZoneLayout.types.ts';
 import { detectLocale, getISOLanguage } from '@/lib/ISOLanguageUtil.ts';
 import type { I18nResourceCode } from '@/i18n';
@@ -455,6 +456,10 @@ export const APP_METADATA: Record<
     shouldEnterFullscreen: {
         convert: convertToBoolean,
     },
+    topBarSettings: {
+        convert: (value: string, defaultValue: any) =>
+            convertToObject(value, defaultValue ?? DEFAULT_TOP_BAR_SETTINGS),
+    },
 } as const;
 
 export const VALID_APP_METADATA_KEYS = Object.keys(APP_METADATA);
@@ -542,6 +547,7 @@ export const GLOBAL_METADATA_KEYS: AppMetadataKeys[] = [
     'customThemes',
     'mangaThumbnailBackdrop',
     'mangaDynamicColorSchemes',
+    'topBarSettings',
 
     // reader
     'exitMode',

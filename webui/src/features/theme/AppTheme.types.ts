@@ -28,6 +28,33 @@ export type TAppThemeContext = {
         React.SetStateAction<(NonNullableProperties<Palette> & { average: FastAverageColorResult }) | null>
     >;
 };
+export interface TopBarPlatformConfig {
+    libraryBarHeight: number;
+    categoryBarHeight: number;
+    autoHide: boolean;
+    showOnHover: boolean;
+}
+
+export interface TopBarSettings {
+    desktop: TopBarPlatformConfig;
+    mobile: TopBarPlatformConfig;
+}
+
+export const DEFAULT_TOP_BAR_SETTINGS: TopBarSettings = {
+    desktop: {
+        libraryBarHeight: 56,
+        categoryBarHeight: 48,
+        autoHide: false,
+        showOnHover: false,
+    },
+    mobile: {
+        libraryBarHeight: 48,
+        categoryBarHeight: 40,
+        autoHide: false,
+        showOnHover: false,
+    },
+};
+
 export type MetadataThemeSettings = {
     locale: string;
     appTheme: AppThemes;
@@ -37,4 +64,5 @@ export type MetadataThemeSettings = {
     mangaThumbnailBackdrop: boolean;
     mangaDynamicColorSchemes: boolean;
     mangaGridItemWidth: number;
+    topBarSettings: TopBarSettings;
 };

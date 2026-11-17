@@ -31,7 +31,7 @@ import {
     WebUiFlavor,
     WebUiInterface,
 } from '@/lib/graphql/generated/graphql-base.types.ts';
-import { ThemeMode } from '@/features/theme/AppTheme.types.ts';
+import { DEFAULT_TOP_BAR_SETTINGS, ThemeMode } from '@/features/theme/AppTheme.types.ts';
 import { getPreferredISOLanguageCodes } from '@/lib/ISOLanguageUtil.ts';
 import type { BackupFlag } from '@/features/backup/Backup.types.ts';
 
@@ -106,6 +106,7 @@ export const SERVER_SETTINGS_METADATA_DEFAULT: MetadataServerSettings = {
     mangaThumbnailBackdrop: true,
     mangaDynamicColorSchemes: true,
     mangaGridItemWidth: MANGA_GRID_WIDTH.default,
+    topBarSettings: DEFAULT_TOP_BAR_SETTINGS,
 };
 
 // recommended mode right below "None", the legacy ones last

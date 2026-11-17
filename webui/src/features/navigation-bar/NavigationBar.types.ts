@@ -65,4 +65,7 @@ export type NavbarContextType = {
 
     bottomBarHeight: number;
     setBottomBarHeight: React.Dispatch<React.SetStateAction<number>>;
+
+    isTopBarHidden: boolean;
+    setIsTopBarHidden: React.Dispatch<React.SetStateAction<boolean>>;
 };

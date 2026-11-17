@@ -450,6 +450,7 @@ msgid "Accounts ({0})"
 msgstr "Accounts ({0})"
 
 #: src/features/authentication/components/UserAccountsDialog.tsx
+#: src/features/settings/screens/Appearance.tsx
 msgid "Active"
 msgstr "Active"
 
@@ -636,6 +637,10 @@ msgstr "Auto"
 msgid "Auto download while reading"
 msgstr "Auto download while reading"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Auto hide on scroll"
+msgstr "Auto hide on scroll"
+
 #: src/features/reader/auto-scroll/settings/quick-setting/ReaderNavBarDesktopAutoScroll.tsx
 #: src/features/reader/overlay/navigation/mobile/quick-settings/ReaderBottomBarMobileQuickSettings.tsx
 msgid "Auto scroll"
@@ -692,6 +697,10 @@ msgstr "Automatically select matches if they have at least the same latest chapt
 #: src/features/migration/components/MigrationBulkSearchOptionsDialog.tsx
 msgid "Automatically select matches if they have no missing chapters"
 msgstr "Automatically select matches if they have no missing chapters"
+
+#: src/features/settings/screens/Appearance.tsx
+msgid "Automatically slides the top bars out of view when scrolling down and restores them on scroll up"
+msgstr "Automatically slides the top bars out of view when scrolling down and restores them on scroll up"
 
 #: src/features/reader/settings/behaviour/ReaderBehaviourSettings.tsx
 msgid "Automatically use webtoon mode for entries that are detected to likely use the long strip format"
@@ -941,6 +950,10 @@ msgstr "Categories"
 msgid "Category"
 msgstr "Category"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Category bar height"
+msgstr "Category bar height"
+
 #: src/features/category/components/CreateOrEditCategoryDialog.tsx
 msgid "Category Name"
 msgstr "Category Name"
@@ -1131,6 +1144,10 @@ msgstr "Comfortable grid"
 msgid "entry-type-detection-comic"
 msgstr "Comic"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Compact"
+msgstr "Compact"
+
 #: src/base/components/GridLayouts.tsx
 #: src/features/library/components/LibraryOptionsPanel.tsx
 msgid "Compact grid"
@@ -1147,6 +1164,10 @@ msgstr "Compression level"
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Configure the database below yourself, or open the migration page: it can switch to the built-in PostgreSQL for you, move your library over safely (with an automatic backup) and guide you through the setup"
 msgstr "Configure the database below yourself, or open the migration page: it can switch to the built-in PostgreSQL for you, move your library over safely (with an automatic backup) and guide you through the setup"
+
+#: src/features/settings/screens/Appearance.tsx
+msgid "Configure top bar dimensions and auto-hide behavior independently for Desktop and Mobile devices"
+msgstr "Configure top bar dimensions and auto-hide behavior independently for Desktop and Mobile devices"
 
 #: src/features/settings/components/images/Processing.tsx
 msgid "Connect timeout"
@@ -1624,6 +1645,7 @@ msgstr "Decrease auto scroll speed"
 #: src/features/device/screens/DeviceSetting.tsx
 #: src/features/downloads/screens/DownloadSettings.tsx
 #: src/features/reader/settings/ReaderSettings.constants.tsx
+#: src/features/settings/screens/Appearance.tsx
 #: src/features/settings/screens/WebUISettings.tsx
 #: src/features/theme/Themes.ts
 msgid "Default"
@@ -1709,6 +1731,7 @@ msgid "Deselect"
 msgstr "Deselect"
 
 #: src/features/reader/overlay/settings/ReaderSettingOverlayMode.tsx
+#: src/features/settings/screens/Appearance.tsx
 msgid "Desktop"
 msgstr "Desktop"
 
@@ -2306,6 +2329,10 @@ msgstr "Headers"
 msgid "Headers ({0})"
 msgstr "Headers ({0})"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Height presets"
+msgstr "Height presets"
+
 #: src/features/manga/Manga.constants.ts
 #: src/features/tracker/Tracker.constants.ts
 msgid "Hiatus"
@@ -2680,6 +2707,10 @@ msgstr "legacy backups are not supported!"
 msgid "Library"
 msgstr "Library"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Library bar height"
+msgstr "Library bar height"
+
 #: src/features/backup/Backup.constants.ts
 msgid "Library entries"
 msgstr "Library entries"
@@ -2988,6 +3019,7 @@ msgid "Missing: {0}"
 msgstr "Missing: {0}"
 
 #: src/features/reader/overlay/settings/ReaderSettingOverlayMode.tsx
+#: src/features/settings/screens/Appearance.tsx
 msgid "Mobile"
 msgstr "Mobile"
 
@@ -4003,6 +4035,10 @@ msgstr "Show more"
 msgid "Show number of items"
 msgstr "Show number of items"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Show on hover"
+msgstr "Show on hover"
+
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Show only downloaded chapters"
 msgstr "Show only downloaded chapters"
@@ -4360,6 +4396,10 @@ msgstr "Tap zones"
 msgid "Target mode"
 msgstr "Target mode"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Target platform"
+msgstr "Target platform"
+
 #: src/features/settings/Settings.constants.ts
 msgid "That haven't been started"
 msgstr "That haven't been started"
@@ -4533,6 +4573,10 @@ msgstr "Toggle stretch image"
 msgid "Top"
 msgstr "Top"
 
+#: src/features/settings/screens/Appearance.tsx
+msgid "Top Bar"
+msgstr "Top Bar"
+
 #: src/features/library/Library.constants.ts
 msgid "Total chapters"
 msgstr "Total chapters"
@@ -4612,6 +4656,10 @@ msgstr "Type"
 #: src/features/settings/Settings.constants.ts
 msgid "UI Login (Recommended)"
 msgstr "UI Login (Recommended)"
+
+#: src/features/settings/screens/Appearance.tsx
+msgid "Ultra-compact"
+msgstr "Ultra-compact"
 
 #: src/features/backup/screens/Backup.tsx
 #: src/features/browse/extensions/Extensions.tsx
@@ -4908,6 +4956,10 @@ msgstr "Welcome back"
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "When enabled, download and streaming links are provided directly in the chapter list. KoSync strategies are applied, but PROMPT conflicts are ignored (treating local progress as priority)"
 msgstr "When enabled, download and streaming links are provided directly in the chapter list. KoSync strategies are applied, but PROMPT conflicts are ignored (treating local progress as priority)"
+
+#: src/features/settings/screens/Appearance.tsx
+msgid "When the top bar is hidden, moving your cursor to the top edge smoothly reveals it"
+msgstr "When the top bar is hidden, moving your cursor to the top edge smoothly reveals it"
 
 #: src/features/settings/Settings.constants.ts
 msgid "When you enable this, you may need to refresh this tab for the login page to appear."

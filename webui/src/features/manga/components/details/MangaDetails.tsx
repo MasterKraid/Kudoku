@@ -254,9 +254,12 @@ export const MangaDetails = ({
     const { updateLibraryState } = useManageMangaLibraryState(manga);
 
     const originUrl = useMemo(() => {
-        if (manga.realUrl) return manga.realUrl;
-        if (manga.url?.startsWith('http')) return manga.url;
-        if (manga.source?.baseUrl && manga.url) {
+        let url: string | null = null;
+        if (manga.realUrl) {
+            url = manga.realUrl;
+        } else if (manga.url?.startsWith('http')) {
+            url = manga.url;
+        } else if (manga.source?.baseUrl && manga.url) {
             const base = manga.source.baseUrl.replace(/\/+$/, '');
             let path = manga.url;
             if (base.includes('comick') && !path.startsWith('/') && !path.startsWith('comic/')) {
@@ -264,9 +267,14 @@ export const MangaDetails = ({
             } else if (!path.startsWith('/')) {
                 path = `/${path}`;
             }
-            return `${base}${path}`;
+            url = `${base}${path}`;
         }
-        return null;
+        if (url) {
+            url = url.replace(/^https?:\/\/kagane\.org\/?([0-9a-fA-F-]+)/i, 'https://kagane.moe/series/$1');
+            url = url.replace(/^https?:\/\/(?:www\.)?(?:manganato\.com|natomanga\.com|manganami\.com|chapmanganato\.to)/i, 'https://www.manganato.gg');
+            url = url.replace(/^https?:\/\/mangak\.org/i, 'https://mangak.io');
+        }
+        return url;
     }, [manga.realUrl, manga.url, manga.source?.baseUrl]);
 
     return (

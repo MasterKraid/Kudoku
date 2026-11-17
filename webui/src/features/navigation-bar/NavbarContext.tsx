@@ -29,6 +29,8 @@ export const NavBarContext = React.createContext<NavbarContextType>({
     setReaderNavBarWidth: (): void => {},
     bottomBarHeight: 0,
     setBottomBarHeight: (): void => {},
+    isTopBarHidden: false,
+    setIsTopBarHidden: (): void => {},
 });
 
 export const useNavBarContext = () => useContext(NavBarContext);
@@ -50,6 +52,7 @@ export function NavBarContextProvider({ children }: IProps) {
     const [navBarWidth, setNavBarWidth] = useState(0);
     const [readerNavBarWidth, setReaderNavBarWidth] = useState(0);
     const [bottomBarHeight, setBottomBarHeight] = useState(0);
+    const [isTopBarHidden, setIsTopBarHidden] = useState(false);
 
     const updateTitle = useCallback(
         (newTitle: string | React.ReactNode, browserTitle: string = typeof newTitle === 'string' ? newTitle : '') => {
@@ -79,6 +82,8 @@ export function NavBarContextProvider({ children }: IProps) {
             setReaderNavBarWidth,
             bottomBarHeight,
             setBottomBarHeight,
+            isTopBarHidden,
+            setIsTopBarHidden,
         }),
         [
             title,
@@ -99,6 +104,8 @@ export function NavBarContextProvider({ children }: IProps) {
             setReaderNavBarWidth,
             bottomBarHeight,
             setBottomBarHeight,
+            isTopBarHidden,
+            setIsTopBarHidden,
         ],
     );
     return <NavBarContext.Provider value={value}>{children}</NavBarContext.Provider>;
