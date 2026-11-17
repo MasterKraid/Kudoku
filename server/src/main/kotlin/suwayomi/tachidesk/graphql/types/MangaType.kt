@@ -119,7 +119,7 @@ class MangaType(
         if (userId != null) resolveInLibrary(row, userId) else row[MangaTable.inLibrary],
         if (userId != null) resolveInLibraryAt(row, userId) else row[MangaTable.inLibraryAt],
         UpdateStrategy.valueOf(row[MangaTable.updateStrategy]),
-        row[MangaTable.realUrl],
+        row[MangaTable.realUrl] ?: (if (row[MangaTable.url].startsWith("http")) row[MangaTable.url] else null),
         row[MangaTable.lastFetchedAt],
         row[MangaTable.chaptersLastFetchedAt],
     )
@@ -140,7 +140,7 @@ class MangaType(
         dataClass.inLibrary,
         dataClass.inLibraryAt,
         dataClass.updateStrategy,
-        dataClass.realUrl,
+        dataClass.realUrl ?: (if (dataClass.url.startsWith("http")) dataClass.url else null),
         dataClass.lastFetchedAt,
         dataClass.chaptersLastFetchedAt,
     )

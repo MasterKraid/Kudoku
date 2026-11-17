@@ -187,6 +187,7 @@ export const MANGA_SCREEN_FIELDS = gql`
 
         status
         realUrl
+        url
 
         meta {
             ...MANGA_META_FIELDS

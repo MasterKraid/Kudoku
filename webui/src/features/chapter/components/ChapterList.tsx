@@ -175,14 +175,6 @@ export const ChapterList = ({
         () => visibleChapters.some(({ chapterNumber }) => chapterNumber === 0),
         [visibleChapters],
     );
-    const decimalChapterCount = useMemo(() => Chapters.getDecimalCount(visibleChapters), [visibleChapters]);
-    const chapterCountNote = [
-        hasChapterZero && t`+ chapter 0`,
-        decimalChapterCount > 0 &&
-            plural(decimalChapterCount, { one: 'incl. # decimal chapter', other: 'incl. # decimal chapters' }),
-    ]
-        .filter(Boolean)
-        .join(' · ');
 
     const noChaptersFound = chapters.length === 0;
     const noChaptersMatchingFilter = !noChaptersFound && visibleChapters.length === 0;
@@ -241,20 +233,20 @@ export const ChapterList = ({
                                     other: '# chapters',
                                 })}
                             </Typography>
-                            {!!chapterCountNote && (
+                            {hasChapterZero && (
                                 <Typography variant="body2" color="text.secondary">
-                                    {chapterCountNote}
+                                    {t`+ chapter 0`}
+                                </Typography>
+                            )}
+                            {missingChapterCount > 0 && (
+                                <Typography variant="body2" color="warning.main">
+                                    {plural(missingChapterCount, {
+                                        one: '(# missing)',
+                                        other: '(# missing)',
+                                    })}
                                 </Typography>
                             )}
                         </Stack>
-                        {!!missingChapterCount && (
-                            <Typography variant="body2" color="warning">
-                                {plural(missingChapterCount, {
-                                    one: 'Missing # chapter',
-                                    other: 'Missing # chapters',
-                                })}
-                            </Typography>
-                        )}
                     </Stack>
 
                     <Stack direction="row">

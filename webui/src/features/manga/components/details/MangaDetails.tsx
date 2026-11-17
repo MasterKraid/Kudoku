@@ -216,7 +216,7 @@ export const MangaDetails = ({
     manga,
     mode,
 }: {
-    manga: Pick<MangaType, 'realUrl'> &
+    manga: Pick<MangaType, 'realUrl' | 'url'> &
         MangaIdInfo &
         MangaTitleInfo &
         MangaStatusInfo &
@@ -325,7 +325,7 @@ export const MangaDetails = ({
                         {manga.inLibrary ? t`In Library` : t`Add To Library`}
                     </FlexWrapButton>
                     <TrackMangaButton manga={manga} />
-                    <OpenSourceButton url={manga.realUrl} />
+                    <OpenSourceButton url={manga.realUrl || (manga.url?.startsWith('http') ? manga.url : null)} />
                 </MangaButtonsContainer>
             </TopContentWrapper>
             <DescriptionGenre manga={manga} mode={mode} />
