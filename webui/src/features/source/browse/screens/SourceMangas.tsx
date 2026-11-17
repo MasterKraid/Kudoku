@@ -510,10 +510,11 @@ export function SourceMangas() {
                     gridLayout={sourceGridLayout}
                     mode={mode}
                     inLibraryIndicator
+                    migrationSourceMangaId={mangaId ? Number(mangaId) : undefined}
                     onMigrateSelect={
                         mangaId
                             ? (match) => {
-                                  MigrationManager.selectManualMatch(mangaId, {
+                                  MigrationManager.selectManualMatch(Number(mangaId), {
                                       ...match,
                                       sourceTitle: Sources.getFromCache(match.sourceId)?.displayName,
                                       latestChapterNumber: undefined,

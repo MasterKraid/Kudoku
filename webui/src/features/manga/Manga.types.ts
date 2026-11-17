@@ -75,6 +75,7 @@ export interface MangaCardProps {
     handleSelection?: SelectableCollectionReturnType<MangaTypeGql['id']>['handleSelection'];
     onMigrateSelect?: (manga: Omit<MigrationMatch, 'sourceTitle' | 'isManualMatch' | 'latestChapterNumber'>) => void;
     mode?: MangaCardMode;
+    migrationSourceMangaId?: number;
 }
 
 export type SpecificMangaCardProps = Omit<MangaCardProps, 'manga'> &

@@ -18,7 +18,6 @@ import Button from '@mui/material/Button';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { useElementSize } from '@mantine/hooks';
 import IconButton from '@mui/material/IconButton';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { d } from 'koration';
@@ -32,6 +31,7 @@ import { STABLE_EMPTY_ARRAY, STABLE_EMPTY_OBJECT } from '@/base/Base.constants.t
 import { defaultPromiseErrorHandler } from '@/lib/DefaultPromiseErrorHandler.ts';
 import { LoadingPlaceholder } from '@/base/components/feedback/LoadingPlaceholder.tsx';
 import { BaseMangaGrid } from '@/features/manga/components/BaseMangaGrid.tsx';
+import { OffsetComponent } from '@/base/OffsetComponent.tsx';
 import { EmptyViewAbsoluteCentered } from '@/base/components/feedback/EmptyViewAbsoluteCentered.tsx';
 import { translateExtensionLanguage } from '@/features/extension/Extensions.utils.ts';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
@@ -240,7 +240,7 @@ const SourceSearchPreview = React.memo(
                         to={AppRoutes.sources.children.browse.path(id, activeQuery)}
                         state={AppRoutes.sources.children.browse.state({
                             mode,
-                            mangaId,
+                            mangaId: mangaId ? Number(mangaId) : undefined,
                         })}
                         sx={{ p: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
@@ -296,6 +296,7 @@ const SourceSearchPreview = React.memo(
                         message={errorMessage}
                         inLibraryIndicator
                         mode={mode}
+                        migrationSourceMangaId={mangaId}
                         onMigrateSelect={onMigrateSelect}
                     />
                 )}
@@ -312,7 +313,6 @@ export const SearchAll = ({
     const { t } = useLingui();
     const navigate = useNavigate();
     const { state } = useLocation<RouteStateSourcesSearchAll>();
-    const { ref: filterHeaderRef, height: filterHeaderHeight } = useElementSize();
 
     const { mangaId } = useParams<{ mangaId?: string }>() ?? STABLE_EMPTY_OBJECT;
     const [query] = useQueryParam(SearchParam.QUERY, StringParam);
@@ -432,12 +432,11 @@ export const SearchAll = ({
 
     return (
         <Box sx={{ position: 'relative', px: 1, pb: 1 }}>
-            <Stack
-                ref={filterHeaderRef}
+            <OffsetComponent
+                wrapperComponent={Stack}
                 sx={{
                     width: '100%',
-                    position: 'fixed',
-                    zIndex: 1,
+                    zIndex: 10,
                     flexDirection: 'row',
                     gap: 2,
                     pt: 1,
@@ -504,8 +503,8 @@ export const SearchAll = ({
                 >
                     {t`Has results`}
                 </Button>
-            </Stack>
-            <Box sx={{ pt: `${filterHeaderHeight}px` }}>
+            </OffsetComponent>
+            <Box>
                 {!!query && !!searchSummary.total && (
                     <Typography variant="caption" component="div" color="text.secondary" sx={{ pb: 1 }}>
                         {searchSummary.done < searchSummary.total

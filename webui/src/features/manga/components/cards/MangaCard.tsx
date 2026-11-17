@@ -23,7 +23,7 @@ import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { useMetadataServerSettings } from '@/features/settings/services/ServerSettingsMetadata.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
 import { t } from '@lingui/core/macro';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { ReactRouter } from '@/lib/react-router/ReactRouter.ts';
 import { MigrationOptionsDialog } from '@/features/migration/components/MigrationOptionsDialog.tsx';
 import { AwaitableComponent } from 'awaitable-component';
@@ -34,16 +34,17 @@ import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { assertIsDefined } from '@/base/Asserts.ts';
 import { usePress } from '@/base/hooks/usePress.ts';
 import { Confirmation } from '@/base/AppAwaitableComponent.ts';
+import type { RouteStateSourceBrowse } from '@/features/source/Source.types.ts';
+import type { RouteStateSourcesSearchAll } from '@/features/global-search/SearchAll.types.ts';
 
 const getMangaLinkTo = (mode: MangaCardMode, mangaId: number): string => {
     switch (mode) {
         case 'default':
         case 'source':
         case 'duplicate':
-            return AppRoutes.manga.path(mangaId);
         case 'migrate.select.single':
         case 'migrate.select.bulk':
-            return '';
+            return AppRoutes.manga.path(mangaId);
         default:
             throw new Error(`getMangaLinkTo: unexpected MangaCardMode "${mode}"`);
     }
@@ -66,8 +67,14 @@ export const MangaCard = memo((props: MangaCardProps) => {
         return data?.fetchMangaAndChapters?.chapters?.length ?? 0;
     }, [id]);
 
-    const { mangaId: mangaIdAsString } = useParams<{ mangaId: string }>();
-    const migrationSourceMangaId = Number(mangaIdAsString);
+    const { mangaId: mangaIdAsString } = useParams<{ mangaId?: string }>();
+    const location = useLocation<RouteStateSourceBrowse | RouteStateSourcesSearchAll>();
+    const stateMangaId =
+        location.state && 'mangaId' in location.state && location.state.mangaId != null
+            ? location.state.mangaId
+            : undefined;
+    const rawMangaId = props.migrationSourceMangaId ?? mangaIdAsString ?? stateMangaId;
+    const migrationSourceMangaId = rawMangaId != null ? Number(rawMangaId) : NaN;
 
     const {
         settings: { showContinueReadingButton },
@@ -134,6 +141,11 @@ export const MangaCard = memo((props: MangaCardProps) => {
                 }
 
                 const migrate = () => {
+                    if (Number.isNaN(migrationSourceMangaId) || !migrationSourceMangaId) {
+                        makeToast(t`Failed to determine source manga for migration`, 'error');
+                        return;
+                    }
+
                     const optionsDialog = AwaitableComponent.showControlled(
                         MigrationOptionsDialog,
                         {

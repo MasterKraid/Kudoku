@@ -36,7 +36,6 @@ import { AuthManager } from '@/features/authentication/AuthManager.ts';
 import { ImageProcessingType } from '@/features/settings/Settings.types.ts';
 import { MigrationFABIndicator } from '@/features/migration/components/MigrationFABIndicator.tsx';
 import { MigrationManager } from '@/features/migration/MigrationManager.ts';
-import { useReloadOnNewVersion } from '@/lib/utils/ReloadOnNewVersion.ts';
 import { usePinchZoomOnlyInReader } from '@/lib/utils/PinchZoom.ts';
 import { useBlurInputOnScroll } from '@/lib/utils/BlurInputOnScroll.ts';
 import { SplashScreen } from '@/features/authentication/components/SplashScreen.tsx';
@@ -223,12 +222,6 @@ const ReactRouterSetter = () => {
 const PinchZoomGuard = () => {
     usePinchZoomOnlyInReader();
     useBlurInputOnScroll();
-
-    return null;
-};
-
-const ReloadOnNewVersion = () => {
-    useReloadOnNewVersion();
 
     return null;
 };
@@ -444,7 +437,6 @@ export const App: React.FC = () => (
                 <WebUIUpdateChecker />
                 <InitialBackgroundRequests />
                 <BackgroundSubscriptions />
-                <ReloadOnNewVersion />
                 <ResumeMigration />
 
                 <Box sx={{ display: 'flex' }}>

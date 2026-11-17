@@ -91,6 +91,7 @@ const createMangaCard = (
     handleSelection?: DefaultGridProps['handleSelection'],
     mode?: MangaCardProps['mode'],
     onMigrateSelect?: DefaultGridProps['onMigrateSelect'],
+    migrationSourceMangaId?: number,
 ) => (
     <MangaCard
         manga={manga}
@@ -100,6 +101,7 @@ const createMangaCard = (
         handleSelection={handleSelection}
         mode={mode}
         onMigrateSelect={onMigrateSelect}
+        migrationSourceMangaId={migrationSourceMangaId}
     />
 );
 
@@ -126,6 +128,7 @@ const HorizontalGrid = ({
     mode,
     ref,
     onMigrateSelect,
+    migrationSourceMangaId,
 }: DefaultGridProps) => (
     <Grid
         ref={ref}
@@ -152,6 +155,7 @@ const HorizontalGrid = ({
                         handleSelection,
                         mode,
                         onMigrateSelect,
+                        migrationSourceMangaId,
                     )}
                 </GridItemContainer>
             ))
@@ -176,6 +180,7 @@ const VerticalGrid = ({
     ref,
     onMigrateSelect,
     gridHandleRef,
+    migrationSourceMangaId,
 }: DefaultGridProps & {
     hasNextPage: boolean;
     loadMore: () => void;
@@ -206,6 +211,7 @@ const VerticalGrid = ({
                         handleSelection,
                         mode,
                         onMigrateSelect,
+                        migrationSourceMangaId,
                     )
                 }
             />
@@ -255,6 +261,7 @@ export const MangaGrid: React.FC<IMangaGridProps> = ({
     gridWrapperProps,
     onMigrateSelect,
     gridHandleRef,
+    migrationSourceMangaId,
 }) => {
     const { t } = useLingui();
 
@@ -386,6 +393,7 @@ export const MangaGrid: React.FC<IMangaGridProps> = ({
                     handleSelection={handleSelection}
                     mode={mode}
                     onMigrateSelect={onMigrateSelect}
+                    migrationSourceMangaId={migrationSourceMangaId}
                 />
             ) : (
                 <VerticalGrid
@@ -403,6 +411,7 @@ export const MangaGrid: React.FC<IMangaGridProps> = ({
                     mode={mode}
                     onMigrateSelect={onMigrateSelect}
                     gridHandleRef={gridHandleRef}
+                    migrationSourceMangaId={migrationSourceMangaId}
                 />
             )}
         </Box>
