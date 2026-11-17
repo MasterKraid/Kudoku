@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -379,26 +379,28 @@ const GitHubAccountSection = ({ currentUserId }: { currentUserId: number }) => {
                 <Typography variant="body2" color="text.secondary">
                     Your account is linked to GitHub for automated backups.
                 </Typography>
-                <ListItem disableGutters>
-                    <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'secondary.main', fontWeight: 700 }}>GH</Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                        primary={`@${status.githubUsername}`}
-                        secondary={
-                            <Typography
-                                component="a"
-                                href={status.repoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                variant="caption"
-                                sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                            >
-                                {status.repoName}
-                            </Typography>
-                        }
-                    />
-                </ListItem>
+                <List disablePadding>
+                    <ListItem disableGutters>
+                        <ListItemAvatar>
+                            <Avatar sx={{ bgcolor: 'secondary.main', fontWeight: 700 }}>GH</Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                            primary={`@${status.githubUsername}`}
+                            secondary={
+                                <Typography
+                                    component="a"
+                                    href={status.repoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    variant="caption"
+                                    sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                                >
+                                    {status.repoName}
+                                </Typography>
+                            }
+                        />
+                    </ListItem>
+                </List>
                 <Typography variant="caption" color="text.secondary">
                     Manage backup interval and synchronization in Settings &gt; Backup &gt; Github Backups.
                 </Typography>
@@ -420,12 +422,13 @@ const GitHubAccountSection = ({ currentUserId }: { currentUserId: number }) => {
             <Typography variant="body2" color="text.secondary">
                 Link your GitHub Personal Access Token to enable automated backups into your own private repository.
             </Typography>
-            <PasswordTextField
+            <TextField
                 label="GitHub Personal Access Token"
                 placeholder="ghp_..."
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 disabled={submitting}
+                type="password"
                 size="small"
                 fullWidth
                 helperText="Requires 'repo' scope to create private backup repository."
@@ -492,8 +495,8 @@ export const UserAccountsDialog = ({
                     )}
                 </Stack>
                 <Tabs value={tab} onChange={(_, newTab) => setTab(newTab)} variant="fullWidth" sx={{ mt: 2 }}>
-                    <Tab value="switch" label={t`Switch`} />
-                    {isAdmin && <Tab value="manage" label={t`Manage`} />}
+                    <Tab value="switch" label={t`Switch account`} />
+                    {isAdmin && <Tab value="manage" label={t`Manage accounts`} />}
                     <Tab value="github" label="GitHub" />
                 </Tabs>
                 {tab === 'manage' && isAdmin ? (
