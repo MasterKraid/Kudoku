@@ -60,8 +60,7 @@ export const ReaderDefaultLayoutSettings = ({
             {profiles.length > 1 && (
                 <Stack sx={{ px: 2 }}>
                     <ButtonSelectInput
-                        label={t`Profile layout settings`}
-                        description={t`Configure layout preferences for a specific reading mode`}
+                        label="Profile layout settings"
                         value={activeProfile}
                         values={profiles}
                         setValue={(profile) => setSelectedProfile(profile)}
