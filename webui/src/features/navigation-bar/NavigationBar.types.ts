@@ -68,4 +68,7 @@ export type NavbarContextType = {
 
     isTopBarHidden: boolean;
     setIsTopBarHidden: React.Dispatch<React.SetStateAction<boolean>>;
+
+    isTopBarVisible: boolean;
+    setIsTopBarVisible: React.Dispatch<React.SetStateAction<boolean>>;
 };

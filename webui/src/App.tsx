@@ -423,9 +423,9 @@ const ReaderApp = () => (
 );
 
 const OffsetContainerRoot = ({ children }: { children?: ReactNode }) => {
-    const { appBarHeight } = useNavBarContext();
+    const { appBarHeight, isTopBarVisible } = useNavBarContext();
 
-    return <OffsetContainer topOffset={appBarHeight}>{children}</OffsetContainer>;
+    return <OffsetContainer topOffset={isTopBarVisible ? appBarHeight : 0}>{children}</OffsetContainer>;
 };
 
 export const App: React.FC = () => (

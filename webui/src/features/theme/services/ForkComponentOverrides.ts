@@ -346,8 +346,8 @@ export const FORK_COMPONENT_OVERRIDES: Components<Theme> = {
                 boxShadow: ELEVATION.md,
                 transition: 'background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease',
                 '& .MuiToolbar-root': {
-                    minHeight: 52,
-                    height: 52,
+                    minHeight: 'var(--app-bar-height, 52px)',
+                    height: 'var(--app-bar-height, 52px)',
                     paddingLeft: 12,
                     paddingRight: 14,
                 },

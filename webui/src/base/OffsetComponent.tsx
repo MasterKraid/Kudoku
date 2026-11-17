@@ -80,6 +80,7 @@ export const OffsetComponent = <Props extends { sx?: BoxProps['sx'] } = BoxProps
                 {
                     position: 'sticky',
                     zIndex: 1,
+                    transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 },
                 wrapperProps.sx,
                 {

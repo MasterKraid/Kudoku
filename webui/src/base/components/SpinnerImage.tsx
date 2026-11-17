@@ -116,7 +116,7 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
 
         const finalShouldLoad = shouldLoad || isRetry;
 
-        if (showMissingImageIcon || !finalShouldLoad || isLoadedAndSrcUnchanged) {
+        if (showMissingImageIcon || !finalShouldLoad || (isLoadedAndSrcUnchanged && !isRetry)) {
             return () => {};
         }
 
@@ -205,6 +205,10 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
                     src={imageSourceUrl}
                     alt={alt}
                     draggable={false}
+                    onError={() => {
+                        setImageSourceUrl(undefined);
+                        updateImageState(false, true);
+                    }}
                 />
             )}
             {(!!isLoading || (src && !imageSourceUrl) || hasError) && (

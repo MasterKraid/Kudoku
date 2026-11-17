@@ -43,6 +43,7 @@ export function DefaultNavBar() {
         setNavBarWidth,
         isTopBarHidden,
         setIsTopBarHidden,
+        setIsTopBarVisible,
     } = useNavBarContext();
 
     const { config: topBarConfig, isMobile } = useTopBarConfig();
@@ -172,6 +173,10 @@ export function DefaultNavBar() {
 
     const isVisible = !isTopBarHidden || (!isMobile && topBarConfig.showOnHover && isHovered);
 
+    useEffect(() => {
+        setIsTopBarVisible(isVisible);
+    }, [isVisible, setIsTopBarVisible]);
+
     return (
         <>
             {!isMobile && topBarConfig.showOnHover && isTopBarHidden && (
@@ -192,6 +197,11 @@ export function DefaultNavBar() {
                 ref={appBarRef}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
+                style={
+                    {
+                        '--app-bar-height': `${topBarConfig.libraryBarHeight}px`,
+                    } as React.CSSProperties
+                }
                 sx={{
                     position: 'fixed',
                     top: APP_BAR_GAP,
@@ -201,13 +211,17 @@ export function DefaultNavBar() {
                     zIndex: theme.zIndex.drawer,
                     transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
                     transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '& .MuiToolbar-root': {
+                        minHeight: `${topBarConfig.libraryBarHeight}px !important`,
+                        height: `${topBarConfig.libraryBarHeight}px !important`,
+                    },
                 }}
             >
                 <Toolbar
                     sx={{
                         position: 'relative',
                         minHeight: `${topBarConfig.libraryBarHeight}px !important`,
-                        height: `${topBarConfig.libraryBarHeight}px`,
+                        height: `${topBarConfig.libraryBarHeight}px !important`,
                         px: { xs: 1.5, sm: 2 },
                     }}
                 >

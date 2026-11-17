@@ -79,7 +79,6 @@ export function Library() {
         settings: { showTabSize, swipeBetweenCategories },
     } = useMetadataServerSettings();
     const { config: topBarConfig } = useTopBarConfig();
-    const { isTopBarHidden } = useNavBarContext();
 
     const {
         data: categoriesResponse,
@@ -345,14 +344,7 @@ export function Library() {
 
     return (
         <TabsWrapper {...(swipeBetweenCategories ? swipeHandlers : undefined)}>
-            <OffsetComponent
-                sx={{
-                    transform: isTopBarHidden
-                        ? `translateY(-${topBarConfig.libraryBarHeight + topBarConfig.categoryBarHeight + 10}px)`
-                        : 'translateY(0)',
-                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-            >
+            <OffsetComponent>
                 <TabsMenu
                     value={activeTab.id}
                     onChange={(e, newTab) => handleTabChange(newTab)}
