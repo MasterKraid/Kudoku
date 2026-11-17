@@ -1,0 +1,42 @@
+name: CI build
+
+# Builds the interface on every push to master. It used to publish a preview to Suwayomi's own preview repository;
+# the server repository (jt-ito/tsundoku) builds this repo into its Docker image and release archives instead.
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up NodeJs
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - uses: pnpm/action-setup@v4.2.0
+        name: Install pnpm
+        with:
+          version: 11.1.2
+
+      - name: Build
+        env:
+          CI: "true"
+          HUSKY: "0"
+        run: pnpm build

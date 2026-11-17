@@ -9,23 +9,10 @@
 #   --build-arg WEBUI_REPO=https://github.com/you/your-webui.git --build-arg WEBUI_REF=my-branch
 # The build context must contain .git: the version number is the commit count.
 
-ARG WEBUI_REPO=https://github.com/jt-ito/tsundoku-WebUI.git
-ARG WEBUI_REF=master
-
 # ---------------------------------------------------------------- WebUI
 FROM node:24-bookworm-slim AS webui
-ARG WEBUI_REPO
-ARG WEBUI_REF
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
 WORKDIR /webui
-# The build cache keys a step by its text, not by what the repository holds now, so a cached clone kept an old WebUI in
-# every image. The CI passes the current commit of the WebUI here, a different value runs the clone and build again
-# (a local build can do the same with --build-arg WEBUI_COMMIT=$(date +%s) or --no-cache-filter webui).
-ARG WEBUI_COMMIT=""
-RUN echo "WebUI commit: ${WEBUI_COMMIT:-unknown}" \
-    && git clone --depth 1 ${WEBUI_REF:+--branch "$WEBUI_REF"} "$WEBUI_REPO" .
+COPY webui/ .
 ENV CI=true HUSKY=0
 RUN corepack enable && pnpm build \
     # the server reads the version of a custom WebUI from this file and shows the splash screen without it

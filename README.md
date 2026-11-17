@@ -1,5 +1,9 @@
 <h1><img src="docs/images/icon.svg" alt="" width="40" align="top"> tsundoku</h1>
 
+> [!IMPORTANT]
+> **PERSONAL FORK NOTICE**
+> This repository is strictly for **personal use**. No pull requests (PRs) will ever be made upstream, and no pull requests will be accepted.
+
 A self-hosted manga reader server that runs [Mihon (Tachiyomi)](https://mihon.app/) extensions, with accounts, a first-run setup flow, a built-in PostgreSQL option and a faster in-app WebView.
 
 **tsundoku is a fork of [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server).** It keeps Suwayomi's extension support, library, downloads, backups, trackers and APIs, and adds the features below. The web interface lives in [tsundoku-WebUI](https://github.com/jt-ito/tsundoku-WebUI), a fork of [Suwayomi-WebUI](https://github.com/Suwayomi/Suwayomi-WebUI).
