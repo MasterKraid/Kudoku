@@ -54,7 +54,6 @@ import { GET_MANGAS_COUNT } from '@/lib/graphql/manga/MangaQuery.ts';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
 import { useAppAction } from '@/features/navigation-bar/hooks/useAppAction.ts';
 import { useTopBarConfig } from '@/features/navigation-bar/hooks/useTopBarConfig.ts';
-import { useNavBarContext } from '@/features/navigation-bar/NavbarContext.tsx';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { SearchParam } from '@/base/Base.types.ts';
 import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';

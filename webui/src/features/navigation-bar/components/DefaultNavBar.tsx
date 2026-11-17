@@ -166,16 +166,16 @@ export function DefaultNavBar() {
         setNavBarWidth(0);
     }, [isMobileWidth]);
 
-    // Allow default navbar to be overrided
-    if (override.status) {
-        return override.value;
-    }
-
-    const isVisible = !isTopBarHidden || (!isMobile && topBarConfig.showOnHover && isHovered);
+    const isVisible = !override.status && (!isTopBarHidden || (!isMobile && topBarConfig.showOnHover && isHovered));
 
     useEffect(() => {
         setIsTopBarVisible(isVisible);
     }, [isVisible, setIsTopBarVisible]);
+
+    // Allow default navbar to be overrided
+    if (override.status) {
+        return override.value;
+    }
 
     return (
         <>
