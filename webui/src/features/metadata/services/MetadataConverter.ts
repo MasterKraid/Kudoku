@@ -14,7 +14,13 @@ export const convertValueFromMetadata = <T extends AllowedMetadataValueTypes = A
     key: string,
     value: string,
     defaultValue: any,
-): T => APP_METADATA[key as AppMetadataKeys].convert(value, defaultValue);
+): T => {
+    const metaConfig = APP_METADATA[key as AppMetadataKeys];
+    if (!metaConfig) {
+        return (defaultValue !== undefined ? defaultValue : value) as T;
+    }
+    return metaConfig.convert(value, defaultValue);
+};
 
 export const convertFromGqlMeta = (
     gqlMetadata?: MetaType[],

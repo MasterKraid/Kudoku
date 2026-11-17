@@ -220,9 +220,14 @@ const filterMangas = <Manga extends TMangasFilter>(
     return mangas.filter((manga) => ignoreFiltersWhileSearching || filterManga(manga, options));
 };
 
-const sortByNumber = (a: number | string = 0, b: number | string = 0) => Number(a) - Number(b);
+const sortByNumber = (a?: number | string | null, b?: number | string | null) => {
+    const numA = a == null || Number.isNaN(Number(a)) ? 0 : Number(a);
+    const numB = b == null || Number.isNaN(Number(b)) ? 0 : Number(b);
+    return numA - numB;
+};
 
-const sortByString = (a: string, b: string): number => a.localeCompare(b, undefined, { sensitivity: 'base' });
+const sortByString = (a?: string | null, b?: string | null): number =>
+    (a ?? '').localeCompare(b ?? '', undefined, { sensitivity: 'base' });
 
 const sortByRandom = () => Math.floor(Math.random() * 3 - 1);
 
@@ -322,7 +327,9 @@ const useSortedMangas = <Manga extends MangaIdInfo & TMangasFilter & TMangaSort>
 
     const sortedMangasUpdatedReferences = useMemo(() => {
         if (haveMangasChanged) {
-            return sortedMangas.map((sortedManga) => mangas.find((manga) => manga.id === sortedManga.id)!);
+            return sortedMangas
+                .map((sortedManga) => mangas.find((manga) => manga.id === sortedManga.id))
+                .filter(Boolean) as Manga[];
         }
 
         return sortedMangas;

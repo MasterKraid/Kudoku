@@ -195,6 +195,12 @@ export const APP_METADATA: Record<
     sortDesc: {
         convert: convertToBooleanNullAndUndefined,
     },
+    defaultSortBy: {
+        convert: convertToStringNullAndUndefined, // LibrarySortMode
+    },
+    defaultSortDesc: {
+        convert: convertToBoolean,
+    },
     hasDownloadedChapters: {
         convert: convertToBooleanNullAndUndefined,
     },
@@ -470,6 +476,8 @@ export const GLOBAL_METADATA_KEYS: AppMetadataKeys[] = [
     'showTabSize',
     'splitScrollButtons',
     'swipeBetweenCategories',
+    'defaultSortBy',
+    'defaultSortDesc',
 
     // library category options
     // filter

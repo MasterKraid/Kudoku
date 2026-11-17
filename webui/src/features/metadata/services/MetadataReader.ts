@@ -87,7 +87,7 @@ const getMetadataValueFrom = <Key extends AppMetadataKeys, Value extends Allowed
 
     const convertedValue = convertValueFromMetadata(key, rawValue, defaultValue);
 
-    return APP_METADATA[key].toConstrainedValue?.(convertedValue) ?? convertedValue;
+    return APP_METADATA[key]?.toConstrainedValue?.(convertedValue) ?? convertedValue;
 };
 
 export function getMetadataFrom<METADATA extends Partial<Metadata<AppMetadataKeys, any>>>(
