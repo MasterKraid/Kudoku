@@ -117,6 +117,13 @@ public class CustomContext extends Context {
                 FakeResources r = (FakeResources) unsafe.allocateInstance(FakeResources.class);
                 r.configuration = (Configuration) unsafe.allocateInstance(Configuration.class);
                 r.displayMetrics = (android.util.DisplayMetrics) unsafe.allocateInstance(android.util.DisplayMetrics.class);
+                r.displayMetrics.density = 2.0f;
+                r.displayMetrics.densityDpi = 320;
+                r.displayMetrics.scaledDensity = 2.0f;
+                r.displayMetrics.widthPixels = 1080;
+                r.displayMetrics.heightPixels = 1920;
+                r.displayMetrics.xdpi = 400.0f;
+                r.displayMetrics.ydpi = 400.0f;
                 return r;
             } catch (ReflectiveOperationException e) {
                 return null;

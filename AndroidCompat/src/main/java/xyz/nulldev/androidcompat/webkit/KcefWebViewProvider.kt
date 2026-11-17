@@ -762,7 +762,11 @@ class KcefWebViewProvider(
     override fun insertVisualStateCallback(
         requestId: Long,
         callback: VisualStateCallback,
-    ): Unit = throw RuntimeException("Stub!")
+    ) {
+        handler.post {
+            callback.onComplete(requestId)
+        }
+    }
 
     override fun clearView(): Unit = throw RuntimeException("Stub!")
 

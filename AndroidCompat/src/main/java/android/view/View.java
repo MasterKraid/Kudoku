@@ -2953,7 +2953,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean dispatchTouchEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean isAccessibilityFocusedViewOrHost() {
@@ -4350,7 +4350,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public Resources getResources() {
-        throw new RuntimeException("Stub!");
+        return mContext != null ? mContext.getResources() : null;
     }
 
     @Override

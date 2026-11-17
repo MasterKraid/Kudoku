@@ -563,45 +563,41 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public ArrayList<View> buildTouchDispatchChildList() {
-        throw new RuntimeException("Stub!");
+        return new ArrayList<View>();
     }
 
     protected boolean isTransformedTouchPointInView(float x, float y, View child,
             PointF outLocalPoint) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void transformPointToViewLocal(float[] point, View child) {
-        throw new RuntimeException("Stub!");
     }
 
     public void setMotionEventSplittingEnabled(boolean split) {
-        throw new RuntimeException("Stub!");
     }
 
     public boolean isMotionEventSplittingEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isTransitionGroup() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setTransitionGroup(boolean isTransitionGroup) {
-        throw new RuntimeException("Stub!");
     }
 
     @Override
     public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-        throw new RuntimeException("Stub!");
     }
 
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @Override

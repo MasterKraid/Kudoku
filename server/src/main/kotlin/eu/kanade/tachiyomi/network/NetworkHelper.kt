@@ -70,8 +70,8 @@ class NetworkHelper(
                     .Builder()
                     .cookieJar(PersistentCookieJar(cookieStore))
                     .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .callTimeout(2, TimeUnit.MINUTES)
+                    .readTimeout(90, TimeUnit.SECONDS)
+                    .callTimeout(3, TimeUnit.MINUTES)
                     .cache(
                         Cache(
                             directory = Files.createTempDirectory("tachidesk_network_cache").toFile(),

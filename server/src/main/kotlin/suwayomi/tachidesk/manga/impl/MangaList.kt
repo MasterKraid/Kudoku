@@ -7,8 +7,10 @@ package suwayomi.tachidesk.manga.impl
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.local.LocalSource
 import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.online.HttpSource
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
@@ -18,6 +20,7 @@ import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.manga.impl.util.source.GetSource.getSourceOrNull
 import suwayomi.tachidesk.manga.impl.util.source.GetSource.getSourceOrStub
 import suwayomi.tachidesk.manga.model.dataclass.PagedMangaListDataClass
 import suwayomi.tachidesk.manga.model.table.MangaTable
@@ -46,11 +49,12 @@ object MangaList {
                     throw Exception("Source $source doesn't support latest")
                 }
             }
-        return mangasPage.processEntries(sourceId)
+        return mangasPage.processEntries(sourceId, source)
     }
 
-    fun MangasPage.insertOrUpdate(sourceId: Long): List<Int> =
-        transaction {
+    suspend fun MangasPage.insertOrUpdate(sourceId: Long, source: Source? = null): List<Int> {
+        val httpSource = (source ?: getSourceOrNull(sourceId)) as? HttpSource
+        return transaction {
             val existingMangaUrlsToId =
                 MangaTable
                     .selectAll()
@@ -74,6 +78,7 @@ object MangaList {
                         this[MangaTable.genre] = it.genre
                         this[MangaTable.status] = it.status
                         this[MangaTable.thumbnail_url] = it.thumbnail_url
+                        this[MangaTable.realUrl] = runCatching { httpSource?.getMangaUrl(it) }.getOrNull()
                         this[MangaTable.updateStrategy] = it.update_strategy.name
                         this[MangaTable.memo] = it.memo
 
@@ -103,6 +108,12 @@ object MangaList {
                             this[MangaTable.genre] = sManga.genre ?: manga[MangaTable.genre]
                             this[MangaTable.status] = sManga.status
                             this[MangaTable.thumbnail_url] = sManga.thumbnail_url ?: manga[MangaTable.thumbnail_url]
+                            this[MangaTable.realUrl] =
+                                if (manga[MangaTable.realUrl].isNullOrEmpty()) {
+                                    runCatching { httpSource?.getMangaUrl(sManga) }.getOrNull()
+                                } else {
+                                    manga[MangaTable.realUrl]
+                                }
                             this[MangaTable.updateStrategy] = sManga.update_strategy.name
                             this[MangaTable.memo] = sManga.memo
                             if (!sManga.thumbnail_url.isNullOrEmpty() && manga[MangaTable.thumbnail_url] != sManga.thumbnail_url) {
@@ -127,11 +138,13 @@ object MangaList {
             }
         }
 
-    fun MangasPage.processEntries(sourceId: Long): PagedMangaListDataClass {
+    }
+
+    suspend fun MangasPage.processEntries(sourceId: Long, source: Source? = null): PagedMangaListDataClass {
         val mangasPage = this
+        val mangaIds = insertOrUpdate(sourceId, source)
         val mangaList =
             transaction {
-                val mangaIds = insertOrUpdate(sourceId)
                 return@transaction MangaTable.selectAll().where { MangaTable.id inList mangaIds }.map { MangaTable.toDataClass(it) }
             }
         return PagedMangaListDataClass(

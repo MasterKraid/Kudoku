@@ -264,12 +264,15 @@ export const MangaDetails = ({
             let path = manga.url;
             if (base.includes('comick') && !path.startsWith('/') && !path.startsWith('comic/')) {
                 path = `/comic/${path}`;
+            } else if (base.includes('comix') && !path.startsWith('/title')) {
+                path = `/title${path.startsWith('/') ? '' : '/'}${path}`;
             } else if (!path.startsWith('/')) {
                 path = `/${path}`;
             }
             url = `${base}${path}`;
         }
         if (url) {
+            url = url.replace(/^(https?:\/\/(?:www\.)?comix\.(?:to|net))(?!\/title\/?)(\/.*)/i, '$1/title$2');
             url = url.replace(/^https?:\/\/kagane\.org\/?([0-9a-fA-F-]+)/i, 'https://kagane.moe/series/$1');
             url = url.replace(/^https?:\/\/(?:www\.)?(?:manganato\.com|natomanga\.com|manganami\.com|chapmanganato\.to)/i, 'https://www.manganato.gg');
             url = url.replace(/^https?:\/\/mangak\.org/i, 'https://mangak.io');

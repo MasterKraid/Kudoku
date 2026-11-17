@@ -175,10 +175,26 @@ class CloudflareInterceptor(
 
                 setUserAgent(flareResponse.solution.userAgent)
 
+                var responseBody = flareResponse.solution.response
+                val preMatch = Regex("""<pre[^>]*>(.*?)</pre>""", RegexOption.DOT_MATCHES_ALL).find(responseBody)
+                val mediaType =
+                    if (preMatch != null) {
+                        val unescaped = org.jsoup.parser.Parser.unescapeEntities(preMatch.groupValues[1], false).trim()
+                        if ((unescaped.startsWith("{") && unescaped.endsWith("}")) || (unescaped.startsWith("[") && unescaped.endsWith("]"))) {
+                            responseBody = unescaped
+                            "application/json; charset=utf-8".toMediaType()
+                        } else {
+                            "text/html; charset=utf-8".toMediaType()
+                        }
+                    } else {
+                        "text/html; charset=utf-8".toMediaType()
+                    }
+
                 return originalResponse
                     .newBuilder()
                     .code(flareResponse.solution.status)
-                    .body(flareResponse.solution.response.toResponseBody())
+                    .header("Content-Type", mediaType.toString())
+                    .body(responseBody.toResponseBody(mediaType))
                     .build()
             } else {
                 logger.debug { "FlareSolverr response is an image html template, not falling back" }
@@ -333,8 +349,8 @@ object CFClearance {
                                         FlareSolverRequest(
                                             "request.${originalRequest.method.lowercase()}",
                                             originalRequest.url.toString(),
-                                            session = serverConfig.flareSolverrSessionName.value,
-                                            sessionTtlMinutes = serverConfig.flareSolverrSessionTtl.value,
+                                            session = serverConfig.flareSolverrSessionName.value.ifBlank { null },
+                                            sessionTtlMinutes = if (serverConfig.flareSolverrSessionName.value.isBlank()) null else serverConfig.flareSolverrSessionTtl.value,
                                             cookies =
                                                 network.cookieStore
                                                     .get(originalRequest.url)

@@ -66,6 +66,17 @@ This document records all manual fixes, database updates, and runtime defenses i
 - **Database Fix**:
   - Migrated all 12 titles to permanent, high-resolution MangaDex cover art.
 
+### G. Comix (`source: 7537715367149829912`)
+- **Issue**:
+  - Comix extension strips `/title` prefix from URLs during search/browse (storing `/<hid>-<slug>` in `manga.url`).
+  - WebUI fallback `originUrl` simply concatenated `baseUrl + url` (`https://comix.to/<hid>-<slug>`), which is an invalid URL structure on Comix (causing 404s when clicking "Open in browser" or "Open in WebView").
+  - Uninitialized manga records inserted during search/browse left `real_url` as NULL.
+- **Database Fix**:
+  - Normalized all 220 Comix titles in `suwayomi.manga` to ensure `real_url` contains the canonical `https://comix.to/title/<hid>-<slug>`.
+- **Runtime & Backend Defense**:
+  - `MangaDetails.tsx`: Added normalization rule to automatically prefix `/title` to Comix paths and rewrite any legacy `comix.to/<slug>` or `comix.net/<slug>` to `comix.to/title/<slug>`.
+  - `MangaList.kt`: Updated batch insert and update logic to immediately compute and store `realUrl` via `httpSource.getMangaUrl(sManga)` for all search and browse results across all extensions.
+
 ---
 
 ## 3. How Extensions & Relative URLs Protect Against Future Domain Migrations
@@ -97,3 +108,60 @@ This document records all manual fixes, database updates, and runtime defenses i
     - `autoHide`: auto-hides on scroll down, reveals on scroll up.
     - `showOnHover`: disabled on touch devices to prevent sticky hover states.
 - **Persistence**: Stored in `suwayomi.globalmeta` under key `topBarSettings` as JSON.
+
+---
+
+## 5. Android Compatibility Layer & Headless WebView (`AndroidCompat`)
+Modern Keiyoushi extensions (including Comix) now employ headless browser automation and realistic human input simulation to bypass bot-detection algorithms on web reader frontends.
+
+### A. Touch Event Pipeline (`MotionEvent` & `InputEvent`)
+- **Problem**:
+  - `libs/android-jar-1.0.0.jar` contains stub classes where constructors and methods throw `RuntimeException("Stub!")`.
+  - When Comix executes its chapter harvesting scraper (`assets/harvest_chapters.js`), it completes `insertVisualStateCallback`, fetches `View.getResources().getDisplayMetrics()`, and then instantiates `MotionEvent.PointerProperties` and `MotionEvent.PointerCoords` to simulate realistic touchscreen taps on the WebView.
+  - In addition, ShadowJar unpacks `android-jar-1.0.0.jar` with `DuplicatesStrategy.INCLUDE`, causing stub classes in the jar to take precedence over compiled sources if duplicate class names exist.
+- **Implementation**:
+  - `AndroidCompat/src/main/java/android/view/InputEvent.java`: Implemented the abstract base class and default constructors.
+  - `AndroidCompat/src/main/java/android/view/MotionEvent.java`: Full concrete implementation supporting `PointerProperties`, `PointerCoords`, `obtain(...)`, `recycle()`, and property getters.
+  - `libs/android-jar-1.0.0.jar`: Stripped `MotionEvent*.class` and `InputEvent.class` out of the stub archive so our compiled classes are the sole versions packaged into `tsundoku.jar`.
+  - `AndroidCompat/src/main/java/android/view/View.java` & `ViewGroup.java`:
+    - `View.getResources()`: returns `mContext != null ? mContext.getResources() : null;`.
+    - `View.dispatchTouchEvent(MotionEvent)` & `ViewGroup.dispatchTouchEvent(MotionEvent)`: Implemented as safe no-ops returning `false` rather than throwing `Stub!`.
+  - `AndroidCompat/src/main/java/xyz/nulldev/androidcompat/androidimpl/CustomContext.java`:
+    - Configured `FakeResources.displayMetrics` with realistic mobile display metrics (`widthPixels: 1080`, `heightPixels: 1920`, `xdpi: 400.0f`, `ydpi: 400.0f`, `density: 2.0f`) to prevent division by zero in extension calculation routines.
+  - `AndroidCompat/src/main/java/xyz/nulldev/androidcompat/webkit/KcefWebViewProvider.kt`:
+    - Implemented `insertVisualStateCallback(requestId, callback)` to asynchronously invoke `callback.onComplete(requestId)` via the main Handler looper.
+
+---
+
+## 6. Cloudflare & FlareSolverr Interceptor Resilience
+- **Location**: `server/src/main/kotlin/eu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor.kt` & `NetworkHelper.kt`
+- **Fixes**:
+  - **Chrome `<pre>` Tag Unwrapping**: When FlareSolverr runs headless Chrome to bypass Cloudflare on JSON API endpoints (e.g. Comick, Vortex Scans), Chrome wraps raw JSON payloads inside `<pre style="...">...</pre>` tags and HTML-escapes quotes. The interceptor now unescapes HTML entities with `org.jsoup.parser.Parser.unescapeEntities` and unwraps `<pre>` tags, setting `Content-Type: application/json; charset=utf-8`.
+  - **Extended Challenge Timeouts**: FlareSolverr interactive challenges take 20–45 seconds. OkHttp's `readTimeout` was extended to 90 seconds and `callTimeout` to 3 minutes to prevent `SocketTimeoutException` aborts during active challenge solving.
+  - **Blank Session Fallback**: Handled empty session names with `.ifBlank { null }` to prevent invalid flare session identifiers.
+
+---
+
+## 7. Comick API Mirror Configuration
+- **Location**: `/data/settings/source_4972933717624256217.xml`
+- **Configuration**:
+  ```xml
+  <map>
+      <string name="preferred_mirror">https://comick.art</string>
+  </map>
+  ```
+- **Context**:
+  - `comick.live` has Cloudflare Under Attack / Turnstile active on its API endpoints, returning 403 to non-browser requests.
+  - `comick.art` is Comick's unblocked high-speed API mirror, responding with HTTP 200 in ~100ms.
+- **Slug Normalization**:
+  - 115 legacy titles stored with hash identifiers (`/comic/<hash>#`) were migrated to canonical text slugs via automated API resolution against the mirror.
+
+---
+
+## 8. Extension Update Invariant
+- **Why Extension Updates Cannot Overwrite These Fixes**:
+  - Tachiyomi extensions (`/data/extensions/*.jar`) are loaded as modular plugins into Tsundoku's runtime.
+  - All modifications made here reside in **Tsundoku's host application layer** (`server/`, `AndroidCompat/`, `webui/`) and **server-side configuration files** (`/data/settings/*.xml`).
+  - Updating an extension from Keiyoushi replaces only the individual `/data/extensions/tachiyomi-*.jar` file; it does not touch the core server, Android compatibility layer, or `/data/settings/` preferences.
+  - Any future extension that invokes Android WebView visual state callbacks, touch events, or `DisplayMetrics` will transparently benefit from the `AndroidCompat` implementations.
+
