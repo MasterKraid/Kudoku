@@ -76,6 +76,9 @@ export const DesktopSideBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) =
                 '& .MuiDrawer-paper': {
                     zIndex: (theme) => theme.zIndex.drawer - 1,
                     overflowX: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                 },
             }}
             slotProps={{
@@ -92,6 +95,7 @@ export const DesktopSideBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) =
                     minWidth: width,
                     maxWidth: width,
                     boxSizing: 'border-box',
+                    flexGrow: 1,
                 }}
             >
                 <DrawerHeader sx={isCollapsed ? { justifyContent: 'center', px: 0 } : undefined}>
@@ -190,8 +194,22 @@ export const DesktopSideBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) =
                     ))}
                 </List>
             </Box>
-            <SidebarVersionButton isCollapsed={isCollapsed} />
-            <UserProfileCard isCollapsed={isCollapsed} />
+            <Box
+                sx={{
+                    mt: 'auto',
+                    pb: 'calc(8px + env(safe-area-inset-bottom))',
+                    width,
+                    minWidth: width,
+                    maxWidth: width,
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
+                <SidebarVersionButton isCollapsed={isCollapsed} />
+                <UserProfileCard isCollapsed={isCollapsed} />
+            </Box>
         </Drawer>
     );
 };
