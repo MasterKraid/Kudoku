@@ -161,11 +161,17 @@ const OpenSourceButton = ({ url }: { url?: string | null }) => {
                 <CustomIconButton
                     size="medium"
                     disabled={!url}
-                    component={Link}
+                    component="a"
                     href={url ?? undefined}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     variant="outlined"
+                    onClick={(e) => {
+                        if (url) {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                            e.preventDefault();
+                        }
+                    }}
                 >
                     <IconBrowser />
                 </CustomIconButton>
@@ -174,11 +180,17 @@ const OpenSourceButton = ({ url }: { url?: string | null }) => {
                 <CustomIconButton
                     size="medium"
                     disabled={!url}
-                    component={Link}
+                    component="a"
                     href={url ? requestManager.getWebviewUrl(url) : undefined}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     variant="outlined"
+                    onClick={(e) => {
+                        if (url) {
+                            window.open(requestManager.getWebviewUrl(url), '_blank', 'noopener,noreferrer');
+                            e.preventDefault();
+                        }
+                    }}
                 >
                     <IconWebView />
                 </CustomIconButton>
@@ -229,7 +241,7 @@ export const MangaDetails = ({
         MangaSourceIdInfo &
         MangaTrackRecordInfo &
         MangaMetaInfo & {
-            source?: Pick<SourceType, 'id' | 'displayName'> | null;
+            source?: Pick<SourceType, 'id' | 'displayName' | 'baseUrl'> | null;
         };
     mode: MangaLocationState['mode'];
 }) => {
@@ -240,6 +252,22 @@ export const MangaDetails = ({
     } = useMetadataServerSettings();
 
     const { updateLibraryState } = useManageMangaLibraryState(manga);
+
+    const originUrl = useMemo(() => {
+        if (manga.realUrl) return manga.realUrl;
+        if (manga.url?.startsWith('http')) return manga.url;
+        if (manga.source?.baseUrl && manga.url) {
+            const base = manga.source.baseUrl.replace(/\/+$/, '');
+            let path = manga.url;
+            if (base.includes('comick') && !path.startsWith('/') && !path.startsWith('comic/')) {
+                path = `/comic/${path}`;
+            } else if (!path.startsWith('/')) {
+                path = `/${path}`;
+            }
+            return `${base}${path}`;
+        }
+        return null;
+    }, [manga.realUrl, manga.url, manga.source?.baseUrl]);
 
     return (
         <DetailsWrapper>
@@ -325,7 +353,7 @@ export const MangaDetails = ({
                         {manga.inLibrary ? t`In Library` : t`Add To Library`}
                     </FlexWrapButton>
                     <TrackMangaButton manga={manga} />
-                    <OpenSourceButton url={manga.realUrl || (manga.url?.startsWith('http') ? manga.url : null)} />
+                    <OpenSourceButton url={originUrl} />
                 </MangaButtonsContainer>
             </TopContentWrapper>
             <DescriptionGenre manga={manga} mode={mode} />

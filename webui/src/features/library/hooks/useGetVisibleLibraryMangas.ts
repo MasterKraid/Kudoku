@@ -285,11 +285,16 @@ const useSortedMangas = <Manga extends MangaIdInfo & TMangasFilter & TMangaSort>
     categoryId: number | undefined,
     mangas: Manga[],
     options: SortOptions,
+    defaultSortBy: LibrarySortMode = 'alphabetically',
+    defaultSortDesc: boolean = false,
 ): Manga[] => {
     const CACHE_MANGAS_KEY = `library-category-${categoryId}-mangas`;
     const CACHE_MANGA_IDS_KEY = `library-category-${categoryId}-manga-ids`;
     const CACHE_MANGAS_SORTED_KEY = `library-category-${categoryId}-mangas-sorted`;
     const CACHE_SORT_OPTIONS_KEY = `library-category-${categoryId}-sort-options`;
+
+    const effectiveSortBy = options.sortBy ?? defaultSortBy;
+    const effectiveSortDesc = options.sortDesc ?? defaultSortDesc;
 
     const mangaIds = useMemo(() => Mangas.getIds(mangas), [mangas]);
 
@@ -302,16 +307,14 @@ const useSortedMangas = <Manga extends MangaIdInfo & TMangasFilter & TMangaSort>
 
     const haveMangasChanged = !isEqual(mangas, cachedMangas);
     const haveMangaIdsChanged = !isEqual(mangaIds, cachedMangaIds);
-    const haveSortOptionsChanged = previousSortBy !== options.sortBy || previousSortDesc !== options.sortDesc;
+    const haveSortOptionsChanged = previousSortBy !== effectiveSortBy || previousSortDesc !== effectiveSortDesc;
     const reapplySorting = haveMangaIdsChanged || haveSortOptionsChanged;
 
     const sortedMangas = (() => {
         if (reapplySorting) {
-            const { sortBy, sortDesc } = options;
+            SORT_CACHE.cacheResponse(CACHE_SORT_OPTIONS_KEY, undefined, { sortBy: effectiveSortBy, sortDesc: effectiveSortDesc });
 
-            SORT_CACHE.cacheResponse(CACHE_SORT_OPTIONS_KEY, undefined, { sortBy, sortDesc });
-
-            return sortManga(mangas, sortBy, sortDesc);
+            return sortManga(mangas, effectiveSortBy, effectiveSortDesc);
         }
 
         return SORT_CACHE.getResponseFor<Manga[]>(CACHE_MANGAS_SORTED_KEY, undefined) ?? STABLE_EMPTY_ARRAY;
@@ -365,7 +368,13 @@ export const useGetVisibleLibraryMangas = <Manga extends MangaIdInfo & TMangasFi
         [hasSourceFilter, sources],
     );
 
-    const sortedMangas = useSortedMangas(category?.id, mangas, options);
+    const sortedMangas = useSortedMangas(
+        category?.id,
+        mangas,
+        options,
+        settings.defaultSortBy ?? 'alphabetically',
+        settings.defaultSortDesc ?? false,
+    );
 
     const isSearching = !!query?.length;
     const isFuzzySearchActive = settings.fuzzySearch && isSearching;
@@ -433,7 +442,9 @@ export const useGetVisibleLibraryMangas = <Manga extends MangaIdInfo & TMangasFi
         visibleMangas,
         searchSuggestions,
         showFilteredOutMessage,
-        isSortedByTitle: (!options.sortBy || options.sortBy === 'alphabetically') && !isFuzzySearchActive,
-        filterKey: `${JSON.stringify(options)}${JSON.stringify(hasSource)}${query}${settings.ignoreFilters}${settings.fuzzySearch}`,
+        isSortedByTitle:
+            (options.sortBy ?? settings.defaultSortBy ?? 'alphabetically') === 'alphabetically' &&
+            !isFuzzySearchActive,
+        filterKey: `${JSON.stringify(options)}${JSON.stringify(hasSource)}${query}${settings.ignoreFilters}${settings.fuzzySearch}${settings.defaultSortBy}${settings.defaultSortDesc}`,
     };
 };

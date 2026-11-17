@@ -24,6 +24,8 @@ export type MetadataLibrarySettings = {
     showUnreadBadge: boolean;
     showUnknownStatusBadge: boolean;
     gridLayout: GridLayout;
+    defaultSortBy?: LibrarySortMode;
+    defaultSortDesc?: boolean;
 };
 export type LibrarySortMode =
     | 'unreadChapters'

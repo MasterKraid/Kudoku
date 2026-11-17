@@ -83,6 +83,30 @@ const DotBadge = styled(FrostedBadge)({
     },
 });
 
+// standalone box for unread / download count on top-right of manga card
+const CountBadge = styled(Typography)(({ theme }) => ({
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    minWidth: 20,
+    height: PILL_HEIGHT,
+    boxSizing: 'border-box',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingInline: 6,
+    borderRadius: 4,
+    fontWeight: 700,
+    fontSize: '0.75rem',
+    boxShadow: ELEVATION.sm,
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+}));
+
+const DownloadBadge = styled(CountBadge)(({ theme }) => ({
+    backgroundColor: theme.palette.secondary.main,
+    color: theme.palette.secondary.contrastText,
+}));
+
 export const MangaBadges = ({
     inLibraryIndicator,
     updateLibraryState,
@@ -216,14 +240,6 @@ export const MangaBadges = ({
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{t`In Library`}</span>
                     </DotBadge>
                 )}
-                {((showUnreadBadge && mode === 'default') || mode === 'duplicate') && (unread ?? 0) > 0 && (
-                    <DotBadge sx={(theme) => ({ '--status-color': theme.palette.primary.main })}>{unread}</DotBadge>
-                )}
-                {((showDownloadBadge && mode === 'default') || mode === 'duplicate') && (downloadCount ?? 0) > 0 && (
-                    <DotBadge sx={(theme) => ({ '--status-color': theme.palette.secondary.main })}>
-                        {downloadCount}
-                    </DotBadge>
-                )}
                 {mode === 'default' && !!status && (showUnknownStatusBadge || status !== MangaStatus.Unknown) && (
                     <DotBadge
                         sx={(theme) => ({
@@ -242,6 +258,28 @@ export const MangaBadges = ({
                     </DotBadge>
                 )}
             </BadgeContainer>
+            {/* Top right badges: unread count and download count */}
+            {(((showUnreadBadge && mode === 'default') || mode === 'duplicate') && (unread ?? 0) > 0 ||
+                ((showDownloadBadge && mode === 'default') || mode === 'duplicate') && (downloadCount ?? 0) > 0) && (
+                <BadgeContainer
+                    className="manga-unread-badge-container"
+                    sx={{
+                        ml: 'auto',
+                        gap: 0.5,
+                        borderRadius: 1,
+                        background: 'transparent',
+                        boxShadow: 'none',
+                        overflow: 'visible',
+                    }}
+                >
+                    {((showUnreadBadge && mode === 'default') || mode === 'duplicate') && (unread ?? 0) > 0 && (
+                        <CountBadge className="manga-unread-badge">{unread}</CountBadge>
+                    )}
+                    {((showDownloadBadge && mode === 'default') || mode === 'duplicate') && (downloadCount ?? 0) > 0 && (
+                        <DownloadBadge className="manga-download-badge">{downloadCount}</DownloadBadge>
+                    )}
+                </BadgeContainer>
+            )}
             {/* top right, next to (or in place of) the option button */}
             {mode === 'source' && (isChapterCountKnown || !!onPeekChapterCount) && (
                 <BadgeContainer

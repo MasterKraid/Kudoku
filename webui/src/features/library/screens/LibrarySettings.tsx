@@ -6,6 +6,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import { useState } from 'react';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -14,7 +20,7 @@ import Switch from '@mui/material/Switch';
 import { CARD_LIST_SX } from '@/base/components/lists/cardListSx.ts';
 import { ListSubheader } from '@/base/components/lists/ListSubheader.tsx';
 import { useLingui } from '@lingui/react/macro';
-import { plural, t as translate } from '@lingui/core/macro';
+import { msg, plural, t as translate } from '@lingui/core/macro';
 import { GlobalUpdateSettings } from '@/features/settings/components/globalUpdate/GlobalUpdateSettings.tsx';
 import { makeToast } from '@/base/utils/Toast.ts';
 import {
@@ -39,6 +45,8 @@ import type { MetadataLibrarySettings } from '@/features/library/Library.types.t
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
+import { LIBRARY_SORT_OPTIONS } from '@/features/library/Library.constants.ts';
+import { batchUpdateCategoryMetadata } from '@/features/category/services/CategoryMetadata.ts';
 
 const removeNonLibraryMangasFromCategories = async (): Promise<void> => {
     try {
@@ -71,6 +79,8 @@ export function LibrarySettings() {
     const { t } = useLingui();
 
     useAppTitle(t`Library`);
+
+    const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
 
     const categories = requestManager.useGetCategories<GetCategoriesSettingsQuery, GetCategoriesSettingsQueryVariables>(
         GET_CATEGORIES_SETTINGS,
@@ -121,7 +131,8 @@ export function LibrarySettings() {
     }
 
     return (
-        <List sx={CARD_LIST_SX}>
+        <>
+            <List sx={CARD_LIST_SX}>
             <List
                 subheader={
                     <ListSubheader component="div" id="library-category-settings">
@@ -160,6 +171,60 @@ export function LibrarySettings() {
                         onChange={(e) => setSettingValue('removeMangaFromCategories', e.target.checked)}
                     />
                 </ListItem>
+            </List>
+            <List
+                subheader={
+                    <ListSubheader component="div" id="library-sorting-settings">
+                        {t`Default sorting`}
+                    </ListSubheader>
+                }
+            >
+                <ListItemButton onClick={() => setIsSortDialogOpen(true)}>
+                    <ListItemText
+                        primary={t`Default sort rule`}
+                        secondary={
+                            t(
+                                LIBRARY_SORT_OPTIONS.find(
+                                    ([mode]) => mode === (settings.defaultSortBy ?? 'alphabetically'),
+                                )?.[1] ?? msg`A—Z`,
+                            )
+                        }
+                    />
+                </ListItemButton>
+                <ListItem>
+                    <ListItemText
+                        primary={t`Sort descending`}
+                        secondary={t`Reverse the sorting order across categories by default`}
+                    />
+                    <Switch
+                        edge="end"
+                        checked={settings.defaultSortDesc ?? false}
+                        onChange={(e) => setSettingValue('defaultSortDesc', e.target.checked)}
+                    />
+                </ListItem>
+                <ListItemButton
+                    onClick={async () => {
+                        try {
+                            const allCategories = categories.data?.categories.nodes ?? [];
+                            if (allCategories.length) {
+                                await batchUpdateCategoryMetadata([
+                                    {
+                                        categories: allCategories,
+                                        delete: ['sortBy', 'sortDesc'],
+                                    },
+                                ]);
+                            }
+                            makeToast(t`Applied default sort rule to all categories`, 'success');
+                        } catch (e) {
+                            makeToast(t`Failed to reset category sort rules`, 'error', getErrorMessage(e));
+                        }
+                    }}
+                >
+                    <ListItemText
+                        primary={t`Apply default sort to all categories`}
+                        secondary={t`Clears category-specific sort overrides so all categories use the default sort rule`}
+                    />
+                </ListItemButton>
             </List>
             <List
                 subheader={
@@ -244,5 +309,28 @@ export function LibrarySettings() {
                 </ListItemLink>
             </List>
         </List>
+        <Dialog open={isSortDialogOpen} onClose={() => setIsSortDialogOpen(false)}>
+            <DialogTitle>{t`Default sort rule`}</DialogTitle>
+            <DialogContent sx={{ p: 0 }}>
+                <List>
+                    {LIBRARY_SORT_OPTIONS.map(([mode, label]) => (
+                        <ListItemButton
+                            key={mode}
+                            selected={(settings.defaultSortBy ?? 'alphabetically') === mode}
+                            onClick={() => {
+                                setSettingValue('defaultSortBy', mode);
+                                setIsSortDialogOpen(false);
+                            }}
+                        >
+                            <ListItemText primary={t(label)} />
+                        </ListItemButton>
+                    ))}
+                </List>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setIsSortDialogOpen(false)}>{t`Cancel`}</Button>
+            </DialogActions>
+        </Dialog>
+        </>
     );
 }

@@ -166,6 +166,7 @@ export const MANGA_MIGRATION_FIELDS = gql`
             id
             name
             displayName
+            baseUrl
         }
     }
 `;
@@ -198,6 +199,7 @@ export const MANGA_SCREEN_FIELDS = gql`
             id
             name
             displayName
+            baseUrl
         }
 
         trackRecords {

@@ -17,6 +17,7 @@ import type {
     ServerSettings,
 } from '@/features/settings/Settings.types.ts';
 import { ImageProcessingTargetMode, ImageProcessingType } from '@/features/settings/Settings.types.ts';
+import type { LibrarySortMode } from '@/features/library/Library.types.ts';
 import { GridLayout } from '@/base/Base.types';
 import { getDefaultLanguages } from '@/base/utils/Languages.ts';
 import type { SelectSettingValue, SelectSettingValueDisplayInfo } from '@/base/components/settings/SelectSetting.tsx';
@@ -61,6 +62,8 @@ export const SERVER_SETTINGS_METADATA_DEFAULT: MetadataServerSettings = {
     showUnreadBadge: false,
     showUnknownStatusBadge: false,
     gridLayout: GridLayout.Compact,
+    defaultSortBy: 'alphabetically' as LibrarySortMode,
+    defaultSortDesc: false,
 
     // client
     devices: [DEFAULT_DEVICE],

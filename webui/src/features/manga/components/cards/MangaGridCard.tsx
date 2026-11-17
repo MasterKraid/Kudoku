@@ -81,6 +81,7 @@ export const MangaGridCard = memo(
                         backgroundColor: (theme) => (selected ? theme.palette.primary.main : undefined),
                         '@media (hover: hover) and (pointer: fine)': {
                             '&:hover .manga-option-button': {
+                                display: 'inline-flex',
                                 visibility: 'visible',
                                 pointerEvents: 'all',
                             },
@@ -137,6 +138,9 @@ export const MangaGridCard = memo(
                                     top: (theme) => theme.spacing(1),
                                     left: (theme) => theme.spacing(1),
                                     right: (theme) => theme.spacing(1),
+                                    gap: 0.5,
+                                    pointerEvents: 'none',
+                                    '& > *': { pointerEvents: 'auto' },
                                 }}
                             >
                                 {mangaBadges}

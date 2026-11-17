@@ -32,4 +32,5 @@ HANDOFF.md
 .env.*
 !.env.template
 *.mv.db*
+db_snapshots/
 .UPSTREAM_MERGE_PENDING

@@ -7,6 +7,8 @@
  */
 
 import type { MessageDescriptor } from '@lingui/core';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import FormLabel from '@mui/material/FormLabel';
 import RadioGroup from '@mui/material/RadioGroup';
 import { useLingui } from '@lingui/react/macro';
@@ -41,10 +43,11 @@ import {
     useMetadataServerSettings,
 } from '@/features/settings/services/ServerSettingsMetadata.ts';
 import { FilterMode, type LibrarySortMode } from '@/features/library/Library.types.ts';
+import { LIBRARY_SORT_OPTIONS } from '@/features/library/Library.constants.ts';
 import type { CategoryMetadataInfo, ICategoryMetadata } from '@/features/category/Category.types.ts';
 import { MANGA_STATUS_TO_TRANSLATION } from '@/features/manga/Manga.constants.ts';
-import { GridLayout, type ValueToDisplayData } from '@/base/Base.types';
 import { getErrorMessage } from '@/lib/HelperFunctions.ts';
+import { GridLayout, type ValueToDisplayData } from '@/base/Base.types';
 import { Collapsable } from '@/base/components/Collapsable.tsx';
 import { ResetButton } from '@/base/components/buttons/ResetButton.tsx';
 import Replay from '@mui/icons-material/Replay';
@@ -57,17 +60,6 @@ const TITLES: { [key in 'filter' | 'sort' | 'display']: MessageDescriptor } = {
     sort: msg`Sort`,
     display: msg`Display`,
 };
-
-const SORT_OPTIONS: [LibrarySortMode, MessageDescriptor][] = [
-    ['unreadChapters', msg`Unread chapters`],
-    ['totalChapters', msg`Total chapters`],
-    ['alphabetically', msg`A—Z`],
-    ['dateAdded', msg`Recently added`],
-    ['lastRead', msg`Recently read`],
-    ['latestFetchedChapter', msg`Latest fetched chapter`],
-    ['latestUploadedChapter', msg`Latest uploaded chapter`],
-    ['random', msg`Random`],
-];
 
 const FILTER_MODE_DISPLAY_DATA: ValueToDisplayData<FilterMode> = {
     [FilterMode.AND]: {
@@ -419,20 +411,45 @@ export const LibraryOptionsPanel = ({
                     );
                 }
                 if (key === 'sort') {
-                    return SORT_OPTIONS.map(([mode, label]) => (
-                        <SortRadioInput
-                            key={mode}
-                            label={t(label)}
-                            checked={categoryLibraryOptions.sortBy === mode}
-                            checkedIcon={mode === 'random' ? <Replay color="primary" /> : undefined}
-                            sortDescending={categoryLibraryOptions.sortDesc}
-                            onClick={() =>
-                                mode !== categoryLibraryOptions.sortBy
-                                    ? updateCategoryLibraryOptions('sortBy', mode)
-                                    : updateCategoryLibraryOptions('sortDesc', !categoryLibraryOptions.sortDesc)
-                            }
-                        />
-                    ));
+                    const activeSortBy = categoryLibraryOptions.sortBy ?? settings.defaultSortBy ?? 'alphabetically';
+                    const activeSortDesc = categoryLibraryOptions.sortDesc ?? settings.defaultSortDesc ?? false;
+
+                    return (
+                        <>
+                            {LIBRARY_SORT_OPTIONS.map(([mode, label]) => (
+                                <SortRadioInput
+                                    key={mode}
+                                    label={t(label)}
+                                    checked={activeSortBy === mode}
+                                    checkedIcon={mode === 'random' ? <Replay color="primary" /> : undefined}
+                                    sortDescending={activeSortDesc}
+                                    onClick={() =>
+                                        mode !== activeSortBy
+                                            ? updateCategoryLibraryOptions('sortBy', mode)
+                                            : updateCategoryLibraryOptions('sortDesc', !activeSortDesc)
+                                    }
+                                />
+                            ))}
+                            <Box sx={{ mt: 2, px: 1 }}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth
+                                    onClick={async () => {
+                                        try {
+                                            await setSettingValue('defaultSortBy', activeSortBy);
+                                            await setSettingValue('defaultSortDesc', activeSortDesc);
+                                            makeToast(t`Saved as default sort for all categories`, 'success');
+                                        } catch (e) {
+                                            makeToast(t`Failed to set default sort`, 'error', getErrorMessage(e));
+                                        }
+                                    }}
+                                >
+                                    {t`Set as default for all categories`}
+                                </Button>
+                            </Box>
+                        </>
+                    );
                 }
                 if (key === 'display') {
                     return (

@@ -93,6 +93,7 @@ export const MangaOptionButton = ({
                     paddingX: '0',
                     paddingY: '2.5px',
                     visibility: popupState.isOpen ? 'visible' : 'hidden',
+                    display: popupState.isOpen ? 'inline-flex' : 'none',
                     pointerEvents: 'none',
                     '@media not (pointer: fine)': {
                         visibility: 'hidden',
@@ -100,6 +101,7 @@ export const MangaOptionButton = ({
                         height: 0,
                         p: 0,
                         m: 0,
+                        display: 'none',
                     },
                 }}
             >
