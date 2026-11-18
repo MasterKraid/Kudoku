@@ -182,11 +182,24 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
         };
     }, [src, imgLoadRetryKey, retryKeyPrefix, showMissingImageIcon, shouldLoad]);
 
+    const setImgOrPlaceholderRef = useCallback(
+        (element: HTMLImageElement | HTMLDivElement | null) => {
+            if (typeof ref === 'function') {
+                ref(element);
+            } else if (ref && 'current' in ref) {
+                // eslint-disable-next-line no-param-reassign
+                (ref as any).current = element;
+            }
+        },
+        [ref],
+    );
+
     return (
         <>
             {showMissingImageIcon ? (
                 <Stack
-                    ref={ref}
+                    ref={setImgOrPlaceholderRef}
+                    data-reader-page="true"
                     sx={MUIUtil.mergeSx(
                         {
                             height: '100%',
@@ -202,6 +215,7 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
             ) : (
                 <Box
                     component="img"
+                    data-reader-page="true"
                     key={`${src}_${imgLoadRetryKey}_${retryKeyPrefix}`}
                     sx={[
                         ...(Array.isArray(imgStyle) ? (imgStyle ?? []) : [imgStyle]),
@@ -212,7 +226,7 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
                             }),
                         }),
                     ]}
-                    ref={ref}
+                    ref={setImgOrPlaceholderRef}
                     crossOrigin={disableCors || isBlobOrData ? undefined : 'anonymous'}
                     src={imageSourceUrl}
                     alt={alt}
@@ -225,7 +239,13 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
             )}
             {(!!isLoading || (src && !imageSourceUrl) || hasError) && (
                 <Stack
-                    ref={loadingIndicatorRef}
+                    data-reader-page="true"
+                    ref={(node: HTMLDivElement | null) => {
+                        loadingIndicatorRef.current = node;
+                        if (!imageSourceUrl) {
+                            setImgOrPlaceholderRef(node);
+                        }
+                    }}
                     sx={MUIUtil.mergeSx(
                         {
                             height: '100%',

@@ -260,6 +260,7 @@ const BaseReaderViewer = ({
                 width: '100%',
                 height: '100%',
                 overflow: 'auto',
+                overflowAnchor: 'none',
                 flexWrap: 'nowrap',
                 ...applyStyles(isContinuousReadingModeActive && !shouldShowTransitionPage, {
                     gap: `${getPageGap(pageGap, readingMode)}px`,

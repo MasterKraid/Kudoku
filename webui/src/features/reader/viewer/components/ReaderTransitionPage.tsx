@@ -9,6 +9,7 @@
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import { Link } from 'react-router-dom';
 import type { ComponentProps } from 'react';
 import { memo, useMemo } from 'react';
@@ -61,23 +62,40 @@ const ChapterInfo = ({
             : undefined,
     );
 
-    const contrastText = theme.palette.getContrastText(
-        autoBackgroundColor ?? getValueFromObject<string>(theme.palette, READER_BACKGROUND_TO_COLOR[backgroundColor]),
-    );
-    const disabledText = theme.alpha(contrastText, 0.5);
+    const isVerticalContinuous = isContinuousVerticalReadingMode(readingMode);
+    const contrastText = isVerticalContinuous
+        ? theme.palette.text.primary
+        : theme.palette.getContrastText(
+              autoBackgroundColor ?? getValueFromObject<string>(theme.palette, READER_BACKGROUND_TO_COLOR[backgroundColor]),
+          );
+    const disabledText = isVerticalContinuous
+        ? theme.palette.text.secondary
+        : theme.alpha(contrastText, 0.5);
 
     if (!name) {
         return null;
     }
 
     return (
-        <Stack>
-            <Typography sx={{ color: contrastText }}>{title}</Typography>
-            <Typography sx={{ color: contrastText }} variant="h6" component="h1">
+        <Stack sx={{ alignItems: isVerticalContinuous ? 'center' : 'inherit' }}>
+            <Typography
+                variant={isVerticalContinuous ? 'caption' : 'body1'}
+                sx={{
+                    color: disabledText,
+                    ...(isVerticalContinuous && { textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }),
+                }}
+            >
+                {title}
+            </Typography>
+            <Typography
+                sx={{ color: contrastText, fontWeight: isVerticalContinuous ? 600 : 'inherit' }}
+                variant={isVerticalContinuous ? 'subtitle1' : 'h6'}
+                component="h1"
+            >
                 {name}
             </Typography>
             {scanlator && (
-                <Typography variant="body2" sx={{ color: disabledText }}>
+                <Typography variant="caption" sx={{ color: disabledText }}>
                     {scanlator}
                 </Typography>
             )}
@@ -136,6 +154,8 @@ const BaseReaderTransitionPage = ({
         return null;
     }
 
+    const isVerticalContinuous = isContinuousVerticalReadingMode(readingMode);
+
     return (
         <Stack
             sx={{
@@ -147,14 +167,28 @@ const BaseReaderTransitionPage = ({
                     height: `calc(100vh - ${scrollbar.xSize}px)`,
                 }),
                 ...applyStyles(isContinuousReadingMode(readingMode), {
-                    position: 'sticky',
-                    ...applyStyles(isContinuousVerticalReadingMode(readingMode), {
-                        left: 0,
-                        maxWidth: `calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px)`,
-                        minHeight: `calc(100vh - ${scrollbar.xSize}px)`,
+                    ...applyStyles(isVerticalContinuous, {
+                        width: '100%',
+                        maxWidth: (theme) =>
+                            `min(540px, calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px - ${theme.spacing(4)}))`,
+                        margin: '24px auto',
+                        py: 2.5,
+                        px: 3,
+                        border: '1.5px solid',
+                        borderColor: (theme) =>
+                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+                        borderRadius: 2,
+                        backgroundColor: (theme) =>
+                            theme.palette.mode === 'dark' ? 'rgba(28, 28, 30, 0.95)' : 'rgba(245, 245, 247, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: 3,
+                        textAlign: 'center',
+                        minHeight: 'unset',
+                        boxSizing: 'border-box',
                     }),
                     ...applyStyles(readingMode === ReadingMode.CONTINUOUS_HORIZONTAL, {
                         top: 0,
+                        position: 'sticky',
                         minWidth: `calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px)`,
                         maxHeight: `calc(100vh - ${scrollbar.xSize}px)`,
                     }),
@@ -163,19 +197,20 @@ const BaseReaderTransitionPage = ({
         >
             <Stack
                 sx={{
-                    gap: 2,
+                    gap: isVerticalContinuous ? 1.5 : 2,
                     maxWidth: (theme) =>
                         // spacing = added padding left + right
                         `calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px - ${theme.spacing(2)})`,
-                    maxHeight: `calc(100vh - ${scrollbar.xSize}px)`,
-                    width: 'max-content',
-                    p: 1,
+                    maxHeight: isVerticalContinuous ? 'unset' : `calc(100vh - ${scrollbar.xSize}px)`,
+                    width: isVerticalContinuous ? '100%' : 'max-content',
+                    alignItems: 'center',
+                    p: isVerticalContinuous ? 0 : 1,
                 }}
             >
                 {isPreviousType && isFirstChapter && (
                     <Typography variant="h6">{t`There is no previous chapter`}</Typography>
                 )}
-                <Stack sx={{ gap: 5 }}>
+                <Stack sx={{ gap: isVerticalContinuous ? 1.5 : 5, width: '100%', alignItems: 'center' }}>
                     {isPreviousType && !isFirstChapter && (
                         <ChapterInfo
                             title={t`Previous:`}
@@ -184,12 +219,32 @@ const BaseReaderTransitionPage = ({
                             backgroundColor={backgroundColor}
                         />
                     )}
+                    {isPreviousType && !isFirstChapter && !!currentChapterName && isVerticalContinuous && (
+                        <Divider
+                            sx={{
+                                width: '60%',
+                                my: 0.5,
+                                borderColor: (theme) =>
+                                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+                            }}
+                        />
+                    )}
                     {!!currentChapterName && (
                         <ChapterInfo
                             title={isPreviousType ? t`Current:` : t`Finished:`}
                             name={currentChapterName}
                             scanlator={currentChapterScanlator}
                             backgroundColor={backgroundColor}
+                        />
+                    )}
+                    {isNextType && !isLastChapter && !!currentChapterName && isVerticalContinuous && (
+                        <Divider
+                            sx={{
+                                width: '60%',
+                                my: 0.5,
+                                borderColor: (theme) =>
+                                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+                            }}
                         />
                     )}
                     {isNextType && !isLastChapter && (

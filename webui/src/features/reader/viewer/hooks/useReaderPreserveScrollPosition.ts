@@ -139,9 +139,13 @@ const useScrollPreservationData = (
         const updateObservation = (nodes: NodeList, intersectionAction: (element: Element) => void) =>
             Array.from(nodes)
                 .filter((node) => node instanceof HTMLElement)
-                .flatMap((element) =>
-                    element instanceof HTMLImageElement ? [element] : Array.from(element.querySelectorAll('img')),
-                )
+                .flatMap((element) => {
+                    const el = element as HTMLElement;
+                    if (el instanceof HTMLImageElement || el.hasAttribute('data-reader-page')) {
+                        return [el];
+                    }
+                    return Array.from(el.querySelectorAll<HTMLElement>('img, [data-reader-page]'));
+                })
                 .forEach(intersectionAction);
 
         const intersectionObserver = new IntersectionObserver((entries) => {
@@ -194,7 +198,7 @@ const usePreserveOnLeadingPageRender = (
     useEffect(() => {
         const scrollElement = scrollElementRef.current;
 
-        if (!scrollElement || !isContinuousReadingModeActive || isContinuousVerticalReadingModeActive) {
+        if (!scrollElement || !isContinuousReadingModeActive) {
             return () => {};
         }
 
@@ -239,9 +243,13 @@ const usePreserveOnLeadingPageRender = (
         const updateObservation = (nodes: NodeList, resizeAction: (element: Element) => void) =>
             Array.from(nodes)
                 .filter((node) => node instanceof HTMLElement)
-                .flatMap((element) =>
-                    element instanceof HTMLImageElement ? [element] : Array.from(element.querySelectorAll('img')),
-                )
+                .flatMap((element) => {
+                    const el = element as HTMLElement;
+                    if (el instanceof HTMLImageElement || el.hasAttribute('data-reader-page')) {
+                        return [el];
+                    }
+                    return Array.from(el.querySelectorAll<HTMLElement>('img, [data-reader-page]'));
+                })
                 .forEach(resizeAction);
 
         const resizeObserver = new ResizeObserver(preserveScrollPosition);
@@ -322,14 +330,17 @@ const usePreserveOnInfiniteScrollPreviousChapterInitialRender = (
 
         let preservedScrollPosition = false;
 
-        const updateObservation = (nodes: NodeList, resizeAction: (element: Element) => void) => {
+        const updateObservation = (nodes: NodeList, resizeAction: (element: Element) => void) =>
             Array.from(nodes)
                 .filter((node) => node instanceof HTMLElement)
-                .flatMap((element) =>
-                    element instanceof HTMLImageElement ? [element] : Array.from(element.querySelectorAll('img')),
-                )
+                .flatMap((element) => {
+                    const el = element as HTMLElement;
+                    if (el instanceof HTMLImageElement || el.hasAttribute("data-reader-page")) {
+                        return [el];
+                    }
+                    return Array.from(el.querySelectorAll<HTMLElement>("img, [data-reader-page]"));
+                })
                 .forEach(resizeAction);
-        };
 
         const resizeObserver = new ResizeObserver(() => {
             if (preservedScrollPosition) {

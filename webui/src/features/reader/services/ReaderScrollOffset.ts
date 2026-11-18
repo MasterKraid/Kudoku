@@ -50,10 +50,10 @@ export const ReaderScrollOffset = {
         return coerceIn((scrollElement.getBoundingClientRect().top - pageRect.top) / pageRect.height, 0, 1);
     },
 
-    /** Remembers the spot to scroll to once the page is rendered, an offset of 0 clears it. */
+    /** Remembers the spot to scroll to once the page is rendered. */
     setPendingResume: (chapterId: number, pageIndex: number, offset: number): void => {
         clearPendingResume();
-        if (offset <= 0) {
+        if (offset < 0) {
             return;
         }
 

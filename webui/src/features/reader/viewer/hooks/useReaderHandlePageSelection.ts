@@ -43,26 +43,50 @@ export const useReaderHandlePageSelection = (
         }
 
         if (isContinuousReadingModeActive) {
-            const imageRef = imageRefs.current[pageToScrollTo.pagesIndex];
+            const doScroll = () => {
+                const imageRef = imageRefs.current[pageToScrollTo.pagesIndex];
+                if (!imageRef) {
+                    return false;
+                }
 
-            imageRef?.scrollIntoView({
-                block: 'start',
-                inline: getScrollIntoViewInlineOption(themeDirection, readingDirection),
-            });
+                if (
+                    scrollElementRef.current &&
+                    isContinuousVerticalReadingMode(getReaderSettingsStore().readingMode.value)
+                ) {
+                    const pageRect = imageRef.getBoundingClientRect();
+                    const containerRect = scrollElementRef.current.getBoundingClientRect();
+                    scrollElementRef.current.scrollTop += pageRect.top - containerRect.top;
+                } else {
+                    imageRef.scrollIntoView({
+                        block: 'start',
+                        inline: getScrollIntoViewInlineOption(themeDirection, readingDirection),
+                    });
+                }
 
-            const { currentChapter } = getReaderChaptersStore();
-            if (
-                imageRef &&
-                scrollElementRef.current &&
-                currentChapter &&
-                isContinuousVerticalReadingMode(getReaderSettingsStore().readingMode.value)
-            ) {
-                ReaderScrollOffset.applyPendingResume(
-                    currentChapter.id,
-                    getIndexOfPage(pageToScrollTo),
-                    imageRef,
-                    scrollElementRef.current,
-                );
+                const { currentChapter } = getReaderChaptersStore();
+                if (
+                    scrollElementRef.current &&
+                    currentChapter &&
+                    isContinuousVerticalReadingMode(getReaderSettingsStore().readingMode.value)
+                ) {
+                    ReaderScrollOffset.applyPendingResume(
+                        currentChapter.id,
+                        getIndexOfPage(pageToScrollTo),
+                        imageRef,
+                        scrollElementRef.current,
+                    );
+                }
+                return true;
+            };
+
+            if (!doScroll()) {
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    attempts++;
+                    if (doScroll() || attempts >= 20) {
+                        clearInterval(interval);
+                    }
+                }, 50);
             }
         }
 

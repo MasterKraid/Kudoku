@@ -296,7 +296,7 @@ const BaseReaderChapterViewer = ({
             ),
         (value) => updateState(value, noOp, getReaderPagesStore().setCurrentPageIndex.bind(getReaderPagesStore())),
         (value) => {
-            if ((isInitialChapter && !arePagesFetched) || scrollIntoView) {
+            if (isCurrentChapter && (isInitialChapter || scrollIntoView)) {
                 getReaderPagesStore().setPageToScrollToIndex(value);
                 getReaderChaptersStore().setReaderStateChapters((prevState) => ({
                     ...prevState,
