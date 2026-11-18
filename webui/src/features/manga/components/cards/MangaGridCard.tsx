@@ -55,6 +55,7 @@ export const MangaGridCard = memo(
         continueReadingButton,
         mangaBadges,
         mode,
+        onAuxClick,
     }: SpecificMangaCardProps) => {
         const preventMobileContextMenu = MediaQuery.usePreventMobileContextMenu();
         const optionButtonRef = useRef<HTMLButtonElement>(null);
@@ -68,6 +69,7 @@ export const MangaGridCard = memo(
                 to={mangaLinkTo}
                 state={Mangas.createLocationState(manga, mode)}
                 onContextMenu={preventMobileContextMenu}
+                onAuxClick={onAuxClick}
                 sx={MUIUtil.mergeSx(MediaQuery.preventMobileContextMenuSx(), { textDecoration: 'none' })}
             >
                 <Box
@@ -102,6 +104,8 @@ export const MangaGridCard = memo(
                         }}
                     >
                         <CardActionArea
+                            component="div"
+                            onAuxClick={onAuxClick}
                             sx={{
                                 position: 'relative',
                                 height: '100%',

@@ -23,7 +23,7 @@ import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { useMetadataServerSettings } from '@/features/settings/services/ServerSettingsMetadata.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
 import { t } from '@lingui/core/macro';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { ReactRouter } from '@/lib/react-router/ReactRouter.ts';
 import { MigrationOptionsDialog } from '@/features/migration/components/MigrationOptionsDialog.tsx';
 import { AwaitableComponent } from 'awaitable-component';
@@ -36,6 +36,7 @@ import { usePress } from '@/base/hooks/usePress.ts';
 import { Confirmation } from '@/base/AppAwaitableComponent.ts';
 import type { RouteStateSourceBrowse } from '@/features/source/Source.types.ts';
 import type { RouteStateSourcesSearchAll } from '@/features/global-search/SearchAll.types.ts';
+import { SubpathUtil } from '@/lib/utils/SubpathUtil.ts';
 
 const getMangaLinkTo = (mode: MangaCardMode, mangaId: number): string => {
     switch (mode) {
@@ -68,13 +69,15 @@ export const MangaCard = memo((props: MangaCardProps) => {
     }, [id]);
 
     const { mangaId: mangaIdAsString } = useParams<{ mangaId?: string }>();
+    const [searchParams] = useSearchParams();
+    const searchParamMangaId = searchParams.get('mangaId');
     const location = useLocation<RouteStateSourceBrowse | RouteStateSourcesSearchAll>();
     const stateMangaId =
         location.state && 'mangaId' in location.state && location.state.mangaId != null
             ? location.state.mangaId
             : undefined;
-    const rawMangaId = props.migrationSourceMangaId ?? mangaIdAsString ?? stateMangaId;
-    const migrationSourceMangaId = rawMangaId != null ? Number(rawMangaId) : NaN;
+    const rawMangaId = props.migrationSourceMangaId ?? mangaIdAsString ?? stateMangaId ?? searchParamMangaId;
+    const migrationSourceMangaId = rawMangaId != null && !Number.isNaN(Number(rawMangaId)) ? Number(rawMangaId) : NaN;
 
     const {
         settings: { showContinueReadingButton },
@@ -141,6 +144,12 @@ export const MangaCard = memo((props: MangaCardProps) => {
                 }
 
                 const migrate = () => {
+                    const targetMangaId = Number(id);
+                    if (Number.isNaN(targetMangaId) || !targetMangaId) {
+                        makeToast(t`Failed to determine target manga for migration`, 'error');
+                        return;
+                    }
+
                     if (Number.isNaN(migrationSourceMangaId) || !migrationSourceMangaId) {
                         makeToast(t`Failed to determine source manga for migration`, 'error');
                         return;
@@ -149,7 +158,7 @@ export const MangaCard = memo((props: MangaCardProps) => {
                     const optionsDialog = AwaitableComponent.showControlled(
                         MigrationOptionsDialog,
                         {
-                            mangaIdToMigrateTo: id,
+                            mangaIdToMigrateTo: targetMangaId,
                             isMigrating: false,
                             startMigration: async (options) => {
                                 makeToast(t`Migrating manga…`, 'info');
@@ -157,24 +166,24 @@ export const MangaCard = memo((props: MangaCardProps) => {
                                 optionsDialog.update({ isMigrating: true });
 
                                 try {
-                                    try {
-                                        await MangaMigration.migrateByIdWithFetch(migrationSourceMangaId, id, options);
-                                    } catch (e) {
-                                        makeToast(
-                                            t(MANGA_ACTION_TO_TRANSLATION['migrate'].error),
-                                            'error',
-                                            getErrorMessage(e),
-                                        );
-                                    }
+                                    await MangaMigration.migrateByIdWithFetch(
+                                        migrationSourceMangaId,
+                                        targetMangaId,
+                                        options,
+                                    );
                                     optionsDialog.submit(options);
-
-                                    ReactRouter.navigate(AppRoutes.manga.path(id), { replace: true });
+                                    ReactRouter.navigate(AppRoutes.manga.path(targetMangaId), { replace: true });
                                 } catch (e) {
+                                    makeToast(
+                                        t(MANGA_ACTION_TO_TRANSLATION['migrate'].error),
+                                        'error',
+                                        getErrorMessage(e),
+                                    );
                                     optionsDialog.update({ isMigrating: false, startMigration: () => migrate() });
                                 }
                             },
                         },
-                        { id: `manga-migration-single-manga-${migrationSourceMangaId}-${id}` },
+                        { id: `manga-migration-single-manga-${migrationSourceMangaId}-${targetMangaId}` },
                     );
                     optionsDialog.promise.catch(defaultPromiseErrorHandler('MangaCard::migrate'));
                 };
@@ -196,6 +205,16 @@ export const MangaCard = memo((props: MangaCardProps) => {
         onPress: handleClick,
     });
 
+    const handleAuxClick = useCallback(
+        (event: React.MouseEvent) => {
+            if (event.button === 1) {
+                event.preventDefault();
+                window.open(`${SubpathUtil.getSubpath()}${mangaLinkTo}`, '_blank');
+            }
+        },
+        [mangaLinkTo],
+    );
+
     const MangaCardComponent = useMemo(
         () => (gridLayout === GridLayout.List ? MangaListCard : MangaGridCard),
         [gridLayout],
@@ -210,6 +229,7 @@ export const MangaCard = memo((props: MangaCardProps) => {
                         longPressBind={longPressBind}
                         popupState={popupState}
                         mangaLinkTo={mangaLinkTo}
+                        onAuxClick={handleAuxClick}
                         isInLibrary={isInLibrary}
                         inLibraryIndicator={inLibraryIndicator}
                         continueReadingButton={

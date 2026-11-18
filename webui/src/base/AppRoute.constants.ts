@@ -144,8 +144,11 @@ export const AppRoutes = {
         children: {
             browse: {
                 match: ':sourceId',
-                path: (sourceId: SourceIdInfo['id'], query?: string | null | undefined) =>
-                    UrlUtil.addQueryParam(`/sources/${sourceId}`, query),
+                path: (sourceId: SourceIdInfo['id'], query?: string | null | undefined, mangaId?: MangaIdInfo['id']) =>
+                    UrlUtil.addParams(`/sources/${sourceId}`, {
+                        ...UrlUtil.createQueryParam(query),
+                        ...(mangaId != null ? { mangaId: String(mangaId) } : {}),
+                    }),
                 state: (state: RouteStateSourceBrowse) => ({
                     ...state,
                 }),

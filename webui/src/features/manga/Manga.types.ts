@@ -86,6 +86,7 @@ export type SpecificMangaCardProps = Omit<MangaCardProps, 'manga'> &
         mangaLinkTo: string;
         continueReadingButton: JSX.Element;
         mangaBadges: JSX.Element;
+        onAuxClick?: (event: React.MouseEvent) => void;
     };
 
 export type MangaMetadata = ChapterListOptions & {

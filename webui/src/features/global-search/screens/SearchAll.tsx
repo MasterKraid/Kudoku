@@ -237,7 +237,11 @@ const SourceSearchPreview = React.memo(
                 <Card sx={{ mb: 1 }}>
                     <CardActionArea
                         component={Link}
-                        to={AppRoutes.sources.children.browse.path(id, activeQuery)}
+                        to={AppRoutes.sources.children.browse.path(
+                            id,
+                            activeQuery,
+                            mangaId ? Number(mangaId) : undefined,
+                        )}
                         state={AppRoutes.sources.children.browse.state({
                             mode,
                             mangaId: mangaId ? Number(mangaId) : undefined,
@@ -431,80 +435,88 @@ export const SearchAll = ({
     }
 
     return (
-        <Box sx={{ position: 'relative', px: 1, pb: 1 }}>
+        <Box sx={{ position: 'relative', pb: 1 }}>
             <OffsetComponent
-                wrapperComponent={Stack}
                 sx={{
                     width: '100%',
                     zIndex: 10,
-                    flexDirection: 'row',
-                    gap: 2,
-                    pt: 1,
-                    pb: 2,
-                    background: (theme) => theme.palette.background.default,
+                    backgroundColor: 'background.default',
                 }}
             >
-                {hasPinnedSources && (
-                    <>
-                        <Button
-                            startIcon={<PushPinIcon />}
-                            variant={shouldShowOnlyPinnedSources ? 'contained' : 'outlined'}
-                            onClick={() =>
-                                navigate(
-                                    {
-                                        pathname: '',
-                                        search: query ? `query=${query}` : '',
-                                    },
-                                    {
-                                        replace: true,
-                                        state: {
-                                            ...state,
-                                            ...AppRoutes.sources.children.searchAll.state({
-                                                shouldShowOnlyPinnedSources: true,
-                                            }),
-                                        },
-                                    },
-                                )
-                            }
-                        >
-                            {t`Pinned`}
-                        </Button>
-                        <Button
-                            startIcon={<DoneAllIcon />}
-                            variant={!shouldShowOnlyPinnedSources ? 'contained' : 'outlined'}
-                            onClick={() =>
-                                navigate(
-                                    {
-                                        pathname: '',
-                                        search: query ? `query=${query}` : '',
-                                    },
-                                    {
-                                        replace: true,
-                                        state: {
-                                            ...state,
-                                            ...AppRoutes.sources.children.searchAll.state({
-                                                shouldShowOnlyPinnedSources: false,
-                                            }),
-                                        },
-                                    },
-                                )
-                            }
-                        >
-                            {t`All`}
-                        </Button>
-                    </>
-                )}
-                <Button
-                    startIcon={<FilterListIcon />}
-                    variant={shouldShowOnlySourcesWithResults ? 'contained' : 'outlined'}
-                    onClick={() =>
-                        updateMetadataSettings('shouldShowOnlySourcesWithResults', !shouldShowOnlySourcesWithResults)
-                    }
+                <Stack
+                    sx={{
+                        flexDirection: 'row',
+                        gap: 2,
+                        px: 1,
+                        pt: 1,
+                        pb: 2,
+                    }}
                 >
-                    {t`Has results`}
-                </Button>
+                    {hasPinnedSources && (
+                        <>
+                            <Button
+                                startIcon={<PushPinIcon />}
+                                variant={shouldShowOnlyPinnedSources ? 'contained' : 'outlined'}
+                                onClick={() =>
+                                    navigate(
+                                        {
+                                            pathname: '',
+                                            search: query ? `query=${query}` : '',
+                                        },
+                                        {
+                                            replace: true,
+                                            state: {
+                                                ...state,
+                                                ...AppRoutes.sources.children.searchAll.state({
+                                                    shouldShowOnlyPinnedSources: true,
+                                                }),
+                                            },
+                                        },
+                                    )
+                                }
+                            >
+                                {t`Pinned`}
+                            </Button>
+                            <Button
+                                startIcon={<DoneAllIcon />}
+                                variant={!shouldShowOnlyPinnedSources ? 'contained' : 'outlined'}
+                                onClick={() =>
+                                    navigate(
+                                        {
+                                            pathname: '',
+                                            search: query ? `query=${query}` : '',
+                                        },
+                                        {
+                                            replace: true,
+                                            state: {
+                                                ...state,
+                                                ...AppRoutes.sources.children.searchAll.state({
+                                                    shouldShowOnlyPinnedSources: false,
+                                                }),
+                                            },
+                                        },
+                                    )
+                                }
+                            >
+                                {t`All`}
+                            </Button>
+                        </>
+                    )}
+                    <Button
+                        startIcon={<FilterListIcon />}
+                        variant={shouldShowOnlySourcesWithResults ? 'contained' : 'outlined'}
+                        onClick={() =>
+                            updateMetadataSettings(
+                                'shouldShowOnlySourcesWithResults',
+                                !shouldShowOnlySourcesWithResults,
+                            )
+                        }
+                    >
+                        {t`Has results`}
+                    </Button>
+                </Stack>
             </OffsetComponent>
-            <Box>
+            <Box sx={{ px: 1 }}>
                 {!!query && !!searchSummary.total && (
                     <Typography variant="caption" component="div" color="text.secondary" sx={{ pb: 1 }}>
                         {searchSummary.done < searchSummary.total

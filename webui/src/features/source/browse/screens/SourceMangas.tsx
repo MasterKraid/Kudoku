@@ -224,15 +224,19 @@ export function SourceMangas() {
     const { sourceId } = useParams<{ sourceId: string }>();
 
     const [searchParams, setSearchParams] = useSearchParams();
+    const searchParamMangaId = searchParams.get('mangaId');
     const navigate = useNavigate();
     const location = useLocation();
     const { key: locationKey, state: locationState } = location;
     const {
         contentType: initialContentType = SourceContentType.POPULAR,
         clearCache = false,
-        mode = 'source',
-        mangaId,
+        mode: stateMode,
+        mangaId: stateMangaId,
     } = useLocation<RouteStateSourceBrowse>().state ?? STABLE_EMPTY_OBJECT;
+
+    const mangaId = stateMangaId ?? (searchParamMangaId ? Number(searchParamMangaId) : undefined);
+    const mode = stateMode ?? (mangaId ? 'migrate.select.single' : 'source');
 
     const {
         settings: { hideLibraryEntries },
