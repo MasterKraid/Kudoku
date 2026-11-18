@@ -38,6 +38,9 @@ export const useReaderHandlePageSelection = (
         }
 
         const pageToScrollTo = getPage(pageToScrollToIndex, pages);
+        if (!pageToScrollTo) {
+            return;
+        }
 
         if (isContinuousReadingModeActive) {
             const imageRef = imageRefs.current[pageToScrollTo.pagesIndex];
