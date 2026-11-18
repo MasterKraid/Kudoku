@@ -37,6 +37,7 @@ import { Confirmation } from '@/base/AppAwaitableComponent.ts';
 import type { RouteStateSourceBrowse } from '@/features/source/Source.types.ts';
 import type { RouteStateSourcesSearchAll } from '@/features/global-search/SearchAll.types.ts';
 import { SubpathUtil } from '@/lib/utils/SubpathUtil.ts';
+import { Sources } from '@/features/source/services/Sources.ts';
 
 const getMangaLinkTo = (mode: MangaCardMode, mangaId: number): string => {
     switch (mode) {
@@ -252,6 +253,8 @@ export const MangaCard = memo((props: MangaCardProps) => {
                                 isSourceMissing={mode === 'default' && (manga as MangaSourceNameInfo).source === null}
                                 updateLibraryState={updateLibraryState}
                                 mode={mode}
+                                mangaTitle={manga.title}
+                                isLocalSource={manga.sourceId === Sources.LOCAL_SOURCE_ID}
                             />
                         }
                     />

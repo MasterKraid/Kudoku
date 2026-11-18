@@ -1670,6 +1670,7 @@ msgstr "Default sorting"
 #: src/features/chapter/Chapter.constants.ts
 #: src/features/downloads/components/DownloadQueueChapterCard.tsx
 #: src/features/extension/store/screens/ExtensionStores.tsx
+#: src/features/manga/components/MangaBadges.tsx
 #: src/features/reader/hotkeys/settings/components/Hotkey.tsx
 #: src/features/settings/components/images/KeyValueItem.tsx
 #: src/features/settings/components/images/Processing.tsx
@@ -1699,6 +1700,14 @@ msgstr "Delete chapters"
 msgid "Delete downloaded"
 msgstr "Delete downloaded"
 
+#: src/features/chapter/components/actions/ChapterActionMenuItems.tsx
+msgid "Delete downloaded chapters"
+msgstr "Delete downloaded chapters"
+
+#: src/features/manga/components/MangaBadges.tsx
+msgid "Delete Downloaded Manga?"
+msgstr "Delete Downloaded Manga?"
+
 #: src/features/downloads/components/DeleteChaptersWhileReadingSetting.tsx
 msgid "Delete finished chapters while reading"
 msgstr "Delete finished chapters while reading"
@@ -1710,6 +1719,10 @@ msgstr "Delete search"
 #: src/features/chapter/Chapter.constants.ts
 msgid "Delete selected"
 msgstr "Delete selected"
+
+#: src/features/manga/components/MangaBadges.tsx
+msgid "Deleted {mangaTitle} from local storage"
+msgstr "Deleted {mangaTitle} from local storage"
 
 #. placeholder {0}: theme.getName()
 #: src/features/theme/components/ThemeList.tsx
@@ -4549,6 +4562,10 @@ msgstr "This icon will be shown on the system that is running the server"
 #: src/features/app-updates/components/VersionInfo.tsx
 msgid "This is the latest version"
 msgstr "This is the latest version"
+
+#: src/features/manga/components/MangaBadges.tsx
+msgid "This will delete \"{mangaTitle}\" and all downloaded chapters from this device."
+msgstr "This will delete \"{mangaTitle}\" and all downloaded chapters from this device."
 
 #: src/features/source/browse/components/SourceOptions.tsx
 msgid "This will delete the saved search \"{savedSearch}\""

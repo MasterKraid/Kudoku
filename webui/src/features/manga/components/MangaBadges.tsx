@@ -7,7 +7,7 @@
  */
 
 import { alpha, styled } from '@mui/material/styles';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
@@ -25,6 +25,9 @@ import { MUIUtil } from '@/lib/mui/MUI.util.ts';
 import { ELEVATION } from '@/features/theme/services/ForkComponentOverrides.ts';
 import { MangaStatus } from '@/lib/graphql/generated/graphql-base.types.ts';
 import { MANGA_STATUS_TO_COLOR, MANGA_STATUS_TO_TRANSLATION } from '@/features/manga/Manga.constants.ts';
+import { Confirmation } from '@/base/AppAwaitableComponent.ts';
+import { LocalFileSystem } from '@/features/local-repository/services/LocalFileSystem.ts';
+import { makeToast } from '@/base/utils/Toast.ts';
 
 const BadgeContainer = styled('div')({
     display: 'flex',
@@ -118,6 +121,8 @@ export const MangaBadges = ({
     status,
     isSourceMissing,
     mode,
+    mangaTitle,
+    isLocalSource,
 }: {
     inLibraryIndicator?: boolean;
     updateLibraryState: () => void;
@@ -132,6 +137,8 @@ export const MangaBadges = ({
     status?: MangaStatus;
     isSourceMissing?: boolean;
     mode: MangaCardMode;
+    mangaTitle?: string;
+    isLocalSource?: boolean;
 }) => {
     const { t } = useLingui();
 
@@ -143,6 +150,25 @@ export const MangaBadges = ({
 
     const [isPeeking, setIsPeeking] = useState(false);
     const [peekedChapterCount, setPeekedChapterCount] = useState<number | null>(null);
+
+    const handleDeleteLocalManga = useCallback(() => {
+        if (!mangaTitle) return;
+        Confirmation.show({
+            title: t`Delete Downloaded Manga?`,
+            message: t`This will delete "${mangaTitle}" and all downloaded chapters from this device.`,
+            actions: {
+                confirm: {
+                    title: t`Delete`,
+                    color: 'error',
+                },
+            },
+        })
+            .then(async () => {
+                await LocalFileSystem.deleteManga(mangaTitle);
+                makeToast(t`Deleted ${mangaTitle} from local storage`, 'info');
+            })
+            .catch(() => {});
+    }, [mangaTitle, t]);
 
     // ponytail: "0 known chapters" is treated as "never fetched" unless it was just peeked - a manga that
     // genuinely has 0 chapters keeps showing the peek button, which is harmless (peeking it just confirms 0)
@@ -188,10 +214,14 @@ export const MangaBadges = ({
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            updateLibraryState();
+                            if (isLocalSource) {
+                                handleDeleteLocalManga();
+                            } else {
+                                updateLibraryState();
+                            }
                         }}
                         sx={(theme) => {
-                            const accent = isInLibrary ? theme.palette.error.main : theme.palette.primary.main;
+                            const accent = isLocalSource || isInLibrary ? theme.palette.error.main : theme.palette.primary.main;
 
                             return {
                                 ...FROSTED_PILL,
@@ -223,7 +253,7 @@ export const MangaBadges = ({
                         }}
                     >
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {isInLibrary ? t`Remove from the library` : t`Add To Library`}
+                            {isLocalSource ? t`Delete` : (isInLibrary ? t`Remove from the library` : t`Add To Library`)}
                         </span>
                     </Button>
                 )}

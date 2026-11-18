@@ -336,6 +336,19 @@ export function SourceMangas() {
         }
     }, [isLocalSource, isConnected, directoryName, fetchLocalMangas]);
 
+    useEffect(() => {
+        if (!isLocalSource) {
+            return undefined;
+        }
+        const onLocalRepoUpdated = () => {
+            fetchLocalMangas();
+        };
+        window.addEventListener('local-repository-updated', onLocalRepoUpdated);
+        return () => {
+            window.removeEventListener('local-repository-updated', onLocalRepoUpdated);
+        };
+    }, [isLocalSource, fetchLocalMangas]);
+
     const [
         loadPage,
         { data, error, isLoading: loading, size: lastPageNum, abortRequest, filteredOutAllItemsOfFetchedPage },

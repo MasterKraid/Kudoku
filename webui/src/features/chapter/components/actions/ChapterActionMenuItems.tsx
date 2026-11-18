@@ -10,6 +10,7 @@ import { openInAppWebView } from '@/features/webview/components/WebViewModal.tsx
 import { STABLE_EMPTY_ARRAY, STABLE_EMPTY_OBJECT } from '@/base/Base.constants.ts';
 import CheckBoxOutlineBlank from '@mui/icons-material/CheckBoxOutlineBlank';
 import Delete from '@mui/icons-material/Delete';
+import DeleteSweep from '@mui/icons-material/DeleteSweep';
 import Download from '@mui/icons-material/Download';
 import RemoveDone from '@mui/icons-material/RemoveDone';
 import Done from '@mui/icons-material/Done';
@@ -89,7 +90,8 @@ export const ChapterActionMenuItems = ({
     const { t } = useLingui();
 
     const isSingleMode = !!chapter;
-    const { isDownloaded, isRead, isBookmarked } = chapter ?? STABLE_EMPTY_OBJECT;
+    const isDownloaded = chapter?.isDownloaded || (chapter ? Chapters.isDownloaded(chapter) : false);
+    const { isRead, isBookmarked } = chapter ?? STABLE_EMPTY_OBJECT;
 
     const mangaChaptersResponse = requestManager.useGetMangaChapters<GetChaptersMangaQuery>(
         GET_CHAPTERS_MANGA,
@@ -275,6 +277,19 @@ export const ChapterActionMenuItems = ({
                         performAction('delete', Chapters.getDeletable(downloadedChapters, deleteChaptersWithBookmark))
                     }
                     title={getMenuItemTitle('delete', downloadedChapters.length)}
+                />
+            )}
+            {isSingleMode && isDownloaded && (
+                <MenuItem
+                    Icon={DeleteSweep}
+                    onClick={() => {
+                        const allDownloaded = Chapters.getDownloaded(allChapters);
+                        if (allDownloaded.length) {
+                            Chapters.delete(Chapters.getIds(allDownloaded));
+                        }
+                        onClose();
+                    }}
+                    title={t`Delete downloaded chapters`}
                 />
             )}
             {shouldShowMenuItem(!isBookmarked) && (

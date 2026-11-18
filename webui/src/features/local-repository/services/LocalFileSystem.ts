@@ -159,7 +159,7 @@ function hashStringToId(str: string): number {
     return -abs;
 }
 
-function parseChapterNumber(name: string): number {
+export function parseChapterNumber(name: string): number {
     const chMatch = /(?:ch(?:apter)?\.?\s*|#\s*)(\d+(?:\.\d+)?)/i.exec(name);
     if (chMatch) {
         return parseFloat(chMatch[1]);
@@ -438,6 +438,41 @@ class LocalFileSystemService {
     }
 
     /**
+     * Gets all downloaded chapter names for a given manga from both directory and IndexedDB.
+     */
+    async getLocalChapterNames(mangaTitle: string): Promise<Set<string>> {
+        const names = new Set<string>();
+
+        // Check linked directory
+        const handle = await this.getStoredDirectoryHandle();
+        if (handle) {
+            try {
+                const mangaDir = await handle.getDirectoryHandle(mangaTitle, { create: false });
+                for await (const [name, entry] of mangaDir.entries()) {
+                    if (entry.kind === 'file' && name.endsWith('.cbz')) {
+                        names.add(name.slice(0, -4));
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        }
+
+        // Check IndexedDB
+        try {
+            const db = await openDb();
+            const chapters = await idbGetChaptersForManga(db, mangaTitle);
+            for (const ch of chapters) {
+                names.add(ch.chapterName);
+            }
+        } catch {
+            // ignore
+        }
+
+        return names;
+    }
+
+    /**
      * Returns true if the chapter exists either in the linked directory or in
      * the IndexedDB offline store.
      */
@@ -447,17 +482,40 @@ class LocalFileSystemService {
         if (handle) {
             try {
                 const mangaDir = await handle.getDirectoryHandle(mangaTitle, { create: false });
-                await mangaDir.getFileHandle(`${chapterName}.cbz`, { create: false });
-                return true;
+                try {
+                    await mangaDir.getFileHandle(`${chapterName}.cbz`, { create: false });
+                    return true;
+                } catch {
+                    const targetNum = parseChapterNumber(chapterName);
+                    for await (const [name, entry] of mangaDir.entries()) {
+                        if (entry.kind === 'file' && name.endsWith('.cbz') && parseChapterNumber(name) === targetNum) {
+                            return true;
+                        }
+                    }
+                }
             } catch {
                 // Not in directory
             }
         }
 
         // Check IndexedDB offline store
-        const db = await openDb();
-        const stored = await idbGet<Blob>(db, OFFLINE_STORE, this.offlineKey(mangaTitle, chapterName));
-        return stored != null;
+        try {
+            const db = await openDb();
+            const stored = await idbGet<Blob>(db, OFFLINE_STORE, this.offlineKey(mangaTitle, chapterName));
+            if (stored != null) {
+                return true;
+            }
+            const targetNum = parseChapterNumber(chapterName);
+            const chapters = await idbGetChaptersForManga(db, mangaTitle);
+            for (const ch of chapters) {
+                if (ch.chapterName === chapterName || parseChapterNumber(ch.chapterName) === targetNum) {
+                    return true;
+                }
+            }
+        } catch {
+            // ignore
+        }
+        return false;
     }
 
     /**
@@ -470,17 +528,115 @@ class LocalFileSystemService {
         if (handle) {
             try {
                 const mangaDir = await handle.getDirectoryHandle(mangaTitle, { create: false });
-                const fileHandle = await mangaDir.getFileHandle(`${chapterName}.cbz`, { create: false });
-                return await fileHandle.getFile();
+                try {
+                    const fileHandle = await mangaDir.getFileHandle(`${chapterName}.cbz`, { create: false });
+                    return await fileHandle.getFile();
+                } catch {
+                    // Try fuzzy match by chapter number
+                    const targetNum = parseChapterNumber(chapterName);
+                    for await (const [name, entry] of mangaDir.entries()) {
+                        if (entry.kind === 'file' && name.endsWith('.cbz') && parseChapterNumber(name) === targetNum) {
+                            const fileHandle = await mangaDir.getFileHandle(name, { create: false });
+                            return await fileHandle.getFile();
+                        }
+                    }
+                }
             } catch {
                 // Not in directory
             }
         }
 
         // Try IndexedDB offline store
-        const db = await openDb();
-        const stored = await idbGet<Blob>(db, OFFLINE_STORE, this.offlineKey(mangaTitle, chapterName));
-        return stored ?? null;
+        try {
+            const db = await openDb();
+            const stored = await idbGet<Blob>(db, OFFLINE_STORE, this.offlineKey(mangaTitle, chapterName));
+            if (stored != null) {
+                return stored;
+            }
+            const targetNum = parseChapterNumber(chapterName);
+            const chapters = await idbGetChaptersForManga(db, mangaTitle);
+            for (const ch of chapters) {
+                if ((ch.chapterName === chapterName || parseChapterNumber(ch.chapterName) === targetNum) && ch.blob) {
+                    return ch.blob;
+                }
+            }
+        } catch {
+            // ignore
+        }
+        return null;
+    }
+
+    /**
+     * Deletes a chapter from the linked directory and IndexedDB.
+     */
+    async deleteChapter(mangaTitle: string, chapterName: string): Promise<void> {
+        const targetNum = parseChapterNumber(chapterName);
+
+        // Delete from directory if possible
+        const handle = await this.getStoredDirectoryHandle();
+        if (handle) {
+            try {
+                const mangaDir = await handle.getDirectoryHandle(mangaTitle, { create: false });
+                try {
+                    await mangaDir.removeEntry(`${chapterName}.cbz`);
+                } catch {
+                    for await (const [name, entry] of mangaDir.entries()) {
+                        if (entry.kind === 'file' && name.endsWith('.cbz') && parseChapterNumber(name) === targetNum) {
+                            await mangaDir.removeEntry(name);
+                            break;
+                        }
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        }
+
+        // Delete from IndexedDB
+        try {
+            const db = await openDb();
+            await idbDelete(db, OFFLINE_STORE, this.offlineKey(mangaTitle, chapterName));
+            const chapters = await idbGetChaptersForManga(db, mangaTitle);
+            for (const ch of chapters) {
+                if (ch.chapterName === chapterName || parseChapterNumber(ch.chapterName) === targetNum) {
+                    await idbDelete(db, OFFLINE_STORE, this.offlineKey(mangaTitle, ch.chapterName));
+                }
+            }
+        } catch {
+            // ignore
+        }
+
+        window.dispatchEvent(new CustomEvent('local-repository-updated'));
+    }
+
+    /**
+     * Deletes all downloaded chapters and metadata for a manga from this device.
+     */
+    async deleteManga(mangaTitle: string): Promise<void> {
+        // Delete directory from linked folder if available
+        const handle = await this.getStoredDirectoryHandle();
+        if (handle) {
+            try {
+                await handle.removeEntry(mangaTitle, { recursive: true });
+            } catch {
+                // ignore
+            }
+        }
+
+        // Delete from IndexedDB
+        try {
+            const db = await openDb();
+            const chapters = await idbGetChaptersForManga(db, mangaTitle);
+            for (const ch of chapters) {
+                await idbDelete(db, OFFLINE_STORE, this.offlineKey(mangaTitle, ch.chapterName));
+            }
+            await idbDelete(db, COVER_STORE, mangaTitle);
+            await idbDelete(db, METADATA_STORE, mangaTitle);
+        } catch {
+            // ignore
+        }
+
+        window.dispatchEvent(new CustomEvent('local-repository-updated'));
     }
 
     // ── CBZ extraction ───────────────────────────────────────────────────────
@@ -507,7 +663,18 @@ class LocalFileSystemService {
 
         const pages = await Promise.all(
             imageEntries.map(async ([name, file], index) => {
-                const imgBlob = await file.async('blob');
+                const buffer = await file.async('arraybuffer');
+                let mimeType = 'image/jpeg';
+                if (/\.png$/i.test(name)) {
+                    mimeType = 'image/png';
+                } else if (/\.webp$/i.test(name)) {
+                    mimeType = 'image/webp';
+                } else if (/\.gif$/i.test(name)) {
+                    mimeType = 'image/gif';
+                } else if (/\.avif$/i.test(name)) {
+                    mimeType = 'image/avif';
+                }
+                const imgBlob = new Blob([buffer], { type: mimeType });
                 const url = URL.createObjectURL(imgBlob);
                 return { url, index, name };
             }),

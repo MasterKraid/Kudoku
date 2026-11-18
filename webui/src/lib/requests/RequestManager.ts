@@ -1225,7 +1225,7 @@ export class RequestManager {
         options: ImageRequestOptions & { useFetchApi?: boolean } = {},
     ): Promise<ImageRequest> {
         const finalOptions = {
-            useFetchApi: AuthManager.isAuthRequired(),
+            useFetchApi: !!AuthManager.getAccessToken() || !!AuthManager.isAuthRequired(),
             shouldDecode: false,
             disableCors: false,
             ignoreQueue: false,

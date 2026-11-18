@@ -94,7 +94,7 @@ export const ChapterCard = memo((props: IProps) => {
     } = props;
     const isSelecting = selected !== null;
 
-    const { isDownloaded } = chapter;
+    const isDownloaded = chapter.isDownloaded || Chapters.isDownloaded(chapter);
 
     const handleClick = (event: MouseEvent | TouchEvent) => {
         if (!isSelecting) {

@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import { styled } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { ComponentProps } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { plural } from '@lingui/core/macro';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
@@ -125,7 +125,7 @@ export const ChapterList = ({
 }: {
     manga: Pick<
         MangaScreenFieldsFragment,
-        'id' | 'firstUnreadChapter' | 'lastReadChapter' | 'chapters' | 'unreadCount' | 'downloadCount'
+        'id' | 'title' | 'firstUnreadChapter' | 'lastReadChapter' | 'chapters' | 'unreadCount' | 'downloadCount'
     >;
     isRefreshing: boolean;
 }) => {
@@ -153,6 +153,11 @@ export const ChapterList = ({
         manga.id,
     );
     const chapters = chaptersData?.chapters.nodes ?? STABLE_EMPTY_ARRAY;
+
+    useEffect(() => {
+        if (!manga.title || !chapters.length) return;
+        Chapters.syncLocalDownloads(manga.title, chapters as any);
+    }, [manga.title, chapters]);
 
     const lastReadNumber = manga.lastReadChapter?.chapterNumber;
     const nextUnreadChapter = useMemo(

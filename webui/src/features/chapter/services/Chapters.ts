@@ -162,6 +162,70 @@ export class Chapters {
         return false;
     }
 
+    static markAsDownloadedLocally(chapterId: number): void {
+        clientDownloadedChapterIds.add(chapterId);
+        try {
+            requestManager.graphQLClient.client.cache.modify({
+                id: requestManager.graphQLClient.client.cache.identify({
+                    __typename: 'ChapterType',
+                    id: chapterId,
+                }),
+                fields: {
+                    isDownloaded() {
+                        return true;
+                    },
+                },
+            });
+        } catch {
+            // ignore
+        }
+    }
+
+    static unmarkAsDownloadedLocally(chapterId: number): void {
+        clientDownloadedChapterIds.delete(chapterId);
+        try {
+            requestManager.graphQLClient.client.cache.modify({
+                id: requestManager.graphQLClient.client.cache.identify({
+                    __typename: 'ChapterType',
+                    id: chapterId,
+                }),
+                fields: {
+                    isDownloaded() {
+                        return false;
+                    },
+                },
+            });
+        } catch {
+            // ignore
+        }
+    }
+
+    static async syncLocalDownloads(
+        mangaTitle: string,
+        chapters: { id: number; name?: string; chapterNumber: number; isDownloaded?: boolean }[],
+    ): Promise<void> {
+        try {
+            const localNames = await LocalFileSystem.getLocalChapterNames(mangaTitle);
+            if (!localNames.size) return;
+
+            const { parseChapterNumber } = await import('@/features/local-repository/services/LocalFileSystem.ts');
+            const localChapterNumbers = new Set<number>();
+            for (const name of localNames) {
+                localChapterNumbers.add(parseChapterNumber(name));
+            }
+
+            for (const ch of chapters) {
+                const chName = ch.name || `Chapter ${ch.chapterNumber}`;
+                const chNum = ch.chapterNumber ?? parseChapterNumber(chName);
+                if (localNames.has(chName) || localNames.has(`Chapter ${chNum}`) || localChapterNumbers.has(chNum)) {
+                    Chapters.markAsDownloadedLocally(ch.id);
+                }
+            }
+        } catch {
+            // ignore
+        }
+    }
+
     static async checkIsDownloadedLocally(
         mangaTitle: string,
         chapter: { id?: number; name?: string; chapterNumber?: number; isDownloaded?: boolean },
@@ -406,7 +470,31 @@ export class Chapters {
         return Chapters.executeAction(
             'delete',
             chapterIds.length,
-            () => requestManager.deleteDownloadedChapters(chapterIds).response,
+            async () => {
+                const { Mangas } = await import('@/features/manga/services/Mangas.ts');
+                for (const id of chapterIds) {
+                    try {
+                        const chapter = Chapters.getFromCache(id);
+                        if (chapter) {
+                            const manga = chapter.mangaId ? Mangas.getFromCache(chapter.mangaId) : null;
+                            const mangaTitle = manga?.title;
+                            const chapterName = chapter.name || `Chapter ${chapter.chapterNumber}`;
+                            if (mangaTitle) {
+                                await LocalFileSystem.deleteChapter(mangaTitle, chapterName);
+                            } else {
+                                const localList = await LocalFileSystem.getLocalMangaList();
+                                for (const localManga of localList) {
+                                    await LocalFileSystem.deleteChapter(localManga.title, chapterName);
+                                }
+                            }
+                        }
+                    } catch {
+                        // ignore
+                    }
+                    Chapters.unmarkAsDownloadedLocally(id);
+                }
+                return requestManager.deleteDownloadedChapters(chapterIds).response;
+            },
             disableConfirmation,
         );
     }
