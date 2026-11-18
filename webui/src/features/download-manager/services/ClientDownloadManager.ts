@@ -268,7 +268,14 @@ async function downloadChapter(
 
     // 4. Save via LocalFileSystem
     const { LocalFileSystem } = await import('@/features/local-repository/services/LocalFileSystem.ts');
-    const { savedToDisk } = await LocalFileSystem.saveChapterCbz(mangaTitle, chapterName, cbzBlob, mangaId);
+    let thumbnailUrl: string | undefined;
+    try {
+        const { Mangas } = await import('@/features/manga/services/Mangas.ts');
+        thumbnailUrl = Mangas.getFromCache(mangaId)?.thumbnailUrl;
+    } catch {
+        // ignore
+    }
+    const { savedToDisk } = await LocalFileSystem.saveChapterCbz(mangaTitle, chapterName, cbzBlob, mangaId, thumbnailUrl);
 
     if (!savedToDisk) {
         showSaveToDownloadsToast(mangaTitle, chapterName, cbzBlob);

@@ -208,12 +208,39 @@ class LocalFileSystemService {
         this.mangaIdCache.set(mangaTitle, mangaId);
         this.idToTitleMap.set(mangaId, mangaTitle);
         this.idToTitleMap.set(hashStringToId(mangaTitle), mangaTitle);
-        if (thumbnailUrl) {
-            this.coverUrlCache.set(mangaTitle, thumbnailUrl);
-        }
+
+        let existingMeta: { thumbnailUrl?: string; inLibrary?: boolean } | undefined;
         try {
             const db = await openDb();
-            await idbPut(db, METADATA_STORE, mangaTitle, { mangaId, mangaTitle, thumbnailUrl, inLibrary });
+            existingMeta = await idbGet<{ thumbnailUrl?: string; inLibrary?: boolean }>(db, METADATA_STORE, mangaTitle);
+        } catch {
+            // ignore
+        }
+
+        let effectiveThumb = thumbnailUrl || existingMeta?.thumbnailUrl || this.coverUrlCache.get(mangaTitle);
+        if (!effectiveThumb) {
+            try {
+                const { Mangas } = await import('@/features/manga/services/Mangas.ts');
+                effectiveThumb = Mangas.getFromCache(mangaId)?.thumbnailUrl;
+            } catch {
+                // ignore
+            }
+        }
+
+        const effectiveInLibrary = inLibrary ?? existingMeta?.inLibrary ?? true;
+
+        if (effectiveThumb) {
+            this.coverUrlCache.set(mangaTitle, effectiveThumb);
+        }
+
+        try {
+            const db = await openDb();
+            await idbPut(db, METADATA_STORE, mangaTitle, {
+                mangaId,
+                mangaTitle,
+                thumbnailUrl: effectiveThumb,
+                inLibrary: effectiveInLibrary,
+            });
         } catch {
             // ignore
         }
@@ -410,9 +437,10 @@ class LocalFileSystemService {
         chapterName: string,
         blob: Blob,
         mangaId?: number,
+        thumbnailUrl?: string,
     ): Promise<{ savedToDisk: boolean; blob: Blob }> {
         if (mangaId) {
-            await this.registerMangaMetadata(mangaTitle, mangaId);
+            await this.registerMangaMetadata(mangaTitle, mangaId, thumbnailUrl);
         }
         const handle = await this.getStoredDirectoryHandle();
 
@@ -563,6 +591,89 @@ class LocalFileSystemService {
         } catch {
             // ignore
         }
+        return null;
+    }
+
+    /**
+     * Finds a chapter CBZ blob across IndexedDB and linked directory using
+     * any available identifier (chapterNumber, chapterName, mangaTitle).
+     */
+    async findChapterBlob(
+        chapterNumber?: number,
+        chapterName?: string,
+        mangaTitle?: string,
+    ): Promise<Blob | null> {
+        // 1. Try exact mangaTitle + chapterName if both available
+        if (mangaTitle && chapterName) {
+            const blob = await this.getChapterBlob(mangaTitle, chapterName);
+            if (blob) {
+                return blob;
+            }
+        }
+
+        // 2. Try exact mangaTitle + `Chapter ${chapterNumber}`
+        if (mangaTitle && chapterNumber != null) {
+            const blob = await this.getChapterBlob(mangaTitle, `Chapter ${chapterNumber}`);
+            if (blob) {
+                return blob;
+            }
+        }
+
+        const targetNum = chapterNumber ?? (chapterName ? parseChapterNumber(chapterName) : NaN);
+
+        // 3. Search IndexedDB OFFLINE_STORE across all offline chapters
+        try {
+            const db = await openDb();
+            const entries = await idbGetAllEntries<Blob>(db, OFFLINE_STORE);
+            for (const { key, value } of entries) {
+                const sep = key.indexOf('::');
+                const keyTitle = sep !== -1 ? key.slice(0, sep) : '';
+                const keyChapterName = sep !== -1 ? key.slice(sep + 2) : key;
+
+                if (mangaTitle && keyTitle && keyTitle.toLowerCase() !== mangaTitle.toLowerCase()) {
+                    continue;
+                }
+
+                if (chapterName && keyChapterName.toLowerCase() === chapterName.toLowerCase()) {
+                    return value;
+                }
+
+                if (!isNaN(targetNum) && parseChapterNumber(keyChapterName) === targetNum) {
+                    return value;
+                }
+            }
+        } catch {
+            // ignore
+        }
+
+        // 4. Search directory handle if available
+        const handle = await this.getStoredDirectoryHandle();
+        if (handle) {
+            try {
+                for await (const [, entry] of iterateDirectory(handle)) {
+                    if (entry.kind === 'directory') {
+                        if (mangaTitle && entry.name.toLowerCase() !== mangaTitle.toLowerCase()) {
+                            continue;
+                        }
+                        const dir = entry as FileSystemDirectoryHandle;
+                        for await (const [, fileEntry] of iterateDirectory(dir)) {
+                            if (fileEntry.kind === 'file' && /\.cbz$/i.test(fileEntry.name)) {
+                                const baseName = fileEntry.name.slice(0, -4);
+                                if (chapterName && baseName.toLowerCase() === chapterName.toLowerCase()) {
+                                    return await (fileEntry as FileSystemFileHandle).getFile();
+                                }
+                                if (!isNaN(targetNum) && parseChapterNumber(fileEntry.name) === targetNum) {
+                                    return await (fileEntry as FileSystemFileHandle).getFile();
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        }
+
         return null;
     }
 
@@ -832,63 +943,60 @@ class LocalFileSystemService {
 
             await Promise.all(
                 Array.from(idbMangaMap.entries()).map(async ([title, info]) => {
-                    const existing = mangaMap.get(title);
-                    if (existing) {
-                        const realId = await this.getMangaId(title);
-                        if (realId) {
-                            existing.id = realId;
-                            this.idToTitleMap.set(realId, title);
-                        }
-                        if (!existing.thumbnailUrl && info.firstBlob) {
-                            let coverUrl = this.coverUrlCache.get(title);
-                            if (!coverUrl) {
-                                coverUrl = await this.extractCoverFromCbz(info.firstBlob);
-                                if (coverUrl) {
-                                    this.coverUrlCache.set(title, coverUrl);
-                                }
-                            }
-                            existing.thumbnailUrl = coverUrl;
-                        }
-                        const chapters = await this.getLocalMangaChapters(title);
-                        existing.chapterCount = chapters.length;
-                    } else {
-                        const realId = await this.getMangaId(title);
-                        const syntheticId = hashStringToId(title);
-                        const finalId = realId ?? syntheticId;
-                        this.idToTitleMap.set(finalId, title);
-                        this.idToTitleMap.set(syntheticId, title);
+                    let coverUrl: string | undefined;
+                    let inLibrary = false;
+                    const realId = await this.getMangaId(title);
 
-                        let coverUrl = this.coverUrlCache.get(title);
-                        if (!coverUrl && info.firstBlob) {
-                            coverUrl = await this.extractCoverFromCbz(info.firstBlob);
-                            if (coverUrl) {
-                                this.coverUrlCache.set(title, coverUrl);
-                            }
+                    try {
+                        const db = await openDb();
+                        const meta = await idbGet<{ thumbnailUrl?: string; inLibrary?: boolean }>(db, METADATA_STORE, title);
+                        if (meta?.thumbnailUrl) {
+                            coverUrl = meta.thumbnailUrl;
                         }
+                        if (meta?.inLibrary != null) {
+                            inLibrary = meta.inLibrary;
+                        }
+                    } catch {
+                        // ignore
+                    }
 
-                        let inLibrary = false;
+                    if (!coverUrl && realId) {
                         try {
-                            const db = await openDb();
-                            const meta = await idbGet<{ thumbnailUrl?: string; inLibrary?: boolean }>(db, METADATA_STORE, title);
-                            if (meta?.thumbnailUrl) {
-                                coverUrl = meta.thumbnailUrl;
-                            }
-                            if (meta?.inLibrary != null) {
-                                inLibrary = meta.inLibrary;
-                            }
+                            const { Mangas } = await import('@/features/manga/services/Mangas.ts');
+                            coverUrl = Mangas.getFromCache(realId)?.thumbnailUrl;
                         } catch {
                             // ignore
                         }
-
-                        mangaMap.set(title, {
-                            id: finalId,
-                            title,
-                            thumbnailUrl: coverUrl,
-                            inLibrary,
-                            sourceId: Sources.LOCAL_SOURCE_ID,
-                            chapterCount: info.count,
-                        });
                     }
+
+                    if (!coverUrl) {
+                        coverUrl = this.coverUrlCache.get(title);
+                    }
+
+                    if (!coverUrl && info.firstBlob) {
+                        coverUrl = await this.extractCoverFromCbz(info.firstBlob);
+                    }
+
+                    if (coverUrl) {
+                        this.coverUrlCache.set(title, coverUrl);
+                    }
+
+                    const syntheticId = hashStringToId(title);
+                    const finalId = realId ?? syntheticId;
+                    this.idToTitleMap.set(finalId, title);
+                    this.idToTitleMap.set(syntheticId, title);
+
+                    const chapters = await this.getLocalMangaChapters(title);
+                    const chapterCount = chapters.length || info.count;
+
+                    mangaMap.set(title, {
+                        id: finalId,
+                        title,
+                        thumbnailUrl: coverUrl,
+                        inLibrary,
+                        sourceId: Sources.LOCAL_SOURCE_ID,
+                        chapterCount,
+                    });
                 }),
             );
         } catch {

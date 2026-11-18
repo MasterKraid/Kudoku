@@ -254,11 +254,9 @@ const BaseReaderChapterViewer = ({
         value: T,
         setLocalState: (value: T) => void,
         setGlobalState: (value: T) => void,
-        forceLocal: boolean = false,
+        _forceLocal: boolean = false,
     ) => {
-        if (forceLocal || !arePagesFetched) {
-            setLocalState(value);
-        }
+        setLocalState(value);
 
         if (isCurrentChapter) {
             setGlobalState(value);
@@ -329,7 +327,9 @@ const BaseReaderChapterViewer = ({
         return null;
     }
 
-    if (pagesResponse.error) {
+    const hasPages = (actualPages.length > 0 && totalPages > 0) || pages.length > 0;
+
+    if (!hasPages && pagesResponse.error) {
         if (shouldHideChapter) {
             return null;
         }
@@ -355,7 +355,7 @@ const BaseReaderChapterViewer = ({
         );
     }
 
-    if (pagesResponse.loading || !arePagesFetched) {
+    if (!hasPages && (pagesResponse.loading || !arePagesFetched)) {
         if (shouldHideChapter) {
             return null;
         }
@@ -374,7 +374,7 @@ const BaseReaderChapterViewer = ({
         );
     }
 
-    if (chapterId != null && !totalPages) {
+    if (chapterId != null && !totalPages && !hasPages) {
         if (shouldHideChapter) {
             return null;
         }

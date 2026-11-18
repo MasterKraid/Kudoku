@@ -19,10 +19,11 @@ import { ReaderScrollOffset } from '@/features/reader/services/ReaderScrollOffse
 import type { requestManager } from '@/lib/requests/RequestManager.ts';
 import type { TChapterReader } from '@/features/chapter/Chapter.types.ts';
 import type { ReaderChaptersStoreSlice } from '@/features/reader/stores/ReaderChaptersStore.ts';
-import { getReaderStore } from '@/features/reader/stores/ReaderStore.ts';
+import { getReaderStore, useReaderChaptersStore, useReaderStore } from '@/features/reader/stores/ReaderStore.ts';
 import { UrlUtil } from '@/lib/UrlUtil.ts';
 import { LocalFileSystem } from '@/features/local-repository/services/LocalFileSystem.ts';
 import { Chapters } from '@/features/chapter/services/Chapters.ts';
+import { Mangas } from '@/features/manga/services/Mangas.ts';
 
 export const useReaderSetPagesState = (
     isCurrentChapter: boolean,
@@ -84,28 +85,30 @@ export const useReaderSetPagesState = (
         setTransitionPageMode(ReaderTransitionPageMode.NONE);
     };
 
+    const readerManga = useReaderStore('manga');
+    const storeChapters = useReaderChaptersStore('chapters');
+
     // Offline / Local CBZ check
     useEffect(() => {
         let isCancelled = false;
 
         async function loadLocalBlob() {
-            const { manga } = getReaderStore();
-            const mangaTitle = manga?.title;
             const chapter =
+                storeChapters.find((c) => c.id === chapterId) ??
                 getReaderStore().chapters.chapters.find((c) => c.id === chapterId) ??
                 Chapters.getFromCache(chapterId);
+
+            const mangaTitle =
+                readerManga?.title ??
+                getReaderStore().manga?.title ??
+                (chapter?.mangaId ? Mangas.getFromCache(chapter.mangaId)?.title : undefined);
+
             const chapterName =
                 chapter?.name || (chapter?.chapterNumber != null ? `Chapter ${chapter.chapterNumber}` : undefined);
-
-            if (!mangaTitle || !chapterName) {
-                return;
-            }
+            const chapterNumber = chapter?.chapterNumber;
 
             try {
-                let blob = await LocalFileSystem.getChapterBlob(mangaTitle, chapterName);
-                if (!blob && chapter?.chapterNumber != null) {
-                    blob = await LocalFileSystem.getChapterBlob(mangaTitle, `Chapter ${chapter.chapterNumber}`);
-                }
+                const blob = await LocalFileSystem.findChapterBlob(chapterNumber, chapterName, mangaTitle);
 
                 if (!blob || isCancelled) {
                     return;
@@ -137,7 +140,7 @@ export const useReaderSetPagesState = (
             localBlobUrlsRef.current = [];
             isLocalBlobLoaded.current = false;
         };
-    }, [chapterId]);
+    }, [chapterId, readerManga?.title, storeChapters.length]);
 
     useLayoutEffect(() => {
         if (isLocalBlobLoaded.current) {
@@ -147,6 +150,10 @@ export const useReaderSetPagesState = (
 
         const pagesPayload = pagesResponse.data?.fetchChapterPages;
         if (!pagesPayload) {
+            return;
+        }
+
+        if (!pagesPayload.pages.length && isLocalBlobLoaded.current) {
             return;
         }
 

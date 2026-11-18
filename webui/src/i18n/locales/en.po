@@ -3591,6 +3591,7 @@ msgstr "Remind later"
 
 #: src/base/components/settings/DateSetting.tsx
 #: src/features/library/screens/LibraryShare.tsx
+#: src/features/manga/components/MangaBadges.tsx
 #: src/features/manga/hooks/useManageMangaLibraryState.tsx
 #: src/features/tracker/components/cards/TrackerActiveCard.tsx
 msgid "Remove"
@@ -3609,7 +3610,6 @@ msgstr "Remove bookmark"
 msgid "Remove bookmarks from selected"
 msgstr "Remove bookmarks from selected"
 
-#: src/features/manga/components/MangaBadges.tsx
 #: src/features/manga/Manga.constants.ts
 #: src/features/reader/overlay/navigation/components/ReaderLibraryButton.tsx
 msgid "Remove from the library"

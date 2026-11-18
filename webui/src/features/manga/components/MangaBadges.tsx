@@ -253,7 +253,7 @@ export const MangaBadges = ({
                         }}
                     >
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {isLocalSource ? t`Delete` : (isInLibrary ? t`Remove from the library` : t`Add To Library`)}
+                            {isLocalSource ? t`Delete` : (isInLibrary ? t`Remove` : t`Add To Library`)}
                         </span>
                     </Button>
                 )}
