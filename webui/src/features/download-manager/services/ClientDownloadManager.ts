@@ -14,6 +14,8 @@ import { devtools } from 'zustand/middleware';
 import { closeSnackbar, enqueueSnackbar } from 'notistack';
 import Button from '@mui/material/Button';
 import { createElement } from 'react';
+import { requestManager } from '@/lib/requests/RequestManager.ts';
+import type { RestClient } from '@/lib/requests/client/RestClient.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -205,14 +207,13 @@ async function downloadChapter(
     const chapterId = chapter.id;
     const chapterName = buildChapterName(chapter);
 
+    const restClient = requestManager.getClient() as RestClient;
+
     // 1. Fetch page list from server REST API
-    const listRes = await fetch(
+    const listRes = await restClient.fetcher(
         `/api/v1/manga/${mangaId}/chapter/${chapter.sourceOrder}`,
-        { signal },
+        { checkResponseIsJson: false, config: { signal } },
     );
-    if (!listRes.ok) {
-        throw new Error(`Failed to fetch chapter info: ${listRes.status}`);
-    }
     const chapterMeta: { pageCount: number } = await listRes.json();
     const pageCount: number = chapterMeta.pageCount ?? chapter.pageCount ?? 0;
     if (pageCount === 0) {
@@ -229,13 +230,10 @@ async function downloadChapter(
             throw new DOMException('Cancelled', 'AbortError');
         }
         /* eslint-disable-next-line no-await-in-loop */
-        const pageRes = await fetch(
+        const pageRes = await restClient.fetcher(
             `/api/v1/manga/${mangaId}/chapter/${chapter.sourceOrder}/page/${i}`,
-            { signal },
+            { checkResponseIsJson: false, config: { signal } },
         );
-        if (!pageRes.ok) {
-            throw new Error(`Failed to fetch page ${i}: ${pageRes.status}`);
-        }
         /* eslint-disable-next-line no-await-in-loop */
         const buffer = await pageRes.arrayBuffer();
         const ext = guessExtension(buffer);
