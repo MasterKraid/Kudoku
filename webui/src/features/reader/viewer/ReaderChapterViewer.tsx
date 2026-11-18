@@ -45,7 +45,7 @@ import { useResizeObserver } from '@/base/hooks/useResizeObserver.tsx';
 import type { ChapterIdInfo } from '@/features/chapter/Chapter.types.ts';
 import { READER_DEFAULT_PAGES_STATE } from '@/features/reader/stores/ReaderPagesStore.ts';
 
-import { getReaderChaptersStore, getReaderPagesStore } from '@/features/reader/stores/ReaderStore.ts';
+import { getReaderChaptersStore, getReaderPagesStore, useReaderChaptersStore } from '@/features/reader/stores/ReaderStore.ts';
 
 const BaseReaderChapterViewer = ({
     currentPageIndex,
@@ -161,9 +161,11 @@ const BaseReaderChapterViewer = ({
     const isContinuousReadingModeActive = isContinuousReadingMode(readingMode);
     const shouldHideChapter = (!isContinuousReadingModeActive && !isCurrentChapter) || isPreloadMode;
 
+    const isPreviousChapterLocked = useReaderChaptersStore('isPreviousChapterLocked');
     const isCurrentChapterInSinglePager = !isContinuousReadingModeActive && isCurrentChapter;
     const showPreviousTransitionPage =
         !shouldHideChapter &&
+        (!isPreviousChapterLocked || !isInitialChapter) &&
         (isCurrentChapterInSinglePager || (isContinuousReadingModeActive && (isInitialChapter || isLeadingChapter)));
     const showNextTransitionPage =
         !shouldHideChapter &&

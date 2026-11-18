@@ -9,6 +9,7 @@
 import { memo } from 'react';
 import { useReaderInfiniteScrollUpdateChapter } from '@/features/reader/infinite-scroll/useReaderInfiniteScrollUpdateChapter.ts';
 import type { ChapterIdInfo } from '@/features/chapter/Chapter.types.ts';
+import { useReaderChaptersStore } from '@/features/reader/stores/ReaderStore.ts';
 
 const BaseReaderInfiniteScrollUpdateChapter = ({
     chapterId,
@@ -29,10 +30,12 @@ const BaseReaderInfiniteScrollUpdateChapter = ({
     imageWrapper: HTMLElement | null;
     scrollElement: HTMLElement | null;
 }) => {
+    const isPreviousChapterLocked = useReaderChaptersStore('isPreviousChapterLocked');
+
     useReaderInfiniteScrollUpdateChapter(
         'first',
         chapterId,
-        previousChapterId,
+        isPreviousChapterLocked ? undefined : previousChapterId,
         isCurrentChapter,
         isPreviousChapterVisible,
         imageWrapper,

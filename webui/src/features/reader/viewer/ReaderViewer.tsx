@@ -82,12 +82,13 @@ const BaseReaderViewer = ({
             'transitionPageMode',
             'retryFailedPagesKeyPrefix',
         );
-    const { initialChapter, currentChapter, chapters, visibleChapters, isCurrentChapterReady } = useReaderChaptersStore(
+    const { initialChapter, currentChapter, chapters, visibleChapters, isCurrentChapterReady, isPreviousChapterLocked } = useReaderChaptersStore(
         'initialChapter',
         'currentChapter',
         'chapters',
         'visibleChapters',
         'isCurrentChapterReady',
+        'isPreviousChapterLocked',
     );
     const {
         readingMode,
@@ -156,9 +157,9 @@ const BaseReaderViewer = ({
         () =>
             chapters.slice(
                 Math.max(0, initialChapterIndex - visibleChapters.trailing),
-                Math.min(chapters.length, initialChapterIndex + visibleChapters.leading + 1),
+                Math.min(chapters.length, initialChapterIndex + (isPreviousChapterLocked ? 0 : visibleChapters.leading) + 1),
             ),
-        [chapters, initialChapterIndex, visibleChapters.trailing, visibleChapters.leading],
+        [chapters, initialChapterIndex, visibleChapters.trailing, visibleChapters.leading, isPreviousChapterLocked],
     );
     const currentChapterIndex = useMemo(
         () => chaptersToRender.findIndex((chapter) => chapter.id === currentChapter?.id),
@@ -293,8 +294,9 @@ const BaseReaderViewer = ({
                 const chapterIndex = Math.max(0, chaptersToRender.length - index - 1);
                 const chapter = chaptersToRender[chapterIndex];
 
-                const previousChapter =
-                    chaptersToRender[chapterIndex + 1] ?? chapters[initialChapterIndex + visibleChapters.leading + 1];
+                const previousChapter = isPreviousChapterLocked
+                    ? undefined
+                    : chaptersToRender[chapterIndex + 1] ?? chapters[initialChapterIndex + visibleChapters.leading + 1];
                 const nextChapter =
                     chaptersToRender[chapterIndex - 1] ?? chapters[initialChapterIndex - visibleChapters.trailing - 1];
 

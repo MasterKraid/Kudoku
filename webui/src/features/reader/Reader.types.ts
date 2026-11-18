@@ -239,6 +239,7 @@ export interface ReaderStateChapters {
     nextChapter: TChapterReader | undefined;
     previousChapter: TChapterReader | undefined;
     isCurrentChapterReady: boolean;
+    isPreviousChapterLocked?: boolean;
     /**
      * Based from the initial chapter index
      */

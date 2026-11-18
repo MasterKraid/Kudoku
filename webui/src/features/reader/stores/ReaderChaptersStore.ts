@@ -11,6 +11,8 @@ import type { ReaderStateChapters } from '@/features/reader/Reader.types.ts';
 
 export interface ReaderChaptersStoreSlice {
     chapters: ReaderStateChapters & {
+        isPreviousChapterLocked: boolean;
+        setIsPreviousChapterLocked: (isLocked: boolean) => void;
         setReaderStateChapters: (
             state: ((state: ReaderStateChapters) => ReaderStateChapters) | ReaderStateChapters,
         ) => void;
@@ -28,6 +30,7 @@ export const READER_DEFAULT_CHAPTERS_STATE = {
         nextChapter: undefined,
         previousChapter: undefined,
         isCurrentChapterReady: false,
+        isPreviousChapterLocked: true,
         visibleChapters: {
             leading: 0,
             trailing: 0,
@@ -48,6 +51,15 @@ export const createReaderChaptersStoreSlice = <T extends ReaderChaptersStoreSlic
 ): ReaderChaptersStoreSlice => ({
     chapters: {
         ...READER_DEFAULT_CHAPTERS_STATE.chapters,
+        isPreviousChapterLocked: true,
+        setIsPreviousChapterLocked: (isLocked: boolean) =>
+            set(
+                (draft) => {
+                    draft.chapters.isPreviousChapterLocked = isLocked;
+                },
+                undefined,
+                createActionName('setIsPreviousChapterLocked'),
+            ),
         reset: () => ({ chapters: { ...get().chapters, ...READER_DEFAULT_CHAPTERS_STATE.chapters } }),
         setReaderStateChapters: (state) =>
             set(

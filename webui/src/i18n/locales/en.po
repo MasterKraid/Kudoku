@@ -2931,6 +2931,14 @@ msgstr "Local source"
 msgid "Local source location"
 msgstr "Local source location"
 
+#: src/features/reader/settings/layout/ReaderLayoutSettings.tsx
+msgid "Lock"
+msgstr "Lock"
+
+#: src/features/reader/settings/layout/ReaderLayoutSettings.tsx
+msgid "Locked. Scrolling up will not load previous chapters."
+msgstr "Locked. Scrolling up will not load previous chapters."
+
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Log file cleanup"
 msgstr "Log file cleanup"
@@ -3635,6 +3643,10 @@ msgstr "Previous"
 msgid "Previous chapter"
 msgstr "Previous chapter"
 
+#: src/features/reader/settings/layout/ReaderLayoutSettings.tsx
+msgid "Previous chapters"
+msgstr "Previous chapters"
+
 #: src/features/reader/hotkeys/settings/components/ReaderSettingHotkey.tsx
 #: src/features/reader/overlay/navigation/desktop/components/ReaderNavBarDesktopPageNavigation.tsx
 msgid "Previous page"
@@ -3823,6 +3835,10 @@ msgstr "Reset"
 #: src/features/reader/settings/layout/components/ReaderSettingZoom.tsx
 msgid "Reset (100%)"
 msgstr "Reset (100%)"
+
+#: src/features/reader/settings/layout/components/ReaderSettingZoom.tsx
+msgid "Reset to default"
+msgstr "Reset to default"
 
 #: src/base/components/settings/DateSetting.tsx
 #: src/base/components/settings/NumberSetting.tsx
@@ -4968,6 +4984,14 @@ msgstr "Unknown source"
 msgid "Unknown status badges"
 msgstr "Unknown status badges"
 
+#: src/features/reader/settings/layout/ReaderLayoutSettings.tsx
+msgid "Unlock"
+msgstr "Unlock"
+
+#: src/features/reader/settings/layout/ReaderLayoutSettings.tsx
+msgid "Unlocked. Scrolling up will load previous chapters."
+msgstr "Unlocked. Scrolling up will load previous chapters."
+
 #: src/features/browse/sources/components/SourceCard.tsx
 msgid "Unpin source"
 msgstr "Unpin source"
@@ -5099,6 +5123,10 @@ msgstr "Use the version that was delivered with the server release"
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Username"
 msgstr "Username"
+
+#: src/features/reader/settings/layout/components/ReaderSettingZoom.tsx
+msgid "Using global default"
+msgstr "Using global default"
 
 #: src/features/settings/components/images/KeyValueItem.tsx
 msgid "Value"

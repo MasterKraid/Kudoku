@@ -440,6 +440,32 @@ export class ReaderService {
             });
         }
 
+        // Update local ReaderSettingsStore immediately for responsive UI
+        const currentStoreSettings = getReaderSettingsStore().settings;
+        if (currentStoreSettings) {
+            if (isGlobalSetting) {
+                // Untouched series (isDefault: true) inherit the new global value immediately
+                if (currentStoreSettings[setting]?.isDefault) {
+                    getReaderSettingsStore().setSettings({
+                        ...currentStoreSettings,
+                        [setting]: {
+                            value,
+                            isDefault: true,
+                        },
+                    });
+                }
+            } else {
+                // Setting for series explicitly marks it as custom (isDefault: false)
+                getReaderSettingsStore().setSettings({
+                    ...currentStoreSettings,
+                    [setting]: {
+                        value,
+                        isDefault: false,
+                    },
+                });
+            }
+        }
+
         if (commit) {
             getMetadataUpdateFunction(metaHolderType, { id: manga.id, meta: convertFromGqlMeta(updatedMetadata) })({
                 update: [[setting, metaValue]],
@@ -473,6 +499,41 @@ export class ReaderService {
         const keysToDelete = MetadataChunker.computeChunkDeletions(existingMeta, key, 0);
 
         const updatedMetadata = convertToGqlMeta(existingMeta)?.filter((meta) => !keysToDelete.includes(meta.key));
+
+        const { cache } = requestManager.graphQLClient.client;
+        if (!isGlobalSetting) {
+            cache.modify({
+                id: cache.identify({ __typename: 'MangaType', id: manga.id }),
+                fields: {
+                    meta() {
+                        return updatedMetadata?.map((meta) =>
+                            cache.writeFragment({
+                                fragment: MANGA_META_FIELDS,
+                                data: {
+                                    __typename: 'MangaMetaType',
+                                    mangaId: manga.id,
+                                    key: meta.key,
+                                    value: meta.value,
+                                },
+                            }),
+                        );
+                    },
+                },
+            });
+        }
+
+        // Reset store setting to global default with isDefault: true
+        const currentStoreSettings = getReaderSettingsStore().settings;
+        if (currentStoreSettings && !isGlobalSetting) {
+            const globalDefaultValue = DEFAULT_READER_SETTINGS[setting];
+            getReaderSettingsStore().setSettings({
+                ...currentStoreSettings,
+                [setting]: {
+                    value: globalDefaultValue,
+                    isDefault: true,
+                },
+            });
+        }
 
         getMetadataUpdateFunction(metaHolderType, { id: manga.id, meta: convertFromGqlMeta(updatedMetadata) })({
             delete: [setting],

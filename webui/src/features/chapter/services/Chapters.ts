@@ -754,7 +754,7 @@ export class Chapters {
     }
 
     static getReaderResumeMode(chapter: ChapterReadInfo): ReaderResumeMode {
-        if (chapter.isRead) {
+        if (chapter.isRead || (chapter.pageCount > 0 && (chapter.lastPageRead ?? 0) >= chapter.pageCount - 1)) {
             return ReaderResumeMode.START;
         }
 

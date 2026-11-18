@@ -7,8 +7,13 @@
  */
 
 import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { useLingui } from '@lingui/react/macro';
 import { ReaderSettingReadingMode } from '@/features/reader/settings/layout/components/ReaderSettingReadingMode.tsx';
 import { ReaderSettingReadingDirection } from '@/features/reader/settings/layout/components/ReaderSettingReadingDirection.tsx';
@@ -21,7 +26,7 @@ import { ReaderSettingPageGap } from '@/features/reader/settings/layout/componen
 import { ReaderSettingWidth } from '@/features/reader/settings/layout/components/ReaderSettingWidth.tsx';
 import { ReaderSettingZoom } from '@/features/reader/settings/layout/components/ReaderSettingZoom.tsx';
 import { DefaultSettingFootnote } from '@/features/reader/settings/components/DefaultSettingFootnote.tsx';
-import { getReaderTapZoneStore } from '@/features/reader/stores/ReaderStore.ts';
+import { getReaderTapZoneStore, useReaderChaptersStore } from '@/features/reader/stores/ReaderStore.ts';
 import { ReaderDefaultLayoutSettings } from '@/features/reader/settings/layout/ReaderDefaultLayoutSettings.tsx';
 import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 
@@ -36,6 +41,10 @@ export const ReaderLayoutSettings = ({
     isSeriesMode?: boolean;
 }) => {
     const { t } = useLingui();
+    const { isPreviousChapterLocked, setIsPreviousChapterLocked } = useReaderChaptersStore(
+        'isPreviousChapterLocked',
+        'setIsPreviousChapterLocked',
+    );
 
     return (
         <Stack sx={{ gap: 2 }}>
@@ -96,6 +105,7 @@ export const ReaderLayoutSettings = ({
             />
             <ReaderSettingZoom
                 readerZoom={settings.readerZoom?.value}
+                isDefault={settings.readerZoom?.isDefault}
                 isDefaultable={isDefaultable}
                 onDefault={() => onDefault?.('readerZoom')}
                 updateSetting={(...args) => updateSetting(...args)}
@@ -114,6 +124,31 @@ export const ReaderLayoutSettings = ({
                 updateSetting={(...args) => updateSetting(...args)}
                 setTransparent={setTransparent}
             />
+            {isSeriesMode && (
+                <Card variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                        <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {t`Previous chapters`}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {isPreviousChapterLocked
+                                    ? t`Locked. Scrolling up will not load previous chapters.`
+                                    : t`Unlocked. Scrolling up will load previous chapters.`}
+                            </Typography>
+                        </Box>
+                        <Button
+                            size="small"
+                            variant={isPreviousChapterLocked ? 'outlined' : 'contained'}
+                            color={isPreviousChapterLocked ? 'primary' : 'warning'}
+                            onClick={() => setIsPreviousChapterLocked(!isPreviousChapterLocked)}
+                            startIcon={isPreviousChapterLocked ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
+                        >
+                            {isPreviousChapterLocked ? t`Unlock` : t`Lock`}
+                        </Button>
+                    </Stack>
+                </Card>
+            )}
             {isSeriesMode && (
                 <>
                     <Divider />

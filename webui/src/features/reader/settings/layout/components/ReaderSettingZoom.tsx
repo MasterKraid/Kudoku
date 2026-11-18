@@ -25,11 +25,13 @@ import { coerceIn } from '@/lib/HelperFunctions.ts';
 
 export const ReaderSettingZoom = ({
     readerZoom,
+    isDefault,
     isDefaultable,
     onDefault,
     updateSetting,
 }: Pick<IReaderSettings, 'readerZoom'> &
     Pick<SelectButtonDefaultableProps<IReaderSettings['readerZoom']['value']>, 'isDefaultable' | 'onDefault'> & {
+        isDefault?: boolean;
         updateSetting: (...args: Parameters<typeof ReaderService.updateSetting>) => void;
         setTransparent?: (transparent: boolean) => void;
     }) => {
@@ -52,10 +54,17 @@ export const ReaderSettingZoom = ({
     return (
         <Stack spacing={1}>
             <Stack sx={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {t`Zoom`}
-                </Typography>
-                {(currentVal !== 100 || isDefaultable) && (
+                <Stack sx={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {t`Zoom`}
+                    </Typography>
+                    {isDefault && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                            ({t`Using global default`})
+                        </Typography>
+                    )}
+                </Stack>
+                {(!isDefault && (currentVal !== 100 || isDefaultable)) && (
                     <Button
                         size="small"
                         variant="text"
@@ -67,7 +76,7 @@ export const ReaderSettingZoom = ({
                             }
                         }}
                     >
-                        {t`Reset (100%)`}
+                        {isDefaultable ? t`Reset to default` : t`Reset (100%)`}
                     </Button>
                 )}
             </Stack>

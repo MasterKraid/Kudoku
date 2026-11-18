@@ -170,20 +170,21 @@ const BaseReaderTransitionPage = ({
                     ...applyStyles(isVerticalContinuous, {
                         width: '100%',
                         maxWidth: (theme) =>
-                            `min(540px, calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px - ${theme.spacing(4)}))`,
-                        margin: '24px auto',
-                        py: 2.5,
+                            `min(480px, calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px - ${theme.spacing(4)}))`,
+                        margin: '16px auto',
+                        py: 2,
                         px: 3,
-                        border: '1.5px solid',
+                        border: '2px solid',
                         borderColor: (theme) =>
-                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)',
                         borderRadius: 2,
                         backgroundColor: (theme) =>
-                            theme.palette.mode === 'dark' ? 'rgba(28, 28, 30, 0.95)' : 'rgba(245, 245, 247, 0.95)',
+                            theme.palette.mode === 'dark' ? '#1c1c1e' : '#f5f5f7',
                         backdropFilter: 'blur(10px)',
-                        boxShadow: 3,
+                        boxShadow: 4,
                         textAlign: 'center',
                         minHeight: 'unset',
+                        height: 'auto',
                         boxSizing: 'border-box',
                     }),
                     ...applyStyles(readingMode === ReadingMode.CONTINUOUS_HORIZONTAL, {
@@ -197,14 +198,25 @@ const BaseReaderTransitionPage = ({
         >
             <Stack
                 sx={{
-                    gap: isVerticalContinuous ? 1.5 : 2,
+                    gap: 1.5,
                     maxWidth: (theme) =>
-                        // spacing = added padding left + right
                         `calc(100vw - ${scrollbar.ySize}px - ${readerNavBarWidth}px - ${theme.spacing(2)})`,
                     maxHeight: isVerticalContinuous ? 'unset' : `calc(100vh - ${scrollbar.xSize}px)`,
                     width: isVerticalContinuous ? '100%' : 'max-content',
                     alignItems: 'center',
-                    p: isVerticalContinuous ? 0 : 1,
+                    ...applyStyles(!isContinuousReadingMode(readingMode), {
+                        py: 3,
+                        px: 4,
+                        border: '2px solid',
+                        borderColor: (theme) =>
+                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)',
+                        borderRadius: 2,
+                        backgroundColor: (theme) =>
+                            theme.palette.mode === 'dark' ? '#1c1c1e' : '#f5f5f7',
+                        boxShadow: 4,
+                        minWidth: 280,
+                    }),
+                    p: isVerticalContinuous ? 0 : undefined,
                 }}
             >
                 {isPreviousType && isFirstChapter && (
