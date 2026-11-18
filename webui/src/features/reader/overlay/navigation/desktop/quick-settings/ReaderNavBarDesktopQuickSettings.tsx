@@ -10,6 +10,9 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GridViewIcon from '@mui/icons-material/GridView';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import { alpha } from '@mui/material/styles';
 import { memo, useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { TONAL_BUTTON_SX } from '@/features/reader/overlay/navigation/ReaderNavTonalButton.ts';
@@ -21,11 +24,15 @@ import { ReaderNavBarDesktopReadingDirection } from '@/features/reader/overlay/n
 import type { ReaderNavBarDesktopProps } from '@/features/reader/overlay/ReaderOverlay.types.ts';
 import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 import { ReaderNavBarDesktopAutoScroll } from '@/features/reader/auto-scroll/settings/quick-setting/ReaderNavBarDesktopAutoScroll.tsx';
-import { useReaderSettingsStore } from '@/features/reader/stores/ReaderStore.ts';
+import { useReaderChaptersStore, useReaderSettingsStore } from '@/features/reader/stores/ReaderStore.ts';
 
 const BaseReaderNavBarDesktopQuickSettings = ({ openSettings }: Pick<ReaderNavBarDesktopProps, 'openSettings'>) => {
     const { t } = useLingui();
     const [isThumbnailsOpen, setIsThumbnailsOpen] = useState(false);
+    const { isPreviousChapterLocked, setIsPreviousChapterLocked } = useReaderChaptersStore(
+        'isPreviousChapterLocked',
+        'setIsPreviousChapterLocked',
+    );
     const { readingMode, shouldOffsetDoubleSpreads, pageScaleMode, shouldStretchPage, readingDirection, autoScroll } =
         useReaderSettingsStore(
             'readingMode',
@@ -66,6 +73,27 @@ const BaseReaderNavBarDesktopQuickSettings = ({ openSettings }: Pick<ReaderNavBa
                 autoScroll={autoScroll}
                 setAutoScroll={(...args) => ReaderService.updateSetting('autoScroll', ...args)}
             />
+            <Button
+                onClick={() => setIsPreviousChapterLocked(!isPreviousChapterLocked)}
+                size="large"
+                sx={{
+                    ...TONAL_BUTTON_SX,
+                    justifyContent: 'center',
+                    ...(isPreviousChapterLocked
+                        ? {}
+                        : {
+                              color: 'warning.main',
+                              backgroundColor: (theme) => alpha(theme.palette.warning.main, 0.14),
+                              '&:hover': {
+                                  backgroundColor: (theme) => alpha(theme.palette.warning.main, 0.22),
+                                  boxShadow: 'none',
+                              },
+                          }),
+                }}
+                startIcon={isPreviousChapterLocked ? <LockIcon /> : <LockOpenIcon />}
+            >
+                {isPreviousChapterLocked ? t`Scroll up: Locked` : t`Scroll up: Unlocked`}
+            </Button>
             <Stack sx={{ flexDirection: 'row', gap: 1, pt: 0.5 }}>
                 <Button
                     onClick={() => setIsThumbnailsOpen(true)}

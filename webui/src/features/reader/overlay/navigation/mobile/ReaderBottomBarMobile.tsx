@@ -9,6 +9,8 @@
 import IconButton from '@mui/material/IconButton';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GridViewIcon from '@mui/icons-material/GridView';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import Stack from '@mui/material/Stack';
 import AppSettingsAltIcon from '@mui/icons-material/AppSettingsAlt';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
@@ -33,10 +35,13 @@ const BaseReaderBottomBarMobile = ({
     topOffset = 0,
 }: ReaderBottomBarMobileProps & { topOffset?: number }) => {
     const { t } = useLingui();
-    const { currentChapterId, chapters } = useReaderChaptersStore((state) => ({
-        currentChapterId: state.currentChapter?.id,
-        chapters: state.chapters,
-    }));
+    const { currentChapterId, chapters, isPreviousChapterLocked, setIsPreviousChapterLocked } =
+        useReaderChaptersStore((state) => ({
+            currentChapterId: state.currentChapter?.id,
+            chapters: state.chapters,
+            isPreviousChapterLocked: state.isPreviousChapterLocked,
+            setIsPreviousChapterLocked: state.setIsPreviousChapterLocked,
+        }));
 
     const chapterListPopupState = usePopupState({ variant: 'dialog', popupId: 'reader-chapter-list-dialog' });
     const quickSettingsPopupState = usePopupState({ variant: 'dialog', popupId: 'reader-quick-settings-dialog' });
@@ -94,6 +99,20 @@ const BaseReaderBottomBarMobile = ({
                             <CustomTooltip title={t`Chapter list`}>
                                 <IconButton {...bindTrigger(chapterListPopupState)} color="inherit">
                                     <FormatListBulletedIcon />
+                                </IconButton>
+                            </CustomTooltip>
+                            <CustomTooltip
+                                title={
+                                    isPreviousChapterLocked
+                                        ? t`Unlock scroll up to previous chapters`
+                                        : t`Lock scroll up to previous chapters`
+                                }
+                            >
+                                <IconButton
+                                    onClick={() => setIsPreviousChapterLocked(!isPreviousChapterLocked)}
+                                    color={isPreviousChapterLocked ? 'inherit' : 'warning'}
+                                >
+                                    {isPreviousChapterLocked ? <LockIcon /> : <LockOpenIcon />}
                                 </IconButton>
                             </CustomTooltip>
                             <CustomTooltip title={t`Quick settings`}>
