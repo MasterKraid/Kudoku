@@ -104,6 +104,8 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
         useCallback((entries) => setIsVisible(entries[0].isIntersecting), []),
     );
 
+    const isBlobOrData = typeof src === 'string' && (src.startsWith('blob:') || src.startsWith('data:'));
+
     useEffect(() => {
         const didSrcChange = previousSrc !== src;
         const isLoadedAndSrcUnchanged = !!imageSourceUrl && !didSrcChange;
@@ -134,6 +136,12 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
         };
         const fetchImage = async () => {
             try {
+                if (isBlobOrData) {
+                    setImageSourceUrl(src);
+                    updateImageState(false);
+                    return;
+                }
+
                 imageRequest = await requestManager.requestImage(src, {
                     priority,
                     shouldDecode,
@@ -201,7 +209,7 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
                         }),
                     ]}
                     ref={ref}
-                    crossOrigin={disableCors ? undefined : 'anonymous'}
+                    crossOrigin={disableCors || isBlobOrData ? undefined : 'anonymous'}
                     src={imageSourceUrl}
                     alt={alt}
                     draggable={false}

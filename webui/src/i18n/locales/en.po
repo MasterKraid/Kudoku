@@ -2757,6 +2757,10 @@ msgstr "Loading theme fonts…"
 msgid "Loading…"
 msgstr "Loading…"
 
+#: src/features/manga/screens/Manga.tsx
+msgid "Local Offline Manga"
+msgstr "Local Offline Manga"
+
 #: src/features/browse/sources/components/SourceCard.tsx
 #: src/features/manga/components/details/MangaDetails.tsx
 #: src/features/migration/components/MigrationCard.tsx
@@ -3636,6 +3640,10 @@ msgstr "Reset"
 #: src/base/components/settings/TimeSetting.tsx
 msgid "Reset to Default"
 msgstr "Reset to Default"
+
+#: src/features/manga/screens/Manga.tsx
+msgid "Resolving offline manga..."
+msgstr "Resolving offline manga..."
 
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Response fallback"

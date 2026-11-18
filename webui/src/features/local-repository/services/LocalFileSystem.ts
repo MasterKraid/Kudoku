@@ -28,9 +28,10 @@ export interface LocalChapterItem {
 // ─── IndexedDB helpers ───────────────────────────────────────────────────────
 
 const DB_NAME = 'tsundoku-local-fs';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const HANDLE_STORE = 'directory-handle';
 const OFFLINE_STORE = 'offline-chapters';
+const METADATA_STORE = 'manga-metadata';
 const HANDLE_KEY = 'active-handle';
 
 function openDb(): Promise<IDBDatabase> {
@@ -43,6 +44,9 @@ function openDb(): Promise<IDBDatabase> {
             }
             if (!db.objectStoreNames.contains(OFFLINE_STORE)) {
                 db.createObjectStore(OFFLINE_STORE);
+            }
+            if (!db.objectStoreNames.contains(METADATA_STORE)) {
+                db.createObjectStore(METADATA_STORE);
             }
         };
         req.onsuccess = () => {
@@ -190,6 +194,84 @@ type FSDirectoryHandle = FileSystemDirectoryHandle;
 class LocalFileSystemService {
     private directoryHandle: FSDirectoryHandle | null = null;
     private coverUrlCache = new Map<string, string>();
+    private mangaIdCache = new Map<string, number>();
+    private idToTitleMap = new Map<number, string>();
+
+    // ── Manga metadata tracking ──────────────────────────────────────────────
+
+    async registerMangaMetadata(mangaTitle: string, mangaId: number): Promise<void> {
+        this.mangaIdCache.set(mangaTitle, mangaId);
+        this.idToTitleMap.set(mangaId, mangaTitle);
+        this.idToTitleMap.set(hashStringToId(mangaTitle), mangaTitle);
+        try {
+            const db = await openDb();
+            await idbPut(db, METADATA_STORE, mangaTitle, { mangaId, mangaTitle });
+        } catch {
+            // ignore
+        }
+    }
+
+    getTitleById(id: number): string | undefined {
+        return this.idToTitleMap.get(id);
+    }
+
+    async resolveTitleById(id: number): Promise<string | undefined> {
+        let title = this.idToTitleMap.get(id);
+        if (!title) {
+            await this.getLocalMangaList();
+            title = this.idToTitleMap.get(id);
+        }
+        return title;
+    }
+
+    async getMangaId(mangaTitle: string): Promise<number | undefined> {
+        if (this.mangaIdCache.has(mangaTitle)) {
+            return this.mangaIdCache.get(mangaTitle);
+        }
+
+        try {
+            const db = await openDb();
+            const meta = await idbGet<{ mangaId: number }>(db, METADATA_STORE, mangaTitle);
+            if (meta?.mangaId) {
+                this.mangaIdCache.set(mangaTitle, meta.mangaId);
+                return meta.mangaId;
+            }
+        } catch {
+            // ignore
+        }
+
+        try {
+            const { useClientDownloadStore } = await import('@/features/download-manager/services/ClientDownloadManager.ts');
+            const queueEntry = useClientDownloadStore.getState().queue.find((e) => e.mangaTitle === mangaTitle);
+            if (queueEntry?.mangaId) {
+                this.mangaIdCache.set(mangaTitle, queueEntry.mangaId);
+                return queueEntry.mangaId;
+            }
+        } catch {
+            // ignore
+        }
+
+        try {
+            const { requestManager } = await import('@/lib/requests/RequestManager.ts');
+            const cacheData = requestManager.graphQLClient.client.cache.extract();
+            for (const key in cacheData) {
+                if (key.startsWith('MangaType:')) {
+                    const cachedManga = cacheData[key] as any;
+                    if (cachedManga?.title?.trim().toLowerCase() === mangaTitle.trim().toLowerCase()) {
+                        const num = Number(cachedManga.id);
+                        if (!isNaN(num) && num > 0) {
+                            this.mangaIdCache.set(mangaTitle, num);
+                            return num;
+                        }
+                    }
+                }
+            }
+        } catch {
+            // ignore
+        }
+
+        return undefined;
+    }
 
     // ── Feature detection ────────────────────────────────────────────────────
 
@@ -286,7 +368,11 @@ class LocalFileSystemService {
         mangaTitle: string,
         chapterName: string,
         blob: Blob,
+        mangaId?: number,
     ): Promise<{ savedToDisk: boolean; blob: Blob }> {
+        if (mangaId) {
+            await this.registerMangaMetadata(mangaTitle, mangaId);
+        }
         const handle = await this.getStoredDirectoryHandle();
 
         if (handle) {
@@ -390,7 +476,7 @@ class LocalFileSystemService {
     }
 
     /**
-     * Extracts the first page from a CBZ blob as a blob URL for cover/thumbnail display.
+     * Extracts the first page from a CBZ blob as a typed blob URL for cover/thumbnail display.
      */
     async extractCoverFromCbz(blob: Blob): Promise<string | undefined> {
         try {
@@ -402,7 +488,19 @@ class LocalFileSystemService {
                 return undefined;
             }
             imageEntries.sort(([nameA], [nameB]) => LocalFileSystemService.naturalCompare(nameA, nameB));
-            const imgBlob = await imageEntries[0][1].async('blob');
+            const [coverName, coverFile] = imageEntries[0];
+            const buffer = await coverFile.async('arraybuffer');
+            let mimeType = 'image/jpeg';
+            if (/\.png$/i.test(coverName)) {
+                mimeType = 'image/png';
+            } else if (/\.webp$/i.test(coverName)) {
+                mimeType = 'image/webp';
+            } else if (/\.gif$/i.test(coverName)) {
+                mimeType = 'image/gif';
+            } else if (/\.avif$/i.test(coverName)) {
+                mimeType = 'image/avif';
+            }
+            const imgBlob = new Blob([buffer], { type: mimeType });
             return URL.createObjectURL(imgBlob);
         } catch {
             return undefined;
@@ -468,8 +566,14 @@ class LocalFileSystemService {
                         }
 
                         if (chapterCount > 0 || coverUrl) {
+                            const realId = await this.getMangaId(mangaTitle);
+                            const syntheticId = hashStringToId(mangaTitle);
+                            const finalId = realId ?? syntheticId;
+                            this.idToTitleMap.set(finalId, mangaTitle);
+                            this.idToTitleMap.set(syntheticId, mangaTitle);
+
                             mangaMap.set(mangaTitle, {
-                                id: hashStringToId(mangaTitle),
+                                id: finalId,
                                 title: mangaTitle,
                                 thumbnailUrl: coverUrl,
                                 inLibrary: false,
@@ -508,6 +612,11 @@ class LocalFileSystemService {
                 Array.from(idbMangaMap.entries()).map(async ([title, info]) => {
                     const existing = mangaMap.get(title);
                     if (existing) {
+                        const realId = await this.getMangaId(title);
+                        if (realId) {
+                            existing.id = realId;
+                            this.idToTitleMap.set(realId, title);
+                        }
                         if (!existing.thumbnailUrl && info.firstBlob) {
                             let coverUrl = this.coverUrlCache.get(title);
                             if (!coverUrl) {
@@ -528,8 +637,14 @@ class LocalFileSystemService {
                                 this.coverUrlCache.set(title, coverUrl);
                             }
                         }
+                        const realId = await this.getMangaId(title);
+                        const syntheticId = hashStringToId(title);
+                        const finalId = realId ?? syntheticId;
+                        this.idToTitleMap.set(finalId, title);
+                        this.idToTitleMap.set(syntheticId, title);
+
                         mangaMap.set(title, {
-                            id: hashStringToId(title),
+                            id: finalId,
                             title,
                             thumbnailUrl: coverUrl,
                             inLibrary: false,

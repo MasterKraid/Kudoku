@@ -268,7 +268,7 @@ async function downloadChapter(
 
     // 4. Save via LocalFileSystem
     const { LocalFileSystem } = await import('@/features/local-repository/services/LocalFileSystem.ts');
-    const { savedToDisk } = await LocalFileSystem.saveChapterCbz(mangaTitle, chapterName, cbzBlob);
+    const { savedToDisk } = await LocalFileSystem.saveChapterCbz(mangaTitle, chapterName, cbzBlob, mangaId);
 
     if (!savedToDisk) {
         showSaveToDownloadsToast(mangaTitle, chapterName, cbzBlob);
@@ -307,6 +307,10 @@ export const ClientDownloadManager = {
             eta: 0,
             abortController,
         };
+
+        import('@/features/local-repository/services/LocalFileSystem.ts').then(({ LocalFileSystem }) => {
+            LocalFileSystem.registerMangaMetadata(mangaTitle, mangaId);
+        });
 
         addEntry(entry);
         emit({ type: 'queued', chapterId });

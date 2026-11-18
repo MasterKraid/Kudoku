@@ -12,9 +12,10 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import React, { useEffect, useRef } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { isNetworkRequestInFlight } from '@apollo/client/utilities';
 import { useLingui } from '@lingui/react/macro';
+import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { CustomTooltip } from '@/base/components/CustomTooltip.tsx';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import { ChapterList } from '@/features/chapter/components/ChapterList.tsx';
@@ -33,9 +34,27 @@ import type { MangaLocationState } from '@/features/manga/Manga.types.ts';
 export const Manga: React.FC = () => {
     const { t } = useLingui();
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const { mode } = useLocation<MangaLocationState>().state ?? STABLE_EMPTY_OBJECT;
 
     const autofetchedRef = useRef(false);
+
+    const numericId = Number(id);
+    const isSyntheticLocalId = !isNaN(numericId) && numericId < 0;
+
+    useEffect(() => {
+        if (isSyntheticLocalId) {
+            import('@/features/local-repository/services/LocalFileSystem.ts').then(async ({ LocalFileSystem }) => {
+                const title = await LocalFileSystem.resolveTitleById(numericId);
+                if (title) {
+                    const realId = await LocalFileSystem.getMangaId(title);
+                    if (realId && realId > 0) {
+                        navigate(AppRoutes.manga.path(realId), { replace: true });
+                    }
+                }
+            });
+        }
+    }, [isSyntheticLocalId, numericId, navigate]);
 
     const {
         data,
@@ -43,7 +62,11 @@ export const Manga: React.FC = () => {
         loading: isLoading,
         networkStatus,
         refetch,
-    } = requestManager.useGetManga<GetMangaScreenQuery>(GET_MANGA_SCREEN, id);
+    } = requestManager.useGetManga<GetMangaScreenQuery>(
+        GET_MANGA_SCREEN,
+        id,
+        { skip: isSyntheticLocalId },
+    );
     const isValidating = isNetworkRequestInFlight(networkStatus);
     const manga = data?.manga;
 
@@ -95,6 +118,15 @@ export const Manga: React.FC = () => {
         </Stack>,
         [t, error, isValidating, refreshing, manga, refresh],
     );
+
+    if (isSyntheticLocalId && !manga) {
+        return (
+            <EmptyViewAbsoluteCentered
+                message={t`Local Offline Manga`}
+                messageExtra={t`Resolving offline manga...`}
+            />
+        );
+    }
 
     if (error && !manga) {
         return <EmptyViewAbsoluteCentered message={t`Could not load manga`} messageExtra={getErrorMessage(error)} />;
