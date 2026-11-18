@@ -7,6 +7,7 @@
  */
 
 export { LocalFileSystem } from '@/features/local-repository/services/LocalFileSystem.ts';
+export type { LocalMangaItem, LocalChapterItem } from '@/features/local-repository/services/LocalFileSystem.ts';
 export { useLocalRepository } from '@/features/local-repository/hooks/useLocalRepository.ts';
 export { LocalRepositoryBanner } from '@/features/local-repository/components/LocalRepositoryBanner.tsx';
 export type { UseLocalRepositoryReturn, LocalRepositoryState, LocalRepositoryActions } from '@/features/local-repository/hooks/useLocalRepository.ts';

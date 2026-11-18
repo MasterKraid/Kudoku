@@ -7,6 +7,23 @@
  */
 
 import JSZip from 'jszip';
+import { Sources } from '@/features/source/services/Sources.ts';
+
+export interface LocalMangaItem {
+    id: number;
+    title: string;
+    thumbnailUrl?: string;
+    inLibrary?: boolean;
+    sourceId: string;
+    chapterCount: number;
+}
+
+export interface LocalChapterItem {
+    id: number;
+    name: string;
+    chapterNumber: number;
+    isDownloaded: boolean;
+}
 
 // ─── IndexedDB helpers ───────────────────────────────────────────────────────
 
@@ -76,6 +93,94 @@ function idbDelete(db: IDBDatabase, store: string, key: IDBValidKey): Promise<vo
     });
 }
 
+function idbGetAllEntries<T = unknown>(db: IDBDatabase, store: string): Promise<Array<{ key: string; value: T }>> {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(store, 'readonly');
+        const req = tx.objectStore(store).openCursor();
+        const results: Array<{ key: string; value: T }> = [];
+        req.onsuccess = () => {
+            const cursor = req.result;
+            if (cursor) {
+                results.push({ key: String(cursor.key), value: cursor.value as T });
+                cursor.continue();
+            } else {
+                resolve(results);
+            }
+        };
+        req.onerror = () => {
+            reject(req.error);
+        };
+    });
+}
+
+function idbGetChaptersForManga(
+    db: IDBDatabase,
+    mangaTitle: string,
+): Promise<Array<{ chapterName: string; blob?: Blob }>> {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(OFFLINE_STORE, 'readonly');
+        const prefix = `${mangaTitle}::`;
+        const range = IDBKeyRange.bound(prefix, `${prefix}\uffff`);
+        const req = tx.objectStore(OFFLINE_STORE).openCursor(range);
+        const results: Array<{ chapterName: string; blob?: Blob }> = [];
+        req.onsuccess = () => {
+            const cursor = req.result;
+            if (cursor) {
+                const key = String(cursor.key);
+                if (key.startsWith(prefix)) {
+                    results.push({
+                        chapterName: key.slice(prefix.length),
+                        blob: cursor.value as Blob,
+                    });
+                }
+                cursor.continue();
+            } else {
+                resolve(results);
+            }
+        };
+        req.onerror = () => {
+            reject(req.error);
+        };
+    });
+}
+
+function hashStringToId(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash |= 0;
+    }
+    const abs = Math.abs(hash) || 1;
+    return -abs;
+}
+
+function parseChapterNumber(name: string): number {
+    const chMatch = /(?:ch(?:apter)?\.?\s*|#\s*)(\d+(?:\.\d+)?)/i.exec(name);
+    if (chMatch) {
+        return parseFloat(chMatch[1]);
+    }
+    const numMatch = /(\d+(?:\.\d+)?)/.exec(name);
+    if (numMatch) {
+        return parseFloat(numMatch[1]);
+    }
+    return 0;
+}
+
+async function* iterateDirectory(
+    dirHandle: FileSystemDirectoryHandle,
+): AsyncGenerator<[string, FileSystemHandle]> {
+    if (typeof (dirHandle as any).entries === 'function') {
+        for await (const entry of (dirHandle as any).entries()) {
+            yield entry as [string, FileSystemHandle];
+        }
+    } else if (typeof (dirHandle as any)[Symbol.asyncIterator] === 'function') {
+        for await (const entry of (dirHandle as any)) {
+            yield entry as [string, FileSystemHandle];
+        }
+    }
+}
+
 // ─── Type helpers ────────────────────────────────────────────────────────────
 
 type FSDirectoryHandle = FileSystemDirectoryHandle;
@@ -84,6 +189,7 @@ type FSDirectoryHandle = FileSystemDirectoryHandle;
 
 class LocalFileSystemService {
     private directoryHandle: FSDirectoryHandle | null = null;
+    private coverUrlCache = new Map<string, string>();
 
     // ── Feature detection ────────────────────────────────────────────────────
 
@@ -281,6 +387,227 @@ class LocalFileSystemService {
         );
 
         return pages;
+    }
+
+    /**
+     * Extracts the first page from a CBZ blob as a blob URL for cover/thumbnail display.
+     */
+    async extractCoverFromCbz(blob: Blob): Promise<string | undefined> {
+        try {
+            const zip = await JSZip.loadAsync(blob);
+            const imageEntries = Object.entries(zip.files).filter(
+                ([name, file]) => !file.dir && LocalFileSystemService.IMAGE_EXTENSIONS.test(name),
+            );
+            if (imageEntries.length === 0) {
+                return undefined;
+            }
+            imageEntries.sort(([nameA], [nameB]) => LocalFileSystemService.naturalCompare(nameA, nameB));
+            const imgBlob = await imageEntries[0][1].async('blob');
+            return URL.createObjectURL(imgBlob);
+        } catch {
+            return undefined;
+        }
+    }
+
+    /**
+     * Retrieves the list of local manga across the linked directory (FileSystem Access API)
+     * and IndexedDB offline chapters fallback, deduplicated and sorted by title.
+     */
+    async getLocalMangaList(): Promise<LocalMangaItem[]> {
+        const mangaMap = new Map<string, LocalMangaItem>();
+
+        // 1. Collect from linked directory handle (if connected)
+        const handle = await this.getStoredDirectoryHandle();
+        if (handle) {
+            try {
+                for await (const [, entry] of iterateDirectory(handle)) {
+                    if (entry.kind === 'directory' && !entry.name.startsWith('.')) {
+                        const mangaTitle = entry.name;
+                        const mangaDir = entry as FileSystemDirectoryHandle;
+                        let chapterCount = 0;
+                        let coverFileHandle: FileSystemFileHandle | null = null;
+                        let firstCbzHandle: FileSystemFileHandle | null = null;
+
+                        for await (const [, child] of iterateDirectory(mangaDir)) {
+                            if (child.kind === 'file') {
+                                const name: string = child.name;
+                                if (/\.cbz$/i.test(name)) {
+                                    chapterCount++;
+                                    if (!firstCbzHandle) {
+                                        firstCbzHandle = child as FileSystemFileHandle;
+                                    }
+                                } else if (/^cover\.(jpe?g|png|webp|avif|bmp)$/i.test(name) && !coverFileHandle) {
+                                    coverFileHandle = child as FileSystemFileHandle;
+                                }
+                            } else if (child.kind === 'directory' && !child.name.startsWith('.')) {
+                                chapterCount++;
+                            }
+                        }
+
+                        let coverUrl = this.coverUrlCache.get(mangaTitle);
+                        if (!coverUrl) {
+                            if (coverFileHandle) {
+                                try {
+                                    const file = await coverFileHandle.getFile();
+                                    coverUrl = URL.createObjectURL(file);
+                                    this.coverUrlCache.set(mangaTitle, coverUrl);
+                                } catch {
+                                    // ignore read failure
+                                }
+                            } else if (firstCbzHandle) {
+                                try {
+                                    const file = await firstCbzHandle.getFile();
+                                    coverUrl = await this.extractCoverFromCbz(file);
+                                    if (coverUrl) {
+                                        this.coverUrlCache.set(mangaTitle, coverUrl);
+                                    }
+                                } catch {
+                                    // ignore read failure
+                                }
+                            }
+                        }
+
+                        if (chapterCount > 0 || coverUrl) {
+                            mangaMap.set(mangaTitle, {
+                                id: hashStringToId(mangaTitle),
+                                title: mangaTitle,
+                                thumbnailUrl: coverUrl,
+                                inLibrary: false,
+                                sourceId: Sources.LOCAL_SOURCE_ID,
+                                chapterCount,
+                            });
+                        }
+                    }
+                }
+            } catch {
+                // Ignore directory read failure
+            }
+        }
+
+        // 2. Collect from IndexedDB offline-chapters
+        try {
+            const db = await openDb();
+            const idbEntries = await idbGetAllEntries<Blob>(db, OFFLINE_STORE);
+            const idbMangaMap = new Map<string, { count: number; firstBlob?: Blob }>();
+
+            for (const { key, value } of idbEntries) {
+                const sep = key.indexOf('::');
+                if (sep === -1) {
+                    continue;
+                }
+                const title = key.slice(0, sep);
+                const existing = idbMangaMap.get(title);
+                if (!existing) {
+                    idbMangaMap.set(title, { count: 1, firstBlob: value });
+                } else {
+                    existing.count++;
+                }
+            }
+
+            await Promise.all(
+                Array.from(idbMangaMap.entries()).map(async ([title, info]) => {
+                    const existing = mangaMap.get(title);
+                    if (existing) {
+                        if (!existing.thumbnailUrl && info.firstBlob) {
+                            let coverUrl = this.coverUrlCache.get(title);
+                            if (!coverUrl) {
+                                coverUrl = await this.extractCoverFromCbz(info.firstBlob);
+                                if (coverUrl) {
+                                    this.coverUrlCache.set(title, coverUrl);
+                                }
+                            }
+                            existing.thumbnailUrl = coverUrl;
+                        }
+                        const chapters = await this.getLocalMangaChapters(title);
+                        existing.chapterCount = chapters.length;
+                    } else {
+                        let coverUrl = this.coverUrlCache.get(title);
+                        if (!coverUrl && info.firstBlob) {
+                            coverUrl = await this.extractCoverFromCbz(info.firstBlob);
+                            if (coverUrl) {
+                                this.coverUrlCache.set(title, coverUrl);
+                            }
+                        }
+                        mangaMap.set(title, {
+                            id: hashStringToId(title),
+                            title,
+                            thumbnailUrl: coverUrl,
+                            inLibrary: false,
+                            sourceId: Sources.LOCAL_SOURCE_ID,
+                            chapterCount: info.count,
+                        });
+                    }
+                }),
+            );
+        } catch {
+            // Ignore IDB read failure
+        }
+
+        const result = Array.from(mangaMap.values());
+        result.sort((a, b) => LocalFileSystemService.naturalCompare(a.title, b.title));
+        return result;
+    }
+
+    /**
+     * Retrieves the list of chapters for a given manga title across the linked directory
+     * and IndexedDB offline store.
+     */
+    async getLocalMangaChapters(mangaTitle: string): Promise<LocalChapterItem[]> {
+        const chapterMap = new Map<string, { name: string; chapterNumber: number }>();
+
+        // 1. From linked directory handle
+        const handle = await this.getStoredDirectoryHandle();
+        if (handle) {
+            try {
+                const mangaDir = await handle.getDirectoryHandle(mangaTitle, { create: false });
+                for await (const [, child] of iterateDirectory(mangaDir)) {
+                    if (child.kind === 'file' && /\.cbz$/i.test(child.name)) {
+                        const name = child.name.replace(/\.cbz$/i, '');
+                        chapterMap.set(name, {
+                            name,
+                            chapterNumber: parseChapterNumber(name),
+                        });
+                    } else if (child.kind === 'directory' && !child.name.startsWith('.')) {
+                        const { name } = child;
+                        chapterMap.set(name, {
+                            name,
+                            chapterNumber: parseChapterNumber(name),
+                        });
+                    }
+                }
+            } catch {
+                // Directory handle read error or folder doesn't exist
+            }
+        }
+
+        // 2. From IndexedDB offline-chapters
+        try {
+            const db = await openDb();
+            const idbChapters = await idbGetChaptersForManga(db, mangaTitle);
+            for (const { chapterName } of idbChapters) {
+                if (!chapterMap.has(chapterName)) {
+                    chapterMap.set(chapterName, {
+                        name: chapterName,
+                        chapterNumber: parseChapterNumber(chapterName),
+                    });
+                }
+            }
+        } catch {
+            // IDB read error
+        }
+
+        const chapters: LocalChapterItem[] = Array.from(chapterMap.values()).map((ch) => ({
+            id: hashStringToId(`${mangaTitle}::${ch.name}`),
+            name: ch.name,
+            chapterNumber: ch.chapterNumber,
+            isDownloaded: true,
+        }));
+
+        chapters.sort(
+            (a, b) => b.chapterNumber - a.chapterNumber || LocalFileSystemService.naturalCompare(b.name, a.name),
+        );
+
+        return chapters;
     }
 
     // ── Export to user downloads ─────────────────────────────────────────────

@@ -11,6 +11,8 @@ import { t } from '@lingui/core/macro';
 import { i18n } from '@/i18n';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import type {
+    GetChaptersMangaQuery,
+    GetChaptersMangaQueryVariables,
     GetMangaMetaQuery,
     GetMangasBaseQuery,
     GetMangasBaseQueryVariables,
@@ -19,6 +21,7 @@ import type {
     MangaBaseFieldsFragment,
 } from '@/lib/graphql/generated/graphql.ts';
 import { Chapters } from '@/features/chapter/services/Chapters.ts';
+import { ClientDownloadManager } from '@/features/download-manager/services/ClientDownloadManager.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
 import { getMetadataServerSettings } from '@/features/settings/services/ServerSettingsMetadata.ts';
 import { GET_MANGA_META, GET_MANGAS_BASE } from '@/lib/graphql/manga/MangaQuery.ts';
@@ -55,9 +58,10 @@ import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import {
     ChapterOrderBy,
     type ChapterConditionInput,
+    type ChapterType,
     type UpdateMangaCategoriesPatchInput,
 } from '@/lib/graphql/generated/graphql-base.types.ts';
-import { GET_MANGAS_CHAPTER_IDS_WITH_STATE } from '@/lib/graphql/chapter/ChapterQuery.ts';
+import { GET_CHAPTERS_MANGA, GET_MANGAS_CHAPTER_IDS_WITH_STATE } from '@/lib/graphql/chapter/ChapterQuery.ts';
 import { filterChapters } from '@/features/chapter/utils/ChapterList.util.tsx';
 import mapValues from 'lodash/fp/mapValues';
 import { getMangaMetadata } from '@/features/manga/services/MangaMetadata.ts';
@@ -178,12 +182,17 @@ export class Mangas {
 
     static getThumbnailUrl(manga: Partial<MangaThumbnailInfo>): string {
         let rawThumb = manga.thumbnailUrl ?? '';
+        if (rawThumb.startsWith('blob:') || rawThumb.startsWith('data:')) {
+            return rawThumb;
+        }
         if (rawThumb.includes('yuzuki.kagane.org')) {
             rawThumb = rawThumb.replace('https://yuzuki.kagane.org', 'https://kagane.moe');
         }
         if (rawThumb.includes('res.mbbcdn.com')) {
             const fn = rawThumb.split('/').pop()?.split('#')[0]?.replace('.png', '.webp');
-            if (fn) rawThumb = `https://rx.resmk.org/covers/${fn}`;
+            if (fn) {
+                rawThumb = `https://rx.resmk.org/covers/${fn}`;
+            }
         }
         const url = UrlUtil.addParams(rawThumb, {
             fetchedAt: manga.thumbnailUrlLastFetched,
@@ -326,11 +335,116 @@ export class Mangas {
                     return Promise.resolve();
                 }
 
-                try {
-                    await Chapters.download(Chapters.getIds(chaptersToDownload), disableConfirmation);
-                } catch (e) {
-                    // Ignore - Error gets handled in Chapters
+                const count = chaptersToDownload.length;
+                const { always, bulkAction, bulkActionCountForce } = MANGA_ACTION_TO_CONFIRMATION_REQUIRED.download;
+                const requiresConfirmation =
+                    !disableConfirmation &&
+                    (always || (bulkAction && count > 1) || (bulkActionCountForce && count >= bulkActionCountForce));
+
+                if (requiresConfirmation) {
+                    const confirmationMessage = MANGA_ACTION_TO_TRANSLATION.download.confirmation;
+                    assertIsDefined(confirmationMessage);
+                    try {
+                        await Confirmation.show({
+                            title: t`Are you sure?`,
+                            /* lingui-extract-ignore */
+                            message: i18n.t({ ...confirmationMessage, values: { count } }),
+                            actions: {
+                                confirm: {
+                                    title: t`Ok`,
+                                },
+                            },
+                        });
+                    } catch {
+                        return;
+                    }
                 }
+
+                const mappedChapters = await Promise.all(
+                    chaptersToDownload.map(async (chapter) => {
+                        const cached = Chapters.getFromCache(chapter.id);
+                        if (cached) {
+                            return {
+                                id: cached.id,
+                                name: cached.name,
+                                chapterNumber: cached.chapterNumber,
+                                sourceOrder: cached.sourceOrder,
+                                mangaId: cached.mangaId ?? chapter.mangaId,
+                            };
+                        }
+
+                        try {
+                            const res = await requestManager.getChapter<{ chapter: ChapterType }>(chapter.id).response;
+                            const fetched = res.data?.chapter;
+                            if (fetched) {
+                                return {
+                                    id: fetched.id,
+                                    name: fetched.name,
+                                    chapterNumber: fetched.chapterNumber,
+                                    sourceOrder: fetched.sourceOrder,
+                                    mangaId: fetched.mangaId ?? chapter.mangaId,
+                                };
+                            }
+                        } catch {
+                            // try chapter list query
+                        }
+
+                        try {
+                            const listRes = await requestManager.getChapters<
+                                GetChaptersMangaQuery,
+                                GetChaptersMangaQueryVariables
+                            >(GET_CHAPTERS_MANGA, {
+                                condition: { mangaId: chapter.mangaId },
+                            }).response;
+                            const fromList = listRes.data?.chapters.nodes.find((c) => c.id === chapter.id);
+                            if (fromList) {
+                                return {
+                                    id: fromList.id,
+                                    name: fromList.name,
+                                    chapterNumber: fromList.chapterNumber,
+                                    sourceOrder: fromList.sourceOrder,
+                                    mangaId: fromList.mangaId,
+                                };
+                            }
+                        } catch {
+                            // ignore
+                        }
+
+                        return {
+                            id: chapter.id,
+                            name: `Chapter ${chapter.chapterNumber}`,
+                            chapterNumber: chapter.chapterNumber,
+                            sourceOrder: 0,
+                            mangaId: chapter.mangaId,
+                        };
+                    }),
+                );
+
+                const mappedChaptersByMangaId = Object.groupBy(mappedChapters, (c) => c.mangaId);
+
+                for (const [mangaIdStr, chapters] of Object.entries(mappedChaptersByMangaId)) {
+                    if (!chapters || !chapters.length) {
+                        continue;
+                    }
+                    const mId = Number(mangaIdStr);
+                    const mangaTitle = Mangas.getFromCache(mId)?.title ?? 'Manga';
+                    ClientDownloadManager.queueChapters(
+                        chapters.map((c) => ({
+                            id: c.id,
+                            name: c.name,
+                            chapterNumber: c.chapterNumber,
+                            sourceOrder: c.sourceOrder,
+                        })),
+                        mangaTitle,
+                        mId,
+                    );
+                }
+
+                makeToast(
+                    /* lingui-extract-ignore */
+                    i18n.t({ ...MANGA_ACTION_TO_TRANSLATION.download.success, values: { count } }),
+                    'success',
+                );
             },
             true,
             true,

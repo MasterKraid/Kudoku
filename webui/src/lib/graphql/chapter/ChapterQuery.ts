@@ -17,6 +17,17 @@ import {
 } from '@/lib/graphql/chapter/ChapterFragments.ts';
 
 // returns the current chapters from the database
+export const GET_CHAPTER = gql`
+    ${CHAPTER_LIST_FIELDS}
+
+    query GET_CHAPTER($id: Int!) {
+        chapter(id: $id) {
+            ...CHAPTER_LIST_FIELDS
+        }
+    }
+`;
+
+// returns the current chapters from the database
 export const GET_CHAPTERS_READER = gql`
     ${CHAPTER_READER_FIELDS}
     ${PAGE_INFO}

@@ -264,7 +264,7 @@ export class Chapters {
     }
 
     static async downloadChapters(
-        chaptersOrIds: (number | (ChapterInfo & { mangaId?: number }))[],
+        chaptersOrIds: (number | (Partial<ChapterInfo> & { id: number; mangaId?: number }))[],
         customMangaTitle?: string,
         customMangaId?: number,
     ): Promise<void> {
@@ -273,41 +273,61 @@ export class Chapters {
             mangaTitleCache.set(customMangaId, customMangaTitle);
         }
 
-        const resolvedItems: { chapterInfo: ChapterInfo; mangaId: number }[] = [];
+        const resolvedItems = await Promise.all(
+            chaptersOrIds.map(async (item) => {
+                const id = typeof item === 'number' ? item : item.id;
+                let name = typeof item === 'number' ? undefined : item.name;
+                let chapterNumber = typeof item === 'number' ? undefined : item.chapterNumber;
+                let sourceOrder = typeof item === 'number' ? undefined : item.sourceOrder;
+                const pageCount = typeof item === 'number' ? undefined : item.pageCount;
+                let mId: number | undefined = customMangaId ?? (typeof item === 'number' ? undefined : item.mangaId);
 
-        for (const item of chaptersOrIds) {
-            let chapterInfo: ChapterInfo;
-            let mId: number | undefined = customMangaId;
-
-            if (typeof item === 'number') {
-                const cached = Chapters.getFromCache(item);
-                if (!cached) {
-                    continue;
+                if (name == null || chapterNumber == null || sourceOrder == null || mId == null) {
+                    const cached = Chapters.getFromCache(id);
+                    if (cached) {
+                        name = name ?? cached.name;
+                        chapterNumber = chapterNumber ?? cached.chapterNumber;
+                        sourceOrder = sourceOrder ?? cached.sourceOrder;
+                        mId = mId ?? cached.mangaId;
+                    }
                 }
-                chapterInfo = {
-                    id: cached.id,
-                    name: cached.name,
-                    chapterNumber: cached.chapterNumber,
-                    sourceOrder: cached.sourceOrder,
-                };
-                mId = mId ?? cached.mangaId;
-            } else {
-                chapterInfo = {
-                    id: item.id,
-                    name: item.name,
-                    chapterNumber: item.chapterNumber,
-                    sourceOrder: item.sourceOrder,
-                    pageCount: item.pageCount,
-                };
-                mId = mId ?? item.mangaId;
-            }
 
-            if (mId) {
-                resolvedItems.push({ chapterInfo, mangaId: mId });
-            }
-        }
+                if (name == null || chapterNumber == null || sourceOrder == null || mId == null) {
+                    try {
+                        const res = await requestManager.getChapter<{ chapter: ChapterType }>(id).response;
+                        const chapterData = res.data?.chapter;
+                        if (chapterData) {
+                            name = name ?? chapterData.name;
+                            chapterNumber = chapterNumber ?? chapterData.chapterNumber;
+                            sourceOrder = sourceOrder ?? chapterData.sourceOrder;
+                            mId = mId ?? chapterData.mangaId;
+                        }
+                    } catch {
+                        // ignore network error
+                    }
+                }
 
-        const missingMangaIds = [...new Set(resolvedItems.map((r) => r.mangaId))].filter(
+                if (mId == null) {
+                    return null;
+                }
+
+                const resolvedChapter: ChapterInfo = {
+                    id,
+                    name: name || `Chapter ${chapterNumber ?? id}`,
+                    chapterNumber: chapterNumber ?? 0,
+                    sourceOrder: sourceOrder ?? 0,
+                    pageCount,
+                };
+
+                return { chapterInfo: resolvedChapter, mangaId: mId };
+            }),
+        );
+
+        const validResolvedItems = resolvedItems.filter(
+            (item): item is { chapterInfo: ChapterInfo; mangaId: number } => item !== null,
+        );
+
+        const missingMangaIds = [...new Set(validResolvedItems.map((r) => r.mangaId))].filter(
             (id) => !mangaTitleCache.has(id),
         );
 
@@ -339,7 +359,7 @@ export class Chapters {
 
         const groups = new Map<number, { mangaTitle: string; chapters: ChapterInfo[] }>();
 
-        for (const { chapterInfo, mangaId } of resolvedItems) {
+        for (const { chapterInfo, mangaId } of validResolvedItems) {
             const title = mangaTitleCache.get(mangaId) ?? 'Manga';
             let group = groups.get(mangaId);
             if (!group) {
@@ -354,11 +374,14 @@ export class Chapters {
         }
     }
 
-    static async download(chapterIds: number[], disableConfirmation?: boolean): Promise<void> {
+    static async download(
+        chaptersOrIds: (number | (Partial<ChapterInfo> & { id: number; mangaId?: number }))[],
+        disableConfirmation?: boolean,
+    ): Promise<void> {
         return Chapters.executeAction(
             'download',
-            chapterIds.length,
-            () => Chapters.downloadChapters(chapterIds),
+            chaptersOrIds.length,
+            () => Chapters.downloadChapters(chaptersOrIds),
             disableConfirmation,
         );
     }
@@ -367,7 +390,14 @@ export class Chapters {
         return Chapters.executeAction(
             'download_cancel',
             chapterIds.length,
-            () => requestManager.removeChaptersFromDownloadQueue(chapterIds).response,
+            async () => {
+                chapterIds.forEach((id) => ClientDownloadManager.cancelDownload(id));
+                try {
+                    await requestManager.removeChaptersFromDownloadQueue(chapterIds).response;
+                } catch {
+                    // ignore if not on server queue
+                }
+            },
             disableConfirmation,
         );
     }

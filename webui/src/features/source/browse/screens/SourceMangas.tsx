@@ -12,7 +12,6 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import IconButton from '@mui/material/IconButton';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { StringParam, useQueryParam } from 'use-query-params';
-import Link from '@mui/material/Link';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -62,6 +61,9 @@ import { ReactRouter } from '@/lib/react-router/ReactRouter.ts';
 import type { FilterChangeInput } from '@/lib/graphql/generated/graphql-base.types.ts';
 import { OffsetComponent } from '@/base/OffsetComponent.tsx';
 import { ELEVATION, glassSurface } from '@/features/theme/services/ForkComponentOverrides.ts';
+import { LocalRepositoryBanner } from '@/features/local-repository/components/LocalRepositoryBanner.tsx';
+import { LocalFileSystem, type LocalMangaItem } from '@/features/local-repository/services/LocalFileSystem.ts';
+import { useLocalRepository } from '@/features/local-repository/hooks/useLocalRepository.ts';
 
 const DEFAULT_SOURCE: SourceIdInfo = { id: '-1' };
 
@@ -124,12 +126,16 @@ const useSourceManga = (
         GetSourceMangasFetchMutationVariables
     >;
 
+    const isLocalSource = sourceId === Sources.LOCAL_SOURCE_ID;
+    const paginationOptions = useMemo(() => ({ skipRequest: isLocalSource }), [isLocalSource]);
+    const effectiveInitialPages = isLocalSource ? 0 : initialPages;
+
     switch (contentType) {
         case SourceContentType.POPULAR:
-            result = requestManager.useGetSourcePopularMangas(sourceId, initialPages);
+            result = requestManager.useGetSourcePopularMangas(sourceId, effectiveInitialPages, paginationOptions);
             break;
         case SourceContentType.LATEST:
-            result = requestManager.useGetSourceLatestMangas(sourceId, initialPages);
+            result = requestManager.useGetSourceLatestMangas(sourceId, effectiveInitialPages, paginationOptions);
             break;
         case SourceContentType.SEARCH:
             result = requestManager.useSourceSearch(
@@ -160,7 +166,8 @@ const useSourceManga = (
                         [filter.type]: state,
                     };
                 }),
-                initialPages,
+                effectiveInitialPages,
+                paginationOptions,
             );
             break;
         default:
@@ -300,17 +307,74 @@ export function SourceMangas() {
 
     const gridKey = `${contentType}${JSON.stringify(filtersToApply)}${query}`;
 
+    const isLocalSource = sourceId === Sources.LOCAL_SOURCE_ID;
+
+    const { isConnected, directoryName } = useLocalRepository();
+    const [localMangas, setLocalMangas] = useState<LocalMangaItem[]>([]);
+    const [isLocalLoading, setIsLocalLoading] = useState(isLocalSource);
+    const [localError, setLocalError] = useState<Error | null>(null);
+
+    const fetchLocalMangas = useCallback(async () => {
+        if (!isLocalSource) {
+            return;
+        }
+        setIsLocalLoading(true);
+        setLocalError(null);
+        try {
+            const list = await LocalFileSystem.getLocalMangaList();
+            setLocalMangas(list);
+        } catch (e) {
+            setLocalError(e instanceof Error ? e : new Error(String(e)));
+        } finally {
+            setIsLocalLoading(false);
+        }
+    }, [isLocalSource]);
+
+    useEffect(() => {
+        if (isLocalSource) {
+            fetchLocalMangas();
+        }
+    }, [isLocalSource, isConnected, directoryName, fetchLocalMangas]);
+
     const [
         loadPage,
         { data, error, isLoading: loading, size: lastPageNum, abortRequest, filteredOutAllItemsOfFetchedPage },
     ] = useSourceManga(sourceId, contentType, query, filtersToApply, 1, hideLibraryEntries, mangaId);
     currentAbortRequest.current = abortRequest;
-    const mangas = data?.fetchSourceManga?.mangas ?? STABLE_EMPTY_ARRAY;
-    const hasNextPage = !!data?.fetchSourceManga?.hasNextPage;
-    const isLoading = loading || (filteredOutAllItemsOfFetchedPage && hasNextPage);
+
+    const displayedLocalMangas = useMemo(() => {
+        if (!isLocalSource) {
+            return STABLE_EMPTY_ARRAY;
+        }
+        let result = localMangas;
+        if (query && query.trim()) {
+            const q = query.trim().toLowerCase();
+            result = result.filter((m) => m.title.toLowerCase().includes(q));
+        }
+        if (hideLibraryEntries) {
+            result = result.filter((m) => !m.inLibrary);
+        }
+        return result.map((item) => ({
+            id: item.id,
+            title: item.title,
+            thumbnailUrl: item.thumbnailUrl,
+            inLibrary: item.inLibrary ?? false,
+            sourceId: item.sourceId ?? Sources.LOCAL_SOURCE_ID,
+            chapters: { totalCount: item.chapterCount },
+        }));
+    }, [isLocalSource, localMangas, query, hideLibraryEntries]);
+
+    const mangas = isLocalSource ? displayedLocalMangas : (data?.fetchSourceManga?.mangas ?? STABLE_EMPTY_ARRAY);
+    const hasNextPage = isLocalSource ? false : !!data?.fetchSourceManga?.hasNextPage;
+    const isLoading = isLocalSource
+        ? isLocalLoading
+        : loading || (filteredOutAllItemsOfFetchedPage && hasNextPage);
+    const activeError = isLocalSource ? localError : error;
+
     const { data: sourceData } = requestManager.useGetSource<GetSourceBrowseQuery, GetSourceBrowseQueryVariables>(
         GET_SOURCE_BROWSE,
         sourceId,
+        { skip: isLocalSource },
     );
     const source = sourceData?.source;
 
@@ -358,16 +422,13 @@ export function SourceMangas() {
         [savedSearches, query, dialogFiltersToApply],
     );
 
-    const message = !isLoading ? t(SOURCE_CONTENT_TYPE_TO_ERROR_MSG_KEY[contentType]) : undefined;
-    const isLocalSource = sourceId === Sources.LOCAL_SOURCE_ID;
-    const messageExtra = isLocalSource ? (
-        <>
-            <span>{t`Check out`} </span>
-            <Link href="https://github.com/Suwayomi/Suwayomi-Server/wiki/Local-Source" target="_blank" rel="noreferrer">
-                {t`Local source guide`}
-            </Link>
-        </>
-    ) : undefined;
+    let message: string | undefined;
+    if (isLocalSource) {
+        message = t`No local manga found. Connect your local directory or download chapters for offline reading.`;
+    } else if (!isLoading) {
+        message = t(SOURCE_CONTENT_TYPE_TO_ERROR_MSG_KEY[contentType]);
+    }
+    const messageExtra = undefined;
 
     const updateContentType = useCallback(
         (newContentType: SourceContentType, newSearch?: string | null) => {
@@ -399,12 +460,12 @@ export function SourceMangas() {
     }
 
     const loadMore = useCallback(() => {
-        if (!hasNextPage) {
+        if (!hasNextPage || isLocalSource) {
             return;
         }
 
         loadPage(lastPageNum + 1);
-    }, [lastPageNum, hasNextPage, contentType]);
+    }, [lastPageNum, hasNextPage, isLocalSource]);
 
     const resetFilters = () => {
         setDialogFiltersToApply([]);
@@ -418,13 +479,13 @@ export function SourceMangas() {
     }, [sourceId]);
 
     useEffect(() => {
-        if (filteredOutAllItemsOfFetchedPage && hasNextPage && !loading) {
+        if (!isLocalSource && filteredOutAllItemsOfFetchedPage && hasNextPage && !loading) {
             loadPage(lastPageNum + 1);
         }
-    }, [filteredOutAllItemsOfFetchedPage, loading]);
+    }, [filteredOutAllItemsOfFetchedPage, hasNextPage, isLocalSource, loading]);
 
     useEffect(() => {
-        if (!clearCache) {
+        if (!clearCache || isLocalSource) {
             return;
         }
 
@@ -434,25 +495,27 @@ export function SourceMangas() {
         }
 
         requestManager.clearBrowseCacheFor(sourceId);
-    }, [clearCache]);
+    }, [clearCache, isLocalSource, sourceId]);
 
     useAppTitleAndAction(
-        source?.displayName ?? t`Source`,
+        source?.displayName ?? (isLocalSource ? t`Local source` : t`Source`),
         <>
             <AppbarSearch searchHistoryKey="source" />
             <SourceGridLayout />
-            <CustomTooltip title={t`Open in WebView`} disabled={!source?.homeUrl}>
-                <IconButton
-                    disabled={!source?.homeUrl}
-                    href={source?.homeUrl ? requestManager.getWebviewUrl(source?.homeUrl) : ''}
-                    rel="noreferrer"
-                    target="_blank"
-                    color="inherit"
-                >
-                    <IconWebView />
-                </IconButton>
-            </CustomTooltip>
-            {source?.isConfigurable && (
+            {!isLocalSource && (
+                <CustomTooltip title={t`Open in WebView`} disabled={!source?.homeUrl}>
+                    <IconButton
+                        disabled={!source?.homeUrl}
+                        href={source?.homeUrl ? requestManager.getWebviewUrl(source?.homeUrl) : ''}
+                        rel="noreferrer"
+                        target="_blank"
+                        color="inherit"
+                    >
+                        <IconWebView />
+                    </IconButton>
+                </CustomTooltip>
+            )}
+            {!isLocalSource && source?.isConfigurable && (
                 <CustomTooltip title={t`Settings`}>
                     <IconButton
                         onClick={() => navigate(AppRoutes.sources.children.configure.path(sourceId))}
@@ -465,42 +528,49 @@ export function SourceMangas() {
                 </CustomTooltip>
             )}
         </>,
-        [source],
+        [source, isLocalSource],
     );
 
     const EmptyViewComponent = mangas.length ? EmptyView : EmptyViewAbsoluteCentered;
 
     return (
         <StyledGridWrapper>
-            <OffsetComponent>
-                <ContentTypeMenu>
-                    <ContentTypeButton
-                        variant={contentType === SourceContentType.POPULAR ? 'contained' : 'outlined'}
-                        startIcon={<FavoriteIcon />}
-                        onClick={() => updateContentType(SourceContentType.POPULAR)}
-                    >
-                        {t`Popular`}
-                    </ContentTypeButton>
-                    {source?.supportsLatest === undefined || source.supportsLatest ? (
+            {!isLocalSource && (
+                <OffsetComponent>
+                    <ContentTypeMenu>
                         <ContentTypeButton
-                            disabled={!source?.supportsLatest}
-                            variant={contentType === SourceContentType.LATEST ? 'contained' : 'outlined'}
-                            startIcon={<NewReleasesIcon />}
-                            onClick={() => updateContentType(SourceContentType.LATEST)}
+                            variant={contentType === SourceContentType.POPULAR ? 'contained' : 'outlined'}
+                            startIcon={<FavoriteIcon />}
+                            onClick={() => updateContentType(SourceContentType.POPULAR)}
                         >
-                            {t`Latest`}
+                            {t`Popular`}
                         </ContentTypeButton>
-                    ) : null}
-                    <ContentTypeButton
-                        variant={contentType === SourceContentType.SEARCH ? 'contained' : 'outlined'}
-                        startIcon={<FilterListIcon />}
-                        onClick={() => updateContentType(SourceContentType.SEARCH, query)}
-                    >
-                        {t`Filter`}
-                    </ContentTypeButton>
-                </ContentTypeMenu>
-            </OffsetComponent>
-            {(isLoading || !error || (!!error && !!mangas.length)) && (
+                        {source?.supportsLatest === undefined || source.supportsLatest ? (
+                            <ContentTypeButton
+                                disabled={!source?.supportsLatest}
+                                variant={contentType === SourceContentType.LATEST ? 'contained' : 'outlined'}
+                                startIcon={<NewReleasesIcon />}
+                                onClick={() => updateContentType(SourceContentType.LATEST)}
+                            >
+                                {t`Latest`}
+                            </ContentTypeButton>
+                        ) : null}
+                        <ContentTypeButton
+                            variant={contentType === SourceContentType.SEARCH ? 'contained' : 'outlined'}
+                            startIcon={<FilterListIcon />}
+                            onClick={() => updateContentType(SourceContentType.SEARCH, query)}
+                        >
+                            {t`Filter`}
+                        </ContentTypeButton>
+                    </ContentTypeMenu>
+                </OffsetComponent>
+            )}
+            {isLocalSource && (
+                <Box sx={{ px: 1, pt: 1 }}>
+                    <LocalRepositoryBanner />
+                </Box>
+            )}
+            {(isLoading || !activeError || (!!activeError && !!mangas.length)) && (
                 <BaseMangaGrid
                     // the key needs to include filters and query to force a re-render of the virtuoso grid to prevent https://github.com/petyosi/react-virtuoso/issues/1242
                     key={gridKey}
@@ -529,14 +599,20 @@ export function SourceMangas() {
                     }
                 />
             )}
-            {error && (
+            {activeError && (
                 <EmptyViewComponent
                     message={t`Unable to load data`}
-                    messageExtra={getErrorMessage(error)}
-                    retry={() => loadPage(lastPageNum).catch(defaultPromiseErrorHandler('SourceMangas::refetch'))}
+                    messageExtra={getErrorMessage(activeError)}
+                    retry={() => {
+                        if (isLocalSource) {
+                            fetchLocalMangas();
+                        } else {
+                            loadPage(lastPageNum).catch(defaultPromiseErrorHandler('SourceMangas::refetch'));
+                        }
+                    }}
                 />
             )}
-            {contentType === SourceContentType.SEARCH && (
+            {contentType === SourceContentType.SEARCH && !isLocalSource && (
                 <SourceOptions
                     savedSearches={savedSearches}
                     selectSavedSearch={selectSavedSearch}

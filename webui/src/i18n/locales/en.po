@@ -586,6 +586,7 @@ msgstr "Are you sure you want to abort the migration?"
 
 #: src/features/authentication/components/UserAccountsDialog.tsx
 #: src/features/category/components/CategorySettingsCard.tsx
+#: src/features/chapter/components/actions/ChapterActionMenuItems.tsx
 #: src/features/chapter/services/Chapters.ts
 #: src/features/extension/store/screens/ExtensionStores.tsx
 #: src/features/manga/hooks/useManageMangaLibraryState.tsx
@@ -1055,10 +1056,6 @@ msgstr "Check description"
 #: src/features/settings/components/globalUpdate/GlobalUpdateSettings.tsx
 msgid "Check for new cover and details when updating library"
 msgstr "Check for new cover and details when updating library"
-
-#: src/features/source/browse/screens/SourceMangas.tsx
-msgid "Check out"
-msgstr "Check out"
 
 #: src/features/app-updates/components/VersionInfo.tsx
 msgid "Checking for update"
@@ -2763,12 +2760,9 @@ msgstr "Loading…"
 #: src/features/browse/sources/components/SourceCard.tsx
 #: src/features/manga/components/details/MangaDetails.tsx
 #: src/features/migration/components/MigrationCard.tsx
+#: src/features/source/browse/screens/SourceMangas.tsx
 msgid "Local source"
 msgstr "Local source"
-
-#: src/features/source/browse/screens/SourceMangas.tsx
-msgid "Local source guide"
-msgstr "Local source guide"
 
 #: src/features/browse/screens/BrowseSettings.tsx
 msgid "Local source location"
@@ -3129,6 +3123,10 @@ msgstr "No downloads"
 msgid "No exact match, showing results for \"{activeQuery}\""
 msgstr "No exact match, showing results for \"{activeQuery}\""
 
+#: src/features/source/browse/screens/SourceMangas.tsx
+msgid "No local manga found. Connect your local directory or download chapters for offline reading."
+msgstr "No local manga found. Connect your local directory or download chapters for offline reading."
+
 #: src/features/global-search/screens/SearchAll.tsx
 #: src/features/manga/components/MangaGrid.tsx
 #: src/features/source/browse/screens/SourceMangas.tsx
@@ -3245,6 +3243,7 @@ msgstr "Offset double spreads"
 #: src/features/backup/component/BackupFlagInclusionDialog.tsx
 #: src/features/category/components/CategoriesInclusionSetting.tsx
 #: src/features/category/components/CategorySelect.tsx
+#: src/features/chapter/components/actions/ChapterActionMenuItems.tsx
 #: src/features/chapter/services/Chapters.ts
 #: src/features/manga/services/Mangas.ts
 #: src/features/settings/components/globalUpdate/GlobalUpdateSettingsEntries.tsx

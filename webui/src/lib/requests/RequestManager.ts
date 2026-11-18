@@ -243,6 +243,7 @@ import type {
     WebviewClearCacheCookiesMutationVariables,
 } from '@/lib/graphql/generated/graphql.ts';
 import type {
+    ChapterType,
     CreateBackupInput,
     CreateServerBackupInput,
     CreateCategoryInput,
@@ -327,6 +328,7 @@ import {
     STOP_DOWNLOADER,
 } from '@/lib/graphql/download/DownloaderMutation.ts';
 import {
+    GET_CHAPTER,
     GET_CHAPTERS_HISTORY,
     GET_CHAPTERS_MANGA,
     GET_CHAPTERS_READER,
@@ -2806,6 +2808,28 @@ export class RequestManager {
         options?: QueryHookOptions<Data, Variables>,
     ): AbortableApolloUseQueryResponse<Data, Variables> {
         return this.doRequest(GQLMethod.USE_QUERY, document, variables, options);
+    }
+
+    public getChapter<Data = { chapter: ChapterType }, Variables extends OperationVariables = { id: number }>(
+        chapterIdOrDocument: number | string | DocumentNode | TypedDocumentNode<Data, Variables>,
+        chapterIdOrOptions?: number | string | QueryOptions<Variables, Data>,
+        options?: QueryOptions<Variables, Data>,
+    ): AbortabaleApolloQueryResponse<Data> {
+        if (typeof chapterIdOrDocument === 'number' || typeof chapterIdOrDocument === 'string') {
+            return this.doRequest(
+                GQLMethod.QUERY,
+                GET_CHAPTER,
+                { id: Number(chapterIdOrDocument) } as unknown as Variables,
+                chapterIdOrOptions as QueryOptions<Variables, Data> | undefined,
+            );
+        }
+
+        return this.doRequest(
+            GQLMethod.QUERY,
+            chapterIdOrDocument,
+            { id: Number(chapterIdOrOptions) } as unknown as Variables,
+            options,
+        );
     }
 
     public getChapters<Data, Variables extends OperationVariables>(

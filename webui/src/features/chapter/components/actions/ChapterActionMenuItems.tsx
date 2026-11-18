@@ -33,7 +33,15 @@ import type { ChapterCard } from '@/features/chapter/components/cards/ChapterCar
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import type { GetChaptersMangaQuery } from '@/lib/graphql/generated/graphql.ts';
 import { GET_CHAPTERS_MANGA } from '@/lib/graphql/chapter/ChapterQuery.ts';
-import { CHAPTER_ACTION_TO_TRANSLATION, FALLBACK_CHAPTER } from '@/features/chapter/Chapter.constants.ts';
+import {
+    CHAPTER_ACTION_TO_CONFIRMATION_REQUIRED,
+    CHAPTER_ACTION_TO_TRANSLATION,
+    FALLBACK_CHAPTER,
+} from '@/features/chapter/Chapter.constants.ts';
+import { i18n } from '@/i18n';
+import { makeToast } from '@/base/utils/Toast.ts';
+import { assertIsDefined } from '@/base/Asserts.ts';
+import { Confirmation } from '@/base/AppAwaitableComponent.ts';
 import type {
     ChapterAction,
     ChapterBookmarkInfo,
@@ -164,6 +172,46 @@ export const ChapterActionMenuItems = ({
         const chaptersToUpdate = getChapters();
 
         if (!chaptersToUpdate.length) {
+            onClose();
+            return;
+        }
+
+        if (actualAction === 'download') {
+            const count = chaptersToUpdate.length;
+            const runDownload = () => {
+                Chapters.downloadChapters(chaptersToUpdate)
+                    .then(() => {
+                        makeToast(
+                            /* lingui-extract-ignore */
+                            i18n.t({
+                                ...CHAPTER_ACTION_TO_TRANSLATION.download.success,
+                                values: { count },
+                            }),
+                            'success',
+                        );
+                    })
+                    .catch(defaultPromiseErrorHandler('ChapterActionMenuItems::downloadChapters'));
+            };
+
+            const { bulkActionCountForce } = CHAPTER_ACTION_TO_CONFIRMATION_REQUIRED.download;
+            if (bulkActionCountForce && count >= bulkActionCountForce) {
+                const confirmationMessage = CHAPTER_ACTION_TO_TRANSLATION.download.confirmation;
+                assertIsDefined(confirmationMessage);
+                Confirmation.show({
+                    title: t`Are you sure?`,
+                    /* lingui-extract-ignore */
+                    message: i18n.t({ ...confirmationMessage, values: { count } }),
+                    actions: {
+                        confirm: {
+                            title: t`Ok`,
+                        },
+                    },
+                })
+                    .then(runDownload)
+                    .catch(() => {});
+            } else {
+                runDownload();
+            }
             onClose();
             return;
         }
