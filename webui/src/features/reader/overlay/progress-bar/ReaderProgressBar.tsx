@@ -103,10 +103,13 @@ const BaseReaderProgressBar = ({
         }, [readingMode]),
     );
 
-    const currentPagesIndex = useMemo(() => getPage(currentPageIndex, pages).pagesIndex, [currentPageIndex, pages]);
+    const currentPagesIndex = useMemo(
+        () => (pages.length ? (getPage(currentPageIndex, pages)?.pagesIndex ?? 0) : 0),
+        [currentPageIndex, pages],
+    );
 
     const isHorizontalPosition = getProgressBarPositionInfo(progressBarPosition).isHorizontal;
-    const currentPage = useMemo(() => getPage(currentPageIndex, pages), [currentPageIndex, pages]);
+    const currentPage = useMemo(() => (pages.length ? getPage(currentPageIndex, pages) : (undefined as any)), [currentPageIndex, pages]);
     const getOptionForDirection = useCallback(
         <T,>(...args: Parameters<typeof getOptionForDirectionImpl<T>>) =>
             getOptionForDirectionImpl(args[0], args[1], direction),
@@ -153,6 +156,10 @@ const BaseReaderProgressBar = ({
         getReaderProgressBarStore().setIsDragging(false);
         clearTimeout(draggingDetectionTimeout.current);
     };
+
+    if (!pages.length) {
+        return null;
+    }
 
     return (
         <ReaderProgressBarContainer {...slotProps?.container} progressBarPosition={progressBarPosition}>

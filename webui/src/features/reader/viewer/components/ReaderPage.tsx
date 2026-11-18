@@ -65,6 +65,7 @@ const BaseReaderPage = ({
     pageScaleMode,
     shouldStretchPage,
     readerWidth,
+    readerZoom,
     safeAreaInset,
     onLoad,
     onError,
@@ -75,7 +76,7 @@ const BaseReaderPage = ({
 }: Omit<SpinnerImageProps, 'spinnerStyle' | 'imgStyle' | 'onLoad' | 'onError'> &
     Pick<
         IReaderSettings,
-        'readingMode' | 'customFilter' | 'pageScaleMode' | 'shouldStretchPage' | 'readerWidth' | 'safeAreaInset'
+        'readingMode' | 'customFilter' | 'pageScaleMode' | 'shouldStretchPage' | 'readerWidth' | 'readerZoom' | 'safeAreaInset'
     > &
     Pick<NavbarContextType, 'readerNavBarWidth'> & {
         pageIndex: number;
@@ -129,6 +130,9 @@ const BaseReaderPage = ({
                 ...applyStyles(!display, {
                     display: 'none',
                 }),
+                ...applyStyles(!!readerZoom?.enabled && readerZoom.value !== 100, {
+                    zoom: `${readerZoom.value / 100}`,
+                }),
                 ...getImageMarginStyling(doublePage, position),
             }}
             imgStyle={{
@@ -145,6 +149,9 @@ const BaseReaderPage = ({
                 objectFit: 'contain',
                 objectPosition: position,
                 userSelect: 'none',
+                ...applyStyles(!!readerZoom?.enabled && readerZoom.value !== 100, {
+                    zoom: `${readerZoom.value / 100}`,
+                }),
                 ...getImageMarginStyling(doublePage, position),
                 ...applyStyles(marginTop !== undefined, {
                     mt: `${marginTop}px`,

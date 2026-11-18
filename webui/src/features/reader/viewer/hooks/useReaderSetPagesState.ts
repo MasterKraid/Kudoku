@@ -89,6 +89,8 @@ export const useReaderSetPagesState = (
 
     // Offline / Local CBZ check
     useEffect(() => {
+        isLocalBlobLoaded.current = false;
+        previousPageData.current = undefined;
         let isCancelled = false;
 
         async function loadLocalBlob() {
@@ -139,6 +141,8 @@ export const useReaderSetPagesState = (
 
         return () => {
             isCancelled = true;
+            isLocalBlobLoaded.current = false;
+            previousPageData.current = undefined;
         };
     }, [chapterId, readerManga?.title, storeChapters.length]);
 
@@ -157,8 +161,25 @@ export const useReaderSetPagesState = (
             return;
         }
 
+        if (!pagesPayload.pages.length) {
+            previousPageData.current = [];
+            setArePagesFetched(true);
+            setPages([]);
+            setPageUrls([]);
+            setTotalPages(0);
+            setPageLoadStates([]);
+            setPagesToSpreadState([]);
+            setPageBackgroundColors([]);
+            setReaderStateChapters((prevState) => ({
+                ...prevState,
+                isCurrentChapterReady: true,
+            }));
+            setTransitionPageMode(ReaderTransitionPageMode.NONE);
+            return;
+        }
+
         const { pages: pagesFromResponse } = pagesPayload;
-        const tmpPages = pagesFromResponse.length ? pagesFromResponse : [''];
+        const tmpPages = pagesFromResponse;
         const newPages = tmpPages.map((page) =>
             UrlUtil.addParams(page, { sourceId: getReaderStore().manga?.sourceId }),
         );

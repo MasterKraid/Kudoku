@@ -220,23 +220,29 @@ class LocalFileSystemService {
     }
 
     clearChapterPagesCache(chapterId?: number): void {
+        const revokeSafe = (urls: string[]) => {
+            setTimeout(() => {
+                urls.forEach((url) => {
+                    if (url.startsWith('blob:')) {
+                        try {
+                            URL.revokeObjectURL(url);
+                        } catch {
+                            // ignore
+                        }
+                    }
+                });
+            }, 30000);
+        };
+
         if (chapterId != null) {
             const entry = this.chapterPagesCache.get(chapterId);
             if (entry) {
-                entry.urls.forEach((url) => {
-                    if (url.startsWith('blob:')) {
-                        URL.revokeObjectURL(url);
-                    }
-                });
+                revokeSafe(entry.urls);
                 this.chapterPagesCache.delete(chapterId);
             }
         } else {
             this.chapterPagesCache.forEach((entry) => {
-                entry.urls.forEach((url) => {
-                    if (url.startsWith('blob:')) {
-                        URL.revokeObjectURL(url);
-                    }
-                });
+                revokeSafe(entry.urls);
             });
             this.chapterPagesCache.clear();
         }
@@ -487,6 +493,51 @@ class LocalFileSystemService {
         window.dispatchEvent(new CustomEvent('local-repository-updated'));
     }
 
+    /**
+     * Calculates the total byte size of offline chapters saved in IndexedDB.
+     */
+    async getOfflineChaptersByteSize(): Promise<number> {
+        try {
+            const db = await openDb();
+            const entries = await idbGetAllEntries<any>(db, OFFLINE_STORE);
+            let total = 0;
+            for (const { value } of entries) {
+                if (value instanceof Blob) {
+                    total += value.size;
+                } else if (value instanceof ArrayBuffer) {
+                    total += value.byteLength;
+                }
+            }
+            return total;
+        } catch {
+            return 0;
+        }
+    }
+
+    /**
+     * Clears browser client caches (CacheStorage + Apollo in-memory cache)
+     * without deleting downloaded offline chapters or authentication tokens.
+     */
+    async clearClientCache(): Promise<void> {
+        this.clearChapterPagesCache();
+        // 1. Clear CacheStorage
+        if ('caches' in window) {
+            try {
+                const keys = await window.caches.keys();
+                await Promise.all(keys.map((k) => window.caches.delete(k)));
+            } catch {
+                // ignore
+            }
+        }
+        // 2. Clear Apollo Client cache
+        try {
+            const { requestManager } = await import('@/lib/requests/RequestManager.ts');
+            requestManager.graphQLClient.client.clearStore().catch(() => {});
+        } catch {
+            // ignore
+        }
+    }
+
     // ── CBZ save / read ──────────────────────────────────────────────────────
 
     private offlineKey(mangaTitle: string, chapterName: string): string {
@@ -674,8 +725,14 @@ class LocalFileSystemService {
         chapterName?: string,
         mangaTitle?: string,
     ): Promise<Blob | null> {
+        if (!mangaTitle || !mangaTitle.trim()) {
+            return null;
+        }
+
+        const normalizedTitle = mangaTitle.trim().toLowerCase();
+
         // 1. Try exact mangaTitle + chapterName if both available
-        if (mangaTitle && chapterName) {
+        if (chapterName) {
             const blob = await this.getChapterBlob(mangaTitle, chapterName);
             if (blob) {
                 return blob;
@@ -683,7 +740,7 @@ class LocalFileSystemService {
         }
 
         // 2. Try exact mangaTitle + `Chapter ${chapterNumber}`
-        if (mangaTitle && chapterNumber != null) {
+        if (chapterNumber != null) {
             const blob = await this.getChapterBlob(mangaTitle, `Chapter ${chapterNumber}`);
             if (blob) {
                 return blob;
@@ -692,16 +749,16 @@ class LocalFileSystemService {
 
         const targetNum = chapterNumber ?? (chapterName ? parseChapterNumber(chapterName) : NaN);
 
-        // 3. Search IndexedDB OFFLINE_STORE across all offline chapters
+        // 3. Search IndexedDB OFFLINE_STORE across all offline chapters for this manga
         try {
             const db = await openDb();
             const entries = await idbGetAllEntries<Blob>(db, OFFLINE_STORE);
             for (const { key, value } of entries) {
                 const sep = key.indexOf('::');
-                const keyTitle = sep !== -1 ? key.slice(0, sep) : '';
+                const keyTitle = sep !== -1 ? key.slice(0, sep).trim().toLowerCase() : '';
                 const keyChapterName = sep !== -1 ? key.slice(sep + 2) : key;
 
-                if (mangaTitle && keyTitle && keyTitle.toLowerCase() !== mangaTitle.toLowerCase()) {
+                if (!keyTitle || keyTitle !== normalizedTitle) {
                     continue;
                 }
 
@@ -723,7 +780,7 @@ class LocalFileSystemService {
             try {
                 for await (const [, entry] of iterateDirectory(handle)) {
                     if (entry.kind === 'directory') {
-                        if (mangaTitle && entry.name.toLowerCase() !== mangaTitle.toLowerCase()) {
+                        if (entry.name.trim().toLowerCase() !== normalizedTitle) {
                             continue;
                         }
                         const dir = entry as FileSystemDirectoryHandle;

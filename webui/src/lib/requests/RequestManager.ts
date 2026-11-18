@@ -1209,7 +1209,11 @@ export class RequestManager {
             response,
             abortRequest: (reason?: any) =>
                 this.abortImageRequest(key, this.getSourceIdFromUrl(url), () => abortRequest(reason)),
-            cleanup: () => URL.revokeObjectURL(objectUrl),
+            cleanup: () => {
+                // Do not eagerly revoke blob URLs during the browser session:
+                // premature revocation causes ERR_FILE_NOT_FOUND and broken image retries
+                // when images are repainted, re-rendered, or retrieved from cache.
+            },
             fromCache: !!fromCache,
         };
     }

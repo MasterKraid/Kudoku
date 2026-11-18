@@ -83,7 +83,10 @@ const BaseMobileReaderProgressBar = ({
 
     const { isLeft, isRight, isVertical, isHorizontal } = getProgressBarPositionInfo(finalProgressBarPosition);
     const finalReaderDirection = isHorizontal ? readerDirection : 'ltr';
-    const currentPagesIndex = useMemo(() => getPage(currentPageIndex, pages).pagesIndex, [currentPageIndex, pages]);
+    const currentPagesIndex = useMemo(
+        () => (pages.length ? (getPage(currentPageIndex, pages)?.pagesIndex ?? 0) : 0),
+        [currentPageIndex, pages],
+    );
 
     const progressBarSlotProps: ComponentProps<typeof ReaderProgressBar>['slotProps'] = useMemo(
         () => ({
@@ -315,11 +318,11 @@ const BaseMobileReaderProgressBar = ({
                                     backgroundColor: 'primary.main',
                                     ...applyStyles(isVertical, {
                                         width: '20px',
-                                        height: `${(Math.max(0, getPage(currentPageIndex, pages).pagesIndex) / (pages.length - 1)) * 100}%`,
+                                        height: `${pages.length > 1 ? (Math.max(0, getPage(currentPageIndex, pages)?.pagesIndex ?? 0) / (pages.length - 1)) * 100 : 0}%`,
                                         borderRadius: '400px 400px 0 0',
                                     }),
                                     ...applyStyles(isHorizontal, {
-                                        width: `${(Math.max(0, getPage(currentPageIndex, pages).pagesIndex) / (pages.length - 1)) * 100}%`,
+                                        width: `${pages.length > 1 ? (Math.max(0, getPage(currentPageIndex, pages)?.pagesIndex ?? 0) / (pages.length - 1)) * 100 : 0}%`,
                                         height: '20px',
                                         borderRadius: '400px 0 0 400px',
                                     }),

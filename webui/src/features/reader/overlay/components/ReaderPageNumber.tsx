@@ -44,14 +44,15 @@ const BaseReaderPageNumber = ({
     const isMaximized = useReaderProgressBarStore('isMaximized');
 
     const pageName = useMemo(() => {
-        const currentPageName = getPage(currentPageIndex, pages).name;
+        if (!pages.length) return '';
+        const currentPageName = getPage(currentPageIndex, pages)?.name ?? '';
         const SEPARATOR = '/';
         const tmpPageName = `${currentPageName}${SEPARATOR}${totalPages}`;
 
         return readingDirection === ReadingDirection.LTR ? tmpPageName : reverseString(tmpPageName, SEPARATOR);
     }, [currentPageIndex, pages, totalPages, readingDirection]);
 
-    if (!shouldShowPageNumber) {
+    if (!shouldShowPageNumber || !pages.length) {
         return null;
     }
 

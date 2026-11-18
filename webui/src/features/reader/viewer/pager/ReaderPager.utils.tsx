@@ -302,6 +302,7 @@ export const createReaderPage = (
     pageScaleMode: IReaderSettings['pageScaleMode'],
     shouldStretchPage: IReaderSettings['shouldStretchPage'],
     readerWidth: IReaderSettings['readerWidth'],
+    readerZoom: IReaderSettings['readerZoom'],
     safeAreaInset: IReaderSettings['safeAreaInset'],
     readerNavBarWidth: NavbarContextType['readerNavBarWidth'],
     retryKeyPrefix?: string,
@@ -333,6 +334,7 @@ export const createReaderPage = (
         pageScaleMode={pageScaleMode}
         shouldStretchPage={shouldStretchPage}
         readerWidth={readerWidth}
+        readerZoom={readerZoom}
         safeAreaInset={safeAreaInset}
         readerNavBarWidth={readerNavBarWidth}
     />

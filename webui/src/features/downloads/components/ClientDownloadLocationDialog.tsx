@@ -20,6 +20,7 @@ import Alert from '@mui/material/Alert';
 import FolderIcon from '@mui/icons-material/Folder';
 import StorageIcon from '@mui/icons-material/Storage';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useLingui } from '@lingui/react/macro';
 import { LocalFileSystem } from '@/features/local-repository/services/LocalFileSystem.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
@@ -43,9 +44,11 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
 
     const [directoryName, setDirectoryName] = useState<string | null>(null);
     const [storageUsage, setStorageUsage] = useState<{ used?: number; quota?: number } | null>(null);
+    const [offlineBytes, setOfflineBytes] = useState<number>(0);
     const [mangaCount, setMangaCount] = useState<number>(0);
     const [totalChapters, setTotalChapters] = useState<number>(0);
     const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+    const [confirmClearCacheOpen, setConfirmClearCacheOpen] = useState(false);
 
     const refreshState = useCallback(async () => {
         try {
@@ -72,6 +75,13 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
         } catch {
             setMangaCount(0);
             setTotalChapters(0);
+        }
+
+        try {
+            const bytes = await LocalFileSystem.getOfflineChaptersByteSize();
+            setOfflineBytes(bytes);
+        } catch {
+            setOfflineBytes(0);
         }
     }, []);
 
@@ -104,9 +114,16 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
         refreshState();
     };
 
+    const handleClearCache = async () => {
+        await LocalFileSystem.clearClientCache();
+        setConfirmClearCacheOpen(false);
+        makeToast(t`Client cache cleared successfully`, 'success');
+        refreshState();
+    };
+
     return (
         <>
-            <Dialog open={open && !confirmClearOpen} onClose={onClose} maxWidth="sm" fullWidth>
+            <Dialog open={open && !confirmClearOpen && !confirmClearCacheOpen} onClose={onClose} maxWidth="sm" fullWidth>
                 <DialogTitle>{t`Download Location & Storage`}</DialogTitle>
                 <DialogContent dividers>
                     <Stack spacing={2.5}>
@@ -132,7 +149,7 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
                                 )}
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                     <Typography variant="subtitle2" color="text.secondary">
-                                        {t`Current storage location`}
+                                        {t`Current storage location:`}
                                     </Typography>
                                     <Typography variant="body1" fontWeight={600} noWrap>
                                         {directoryName
@@ -152,7 +169,7 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
                         <Box sx={{ px: 0.5 }}>
                             <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                                 <Typography variant="body2" color="text.secondary">
-                                    {t`Offline downloads`}
+                                    {t`Offline downloads:`}
                                 </Typography>
                                 <Typography variant="body2" fontWeight={500}>
                                     {totalChapters > 0
@@ -161,17 +178,31 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
                                 </Typography>
                             </Stack>
 
+                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    {t`Offline chapters storage:`}
+                                </Typography>
+                                <Typography variant="body2" fontWeight={500}>
+                                    {formatBytes(offlineBytes)}
+                                </Typography>
+                            </Stack>
+
                             {storageUsage?.used != null && (
-                                <Stack direction="row" justifyContent="space-between">
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t`Estimated browser storage used`}
+                                <Box sx={{ mt: 0.5 }}>
+                                    <Stack direction="row" justifyContent="space-between">
+                                        <Typography variant="body2" color="text.secondary">
+                                            {t`Total browser origin storage:`}
+                                        </Typography>
+                                        <Typography variant="body2" fontWeight={500}>
+                                            {storageUsage.quota
+                                                ? `${formatBytes(storageUsage.used)} / ${formatBytes(storageUsage.quota)}`
+                                                : formatBytes(storageUsage.used)}
+                                        </Typography>
+                                    </Stack>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                                        {t`Includes online manga image caches and service worker network assets.`}
                                     </Typography>
-                                    <Typography variant="body2" fontWeight={500}>
-                                        {storageUsage.quota
-                                            ? `${formatBytes(storageUsage.used)} / ${formatBytes(storageUsage.quota)}`
-                                            : formatBytes(storageUsage.used)}
-                                    </Typography>
-                                </Stack>
+                                </Box>
                             )}
                         </Box>
 
@@ -206,23 +237,53 @@ export const ClientDownloadLocationDialog: React.FC<ClientDownloadLocationDialog
                             </Alert>
                         )}
 
-                        {/* Clear Storage */}
-                        {totalChapters > 0 && (
+                        {/* Storage Management Actions */}
+                        <Stack direction="row" spacing={1.5} sx={{ pt: 1 }}>
                             <Button
-                                variant="text"
-                                color="error"
-                                startIcon={<DeleteIcon />}
-                                onClick={() => setConfirmClearOpen(true)}
-                                sx={{ alignSelf: 'flex-start' }}
+                                variant="outlined"
+                                color="inherit"
+                                startIcon={<RefreshIcon />}
+                                onClick={() => setConfirmClearCacheOpen(true)}
+                                size="small"
                             >
-                                {t`Clear all offline downloads...`}
+                                {t`Clear client cache`}
                             </Button>
-                        )}
+
+                            {totalChapters > 0 && (
+                                <Button
+                                    variant="text"
+                                    color="error"
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => setConfirmClearOpen(true)}
+                                    size="small"
+                                >
+                                    {t`Clear offline downloads`}
+                                </Button>
+                            )}
+                        </Stack>
                     </Stack>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={onClose} color="inherit">
                         {t`Close`}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Confirmation dialog for clearing client cache */}
+            <Dialog open={confirmClearCacheOpen} onClose={() => setConfirmClearCacheOpen(false)} maxWidth="xs">
+                <DialogTitle>{t`Clear Client Cache?`}</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2">
+                        {t`This will clear cached online images and network requests stored by the browser. Your login tokens, reading progress, and downloaded offline chapters will remain safe.`}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmClearCacheOpen(false)} color="inherit">
+                        {t`Cancel`}
+                    </Button>
+                    <Button onClick={handleClearCache} color="primary" variant="contained">
+                        {t`Clear Cache`}
                     </Button>
                 </DialogActions>
             </Dialog>

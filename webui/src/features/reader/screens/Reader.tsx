@@ -215,26 +215,30 @@ const BaseReader = ({
         : (mangaResponse.error ?? chaptersResponse.error ?? defaultSettingsResponse.error);
 
     const page = getPage(currentPageIndex, pages);
-    const primaryPageBackground = getReaderBackgroundColor(
-        backgroundColor,
-        pageBackgroundColors[page.primary.index]?.color,
-        isContinuousReadingMode(readingMode.value),
-        useAutoBackgroundColorContinuousMode,
-        theme,
-        invertColors,
-        applySepia,
-        applyGrayscale,
-    );
-    const secondaryPageBackground = getReaderBackgroundColor(
-        backgroundColor,
-        pageBackgroundColors[page.secondary?.index ?? page.primary.index]?.color,
-        isContinuousReadingMode(readingMode.value),
-        useAutoBackgroundColorContinuousMode,
-        theme,
-        invertColors,
-        applySepia,
-        applyGrayscale,
-    );
+    const primaryPageBackground = page?.primary
+        ? getReaderBackgroundColor(
+              backgroundColor,
+              pageBackgroundColors[page.primary.index]?.color,
+              isContinuousReadingMode(readingMode.value),
+              useAutoBackgroundColorContinuousMode,
+              theme,
+              invertColors,
+              applySepia,
+              applyGrayscale,
+          )
+        : undefined;
+    const secondaryPageBackground = page?.primary
+        ? getReaderBackgroundColor(
+              backgroundColor,
+              pageBackgroundColors[page.secondary?.index ?? page.primary.index]?.color,
+              isContinuousReadingMode(readingMode.value),
+              useAutoBackgroundColorContinuousMode,
+              theme,
+              invertColors,
+              applySepia,
+              applyGrayscale,
+          )
+        : undefined;
 
     const direction = READING_DIRECTION_TO_THEME_DIRECTION[readingDirection.value];
 
@@ -308,6 +312,21 @@ const BaseReader = ({
         return () => setOverride({ status: false, value: null });
     }, [scrollElementRef.current]);
 
+    if (isLoading) {
+        return (
+            <Box
+                sx={{
+                    height: '100vh',
+                    width: '100vw',
+                    display: 'grid',
+                    placeItems: 'center',
+                }}
+            >
+                <LoadingPlaceholder />
+            </Box>
+        );
+    }
+
     if (error) {
         return (
             <EmptyViewAbsoluteCentered
@@ -329,21 +348,6 @@ const BaseReader = ({
                     }
                 }}
             />
-        );
-    }
-
-    if (isLoading) {
-        return (
-            <Box
-                sx={{
-                    height: '100vh',
-                    width: '100vw',
-                    display: 'grid',
-                    placeItems: 'center',
-                }}
-            >
-                <LoadingPlaceholder />
-            </Box>
         );
     }
 

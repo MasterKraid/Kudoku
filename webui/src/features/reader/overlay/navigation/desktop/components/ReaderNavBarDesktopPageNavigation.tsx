@@ -32,6 +32,10 @@ const BaseReaderNavBarDesktopPageNavigation = () => {
     const currentPage = useMemo(() => getPage(currentPageIndex, pages), [currentPageIndex, pages]);
     const direction = READING_DIRECTION_TO_THEME_DIRECTION[readingDirection];
 
+    if (!pages.length || !currentPage?.primary) {
+        return null;
+    }
+
     return (
         <Stack sx={{ flexDirection: 'row', gap: 1 }} dir="ltr">
             <ReaderNavBarDesktopNextPreviousButton
@@ -53,7 +57,7 @@ const BaseReaderNavBarDesktopPageNavigation = () => {
                     renderValue={(value) => {
                         const separator = ' / ';
 
-                        const text = `${getPage(value, pages).name}${separator}${getIndexOfPage(pages.slice(-1)[0]) + 1}`;
+                        const text = `${getPage(value, pages)?.name ?? ''}${separator}${getIndexOfPage(pages.slice(-1)[0]) + 1}`;
 
                         return getOptionForDirection(text, reverseString(text, separator), direction);
                     }}

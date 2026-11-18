@@ -377,7 +377,15 @@ class ReaderControlsClass {
             forceDirection ?? direction,
         );
 
+        if (!pages.length) {
+            return;
+        }
+
         const currentPage = getPage(currentPageIndex, pages);
+        if (!currentPage?.primary) {
+            return;
+        }
+
         const previousPageIndex = getNextPageIndex('previous', currentPage.pagesIndex, pages);
         const nextPageIndex = getNextPageIndex('next', currentPage.pagesIndex, pages);
         const indexOfFirstPage = getIndexOfPage(pages[0]);
@@ -515,11 +523,15 @@ class ReaderControlsClass {
 
                     const actualPageIndex = endReached ? currentChapterUpToDate.pageCount - 1 : pageIndex;
                     const isLastPage = actualPageIndex === currentChapterUpToDate.pageCount - 1;
+                    const isNinetyPercentRead =
+                        currentChapterUpToDate.pageCount > 0 &&
+                        actualPageIndex + 1 >= Math.ceil(currentChapterUpToDate.pageCount * 0.9);
+                    const shouldMarkAsRead = isNinetyPercentRead || isLastPage || endReached;
 
                     updateChapter({
                         lastPageRead: actualPageIndex,
                         lastPageOffset: endReached ? undefined : offset,
-                        isRead: isLastPage ? true : undefined,
+                        isRead: shouldMarkAsRead ? true : undefined,
                     });
                 };
 

@@ -54,6 +54,7 @@ const BaseReaderChapterViewer = ({
     retryFailedPagesKeyPrefix,
     readingMode,
     readerWidth,
+    readerZoom,
     safeAreaInset,
     pageScaleMode,
     shouldOffsetDoubleSpreads,
@@ -327,7 +328,26 @@ const BaseReaderChapterViewer = ({
         return null;
     }
 
-    const hasPages = (actualPages.length > 0 && totalPages > 0) || pages.length > 0;
+    const hasPages = actualPages.length > 0 && totalPages > 0;
+
+    if (!hasPages && (pagesResponse.loading || !arePagesFetched)) {
+        if (shouldHideChapter) {
+            return null;
+        }
+
+        return (
+            <Box
+                sx={{
+                    minHeight: '100%',
+                    minWidth: '100%',
+                    display: 'grid',
+                    placeItems: 'center',
+                }}
+            >
+                <LoadingPlaceholder />
+            </Box>
+        );
+    }
 
     if (!hasPages && pagesResponse.error) {
         if (shouldHideChapter) {
@@ -355,25 +375,6 @@ const BaseReaderChapterViewer = ({
         );
     }
 
-    if (!hasPages && (pagesResponse.loading || !arePagesFetched)) {
-        if (shouldHideChapter) {
-            return null;
-        }
-
-        return (
-            <Box
-                sx={{
-                    minHeight: '100%',
-                    minWidth: '100%',
-                    display: 'grid',
-                    placeItems: 'center',
-                }}
-            >
-                <LoadingPlaceholder />
-            </Box>
-        );
-    }
-
     if (chapterId != null && !totalPages && !hasPages) {
         if (shouldHideChapter) {
             return null;
@@ -381,7 +382,11 @@ const BaseReaderChapterViewer = ({
 
         return (
             <Box sx={{ minWidth: '100%', minHeight: '100%', position: 'relative' }}>
-                <EmptyViewAbsoluteCentered message={t`No pages found`} retry={doFetchPages} />
+                <EmptyViewAbsoluteCentered
+                    message={t`No pages found`}
+                    messageExtra={t`The upstream source returned 0 pages for this chapter. The source may be Cloudflare-protected, offline, or temporarily unavailable.`}
+                    retry={doFetchPages}
+                />
             </Box>
         );
     }
@@ -459,6 +464,7 @@ const BaseReaderChapterViewer = ({
                 customFilter={customFilter}
                 shouldStretchPage={shouldStretchPage}
                 readerWidth={readerWidth}
+                readerZoom={readerZoom}
                 safeAreaInset={safeAreaInset}
                 readerNavBarWidth={readerNavBarWidth}
                 isPreloadMode={isPreloadMode}

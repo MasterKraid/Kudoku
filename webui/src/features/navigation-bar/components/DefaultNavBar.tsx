@@ -117,11 +117,7 @@ export function DefaultNavBar() {
     );
 
     const measureAppBar = useCallback(() => {
-        if (!appBarRef.current) {
-            setAppBarHeight(0);
-            return;
-        }
-        const height = appBarRef.current.offsetHeight || topBarConfig.libraryBarHeight;
+        const height = appBarRef.current?.offsetHeight || topBarConfig.libraryBarHeight || 48;
         setAppBarHeight(Math.ceil(height) + APP_BAR_GAP);
     }, [topBarConfig.libraryBarHeight, setAppBarHeight]);
 
@@ -149,13 +145,22 @@ export function DefaultNavBar() {
         if (override.status) {
             setAppBarHeight(0);
             setNavBarWidth(0);
+        } else {
+            measureAppBar();
         }
+    }, [override.status, measureAppBar]);
 
-        return () => {
-            setAppBarHeight(0);
-            setNavBarWidth(0);
-        };
-    }, [override.status]);
+    useEffect(() => {
+        if (!override.status) {
+            measureAppBar();
+            const raf = requestAnimationFrame(measureAppBar);
+            const timer = setTimeout(measureAppBar, 100);
+            return () => {
+                cancelAnimationFrame(raf);
+                clearTimeout(timer);
+            };
+        }
+    }, [pathname, override.status, measureAppBar]);
 
     useLayoutEffect(() => {
         if (!isMobileWidth) {

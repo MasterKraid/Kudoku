@@ -172,6 +172,9 @@ export const APP_METADATA: Record<
     readerWidth: {
         convert: convertToObject<IReaderSettings['readerWidth']>,
     },
+    readerZoom: {
+        convert: convertToObject<IReaderSettings['readerZoom']>,
+    },
     savedSearches: {
         convert: convertToObject<ISourceMetadata['savedSearches']>,
     },

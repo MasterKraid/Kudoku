@@ -81,6 +81,7 @@ const convertSettingsToMetadata = (
     tapZoneInvertMode: JSON.stringify(settings.tapZoneInvertMode),
     customFilter: JSON.stringify(settings.customFilter),
     readerWidth: JSON.stringify(settings.readerWidth),
+    readerZoom: JSON.stringify(settings.readerZoom),
     hotkeys: JSON.stringify(settings.hotkeys),
     autoScroll: JSON.stringify(settings.autoScroll),
     safeAreaInset: JSON.stringify(settings.autoScroll),

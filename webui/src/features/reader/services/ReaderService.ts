@@ -327,7 +327,7 @@ export class ReaderService {
         }
 
         const page = getPage(currentPageIndex, pages);
-        const updatedPageIndex = shouldOffset ? page.primary.index : currentPageIndex;
+        const updatedPageIndex = shouldOffset && page?.primary ? page.primary.index : currentPageIndex;
 
         getReaderPagesStore().setCurrentPageIndex(updatedPageIndex);
         ReaderService.updateSetting('shouldOffsetDoubleSpreads', shouldOffset);

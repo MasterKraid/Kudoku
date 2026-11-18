@@ -35,19 +35,10 @@ export const READER_DEFAULT_PAGES_STATE: Omit<
     currentPageIndex: 0,
     pageToScrollToIndex: null,
     pageUrls: [],
-    pageSpreadStates: [{ url: '', isSpread: false }],
-    pageLoadStates: [{ url: '', loaded: false }],
-    pageBackgroundColors: [{ url: '', color: undefined }],
-    pages: [
-        {
-            name: '1',
-            primary: {
-                index: 0,
-                alt: `Page #1`,
-                url: `${requestManager.getBaseUrl()}`,
-            },
-        },
-    ],
+    pageSpreadStates: [],
+    pageLoadStates: [],
+    pageBackgroundColors: [],
+    pages: [],
     transitionPageMode: ReaderTransitionPageMode.NONE,
     retryFailedPagesKeyPrefix: '',
 };

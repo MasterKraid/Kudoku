@@ -52,6 +52,7 @@ import {
     useReaderSettingsStore,
 } from '@/features/reader/stores/ReaderStore.ts';
 import { STABLE_EMPTY_OBJECT } from '@/base/Base.constants.ts';
+import { DEFAULT_READER_SETTINGS } from '@/features/reader/settings/ReaderSettings.constants.tsx';
 import { getPage } from '@/features/reader/overlay/progress-bar/ReaderProgressBar.utils.tsx';
 
 const READING_MODE_TO_IN_VIEWPORT_TYPE: Record<ReadingMode, PageInViewportType> = {
@@ -92,6 +93,7 @@ const BaseReaderViewer = ({
         readingMode,
         readingDirection,
         readerWidth,
+        readerZoom,
         pageScaleMode,
         shouldOffsetDoubleSpreads,
         imagePreLoadAmount,
@@ -104,6 +106,7 @@ const BaseReaderViewer = ({
         readingMode: state.readingMode.value,
         readingDirection: state.readingDirection.value,
         readerWidth: state.readerWidth.value,
+        readerZoom: state.readerZoom?.value ?? DEFAULT_READER_SETTINGS.readerZoom,
         pageScaleMode: state.pageScaleMode.value,
         shouldOffsetDoubleSpreads: state.shouldOffsetDoubleSpreads.value,
         imagePreLoadAmount: state.imagePreLoadAmount,
@@ -234,6 +237,7 @@ const BaseReaderViewer = ({
         pageScaleMode,
         shouldStretchPage,
         readerWidth,
+        readerZoom,
     );
 
     useLayoutEffect(() => {
@@ -330,7 +334,7 @@ const BaseReaderViewer = ({
                       )
                     : -1;
                 const currentChapterCurrentPagesIndex = isAdjacentChapterToCurrentChapter
-                    ? getPage(currentChapterCurrentPageIndex, pages).pagesIndex
+                    ? (getPage(currentChapterCurrentPageIndex, pages)?.pagesIndex ?? -1)
                     : -1;
 
                 const currentChapterRemainingLeadingPages = currentChapterCurrentPagesIndex;
@@ -373,6 +377,7 @@ const BaseReaderViewer = ({
                         retryFailedPagesKeyPrefix={retryFailedPagesKeyPrefix}
                         readingMode={readingMode}
                         readerWidth={readerWidth}
+                        readerZoom={readerZoom}
                         safeAreaInset={safeAreaInset}
                         pageScaleMode={pageScaleMode}
                         shouldOffsetDoubleSpreads={shouldOffsetDoubleSpreads}

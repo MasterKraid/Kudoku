@@ -202,6 +202,13 @@ export interface IReaderSettingsManga {
         value: number;
         enabled: boolean;
     };
+    readerZoom: {
+        /**
+         * percentage (30 to 200)
+         */
+        value: number;
+        enabled: boolean;
+    };
 }
 
 export type IReaderSettings = IReaderSettingsGlobal & IReaderSettingsManga;
@@ -358,6 +365,7 @@ export interface ReaderPagerProps
             | 'customFilter'
             | 'shouldStretchPage'
             | 'readerWidth'
+            | 'readerZoom'
             | 'safeAreaInset'
         >,
         Pick<NavbarContextType, 'readerNavBarWidth'> {

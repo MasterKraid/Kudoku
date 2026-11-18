@@ -19,6 +19,7 @@ import { ReaderSettingStretchPage } from '@/features/reader/settings/layout/comp
 import type { ReaderSettingsTypeProps } from '@/features/reader/Reader.types.ts';
 import { ReaderSettingPageGap } from '@/features/reader/settings/layout/components/ReaderSettingPageGap.tsx';
 import { ReaderSettingWidth } from '@/features/reader/settings/layout/components/ReaderSettingWidth.tsx';
+import { ReaderSettingZoom } from '@/features/reader/settings/layout/components/ReaderSettingZoom.tsx';
 import { DefaultSettingFootnote } from '@/features/reader/settings/components/DefaultSettingFootnote.tsx';
 import { getReaderTapZoneStore } from '@/features/reader/stores/ReaderStore.ts';
 import { ReaderDefaultLayoutSettings } from '@/features/reader/settings/layout/ReaderDefaultLayoutSettings.tsx';
@@ -91,6 +92,13 @@ export const ReaderLayoutSettings = ({
                 setPageScaleMode={(value) => updateSetting('pageScaleMode', value)}
                 isDefaultable={isDefaultable}
                 onDefault={() => onDefault?.('pageScaleMode')}
+            />
+            <ReaderSettingZoom
+                readerZoom={settings.readerZoom?.value}
+                isDefaultable={isDefaultable}
+                onDefault={() => onDefault?.('readerZoom')}
+                updateSetting={(...args) => updateSetting(...args)}
+                setTransparent={setTransparent}
             />
             <ReaderSettingStretchPage
                 pageScaleMode={settings.pageScaleMode.value}

@@ -69,6 +69,13 @@ export const DownloadSettings = () => {
         loading: areMetadataServerSettingsLoading,
         request: { error: metadataServerSettingsError, refetch: refetchMetadataServerSettings },
     } = useMetadataServerSettings();
+    const { directoryName } = useLocalRepository();
+    const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
+
+    const [clientSaveAsCbz, setClientSaveAsCbz] = useState<boolean>(() => {
+        const stored = localStorage.getItem('client_download_save_cbz');
+        return stored != null ? stored === 'true' : true;
+    });
 
     const loading = serverSettings.loading || areMetadataServerSettingsLoading || categories.loading;
     if (loading) {
@@ -103,13 +110,6 @@ export const DownloadSettings = () => {
     }
 
     const downloadSettings = serverSettings.data!.settings;
-    const { directoryName } = useLocalRepository();
-    const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
-
-    const [clientSaveAsCbz, setClientSaveAsCbz] = useState<boolean>(() => {
-        const stored = localStorage.getItem('client_download_save_cbz');
-        return stored != null ? stored === 'true' : true;
-    });
 
     const handleToggleCbz = (checked: boolean) => {
         setClientSaveAsCbz(checked);

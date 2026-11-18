@@ -165,6 +165,7 @@ export const GLOBAL_READER_SETTING_KEYS = Object.keys(GLOBAL_READER_SETTING_OBJE
 
 export const DEFAULT_READER_SETTINGS: IReaderSettings = {
     readerWidth: { value: 50, enabled: false },
+    readerZoom: { value: 100, enabled: false },
     overlayMode: ReaderOverlayMode.AUTO,
     tapZoneLayout: TapZoneLayouts.RIGHT_LEFT,
     tapZoneInvertMode: { vertical: false, horizontal: false },

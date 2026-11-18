@@ -122,6 +122,10 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
             return () => {};
         }
 
+        if (isRetry || didSrcChange) {
+            setHasError(false);
+        }
+
         let isAborted = false;
         let imageRequest: ImageRequest = {
             response: Promise.resolve(''),
@@ -238,8 +242,8 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
                             justifyContent: 'center',
                         }}
                     >
-                        {isVisible && !!isLoading && <CircularProgress thickness={5} />}
-                        {hasError && isLoading === false && (
+                        {!hasError && <CircularProgress thickness={5} />}
+                        {hasError && (
                             <>
                                 <BrokenImageIcon />
                                 <Button

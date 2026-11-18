@@ -14,13 +14,20 @@ import { coerceIn } from '@/lib/HelperFunctions.ts';
 import { DirectionOffset } from '@/base/Base.types.ts';
 
 export const getPage = (pageIndex: number, pages: ReaderStatePages['pages']): TReaderProgressCurrentPage => {
+    if (!pages || !pages.length) {
+        return undefined as any;
+    }
     const pagesIndex = pages.findIndex(({ primary, secondary }) =>
-        [primary.index, secondary?.index].includes(pageIndex),
+        [primary?.index, secondary?.index].includes(pageIndex),
     );
-    const page = pages[coerceIn(pagesIndex, 0, pages.length - 1)];
+    const safeIndex = pagesIndex === -1 ? 0 : coerceIn(pagesIndex, 0, pages.length - 1);
+    const page = pages[safeIndex];
+    if (!page) {
+        return undefined as any;
+    }
     return {
         ...page,
-        pagesIndex,
+        pagesIndex: safeIndex,
     };
 };
 
@@ -28,7 +35,8 @@ export const getPage = (pageIndex: number, pages: ReaderStatePages['pages']): TR
  * for the double page mode the secondary page index has to be used to be able to correctly detect if the last page is visible
  *
  */
-export const getIndexOfPage = (page: ReaderStatePages['pages'][number]) => page.secondary?.index ?? page.primary.index;
+export const getIndexOfPage = (page?: ReaderStatePages['pages'][number]) =>
+    page?.secondary?.index ?? page?.primary?.index ?? 0;
 
 export const getNextPageIndex = (
     offset: 'previous' | 'next',

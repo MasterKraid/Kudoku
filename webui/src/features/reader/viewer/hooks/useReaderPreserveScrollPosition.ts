@@ -378,6 +378,7 @@ export const useReaderPreserveScrollPosition = (
     pageScaleMode: ReaderPageScaleMode,
     shouldStretchPage: boolean,
     readerWidth: IReaderSettingsManga['readerWidth'],
+    readerZoom?: IReaderSettingsManga['readerZoom'],
 ) => {
     usePreserveOnInfiniteScrollPreviousChapterInitialRender(
         scrollElementRef,
@@ -395,4 +396,5 @@ export const useReaderPreserveScrollPosition = (
     usePreserveOnValueChange(pageScaleMode, currentPageIndex);
     usePreserveOnValueChange(shouldStretchPage, currentPageIndex);
     usePreserveOnValueChange(`${readerWidth.value}_${readerWidth.enabled}`, currentPageIndex);
+    usePreserveOnValueChange(`${readerZoom?.value}_${readerZoom?.enabled}`, currentPageIndex);
 };
