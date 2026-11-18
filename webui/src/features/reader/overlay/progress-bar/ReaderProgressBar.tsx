@@ -157,7 +157,7 @@ const BaseReaderProgressBar = ({
         clearTimeout(draggingDetectionTimeout.current);
     };
 
-    if (!pages.length) {
+    if (!pages.length || !currentPage) {
         return null;
     }
 
@@ -178,7 +178,7 @@ const BaseReaderProgressBar = ({
                     ]}
                     onClick={() => ReaderControls.openPage('previous', 'ltr', false)}
                 >
-                    {currentPage.name}
+                    {currentPage?.name ?? ''}
                 </ReaderProgressBarPageNumber>
                 <ClickAwayListener onClickAway={() => getReaderProgressBarStore().setIsDragging(false)}>
                     <ReaderProgressBarSlotsActionArea
@@ -209,15 +209,15 @@ const BaseReaderProgressBar = ({
                             ))}
                             <ProgressBarHighlightReadPages
                                 {...slotProps?.progressBarReadPages}
-                                currentPagesIndex={currentPage.pagesIndex}
+                                currentPagesIndex={currentPage?.pagesIndex ?? 0}
                                 pagesLength={pages.length}
                                 progressBarPosition={progressBarPosition}
                             />
                         </ReaderProgressBarSlotsContainer>
                         <ReaderProgressBarCurrentPageSlot
                             boxProps={slotProps?.progressBarCurrentPageSlot}
-                            pageName={currentPage.name}
-                            currentPagesIndex={currentPage.pagesIndex}
+                            pageName={currentPage?.name ?? ''}
+                            currentPagesIndex={currentPage?.pagesIndex ?? 0}
                             pagesLength={pages.length}
                             isDragging={isDragging}
                             progressBarPosition={progressBarPosition}

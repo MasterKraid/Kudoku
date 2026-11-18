@@ -589,11 +589,11 @@ export const getPageIndexesToLoad = (
     isPreviousChapter: boolean,
     isNextChapter: boolean,
 ): number[] => {
-    if (!isCurrentChapter && !isPreviousChapter && !isNextChapter) {
+    if (!pages?.length || (!isCurrentChapter && !isPreviousChapter && !isNextChapter)) {
         return [];
     }
 
-    const currentPagesIndex = getPage(currentPageIndex, pages).pagesIndex;
+    const currentPagesIndex = getPage(currentPageIndex, pages)?.pagesIndex ?? 0;
     const finalImagePreLoadAmount = getImagePreLoadAmount(
         isCurrentChapter,
         isPreviousChapter,

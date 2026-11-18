@@ -205,7 +205,8 @@ const BaseReader = ({
     const isOffline = offlineReady;
     const isLoading =
         !isOffline &&
-        (currentChapter === undefined ||
+        (!manga ||
+            currentChapter === undefined ||
             !areSettingsSet ||
             mangaResponse.loading ||
             (chaptersResponse.loading && chaptersResponse.dataState !== 'complete') ||
@@ -356,7 +357,18 @@ const BaseReader = ({
     }
 
     if (!manga || !currentChapter) {
-        return null;
+        return (
+            <Box
+                sx={{
+                    height: '100vh',
+                    width: '100vw',
+                    display: 'grid',
+                    placeItems: 'center',
+                }}
+            >
+                <LoadingPlaceholder />
+            </Box>
+        );
     }
 
     return (
