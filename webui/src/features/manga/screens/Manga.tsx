@@ -41,18 +41,27 @@ export const Manga: React.FC = () => {
 
     const numericId = Number(id);
     const isSyntheticLocalId = !isNaN(numericId) && numericId < 0;
+    const [resolvingFailed, setResolvingFailed] = React.useState(false);
 
     useEffect(() => {
         if (isSyntheticLocalId) {
+            let active = true;
             import('@/features/local-repository/services/LocalFileSystem.ts').then(async ({ LocalFileSystem }) => {
                 const title = await LocalFileSystem.resolveTitleById(numericId);
-                if (title) {
+                if (title && active) {
                     const realId = await LocalFileSystem.getMangaId(title);
-                    if (realId && realId > 0) {
+                    if (realId && realId > 0 && active) {
                         navigate(AppRoutes.manga.path(realId), { replace: true });
+                        return;
                     }
                 }
+                if (active) {
+                    setResolvingFailed(true);
+                }
             });
+            return () => {
+                active = false;
+            };
         }
     }, [isSyntheticLocalId, numericId, navigate]);
 
@@ -122,8 +131,12 @@ export const Manga: React.FC = () => {
     if (isSyntheticLocalId && !manga) {
         return (
             <EmptyViewAbsoluteCentered
-                message={t`Local Offline Manga`}
-                messageExtra={t`Resolving offline manga...`}
+                message={resolvingFailed ? t`Offline Local Manga` : t`Loading Manga...`}
+                messageExtra={
+                    resolvingFailed
+                        ? t`Could not link to server manga. Return to Browse to select your downloaded titles.`
+                        : t`Resolving manga details...`
+                }
             />
         );
     }

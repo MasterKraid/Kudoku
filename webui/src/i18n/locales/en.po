@@ -1321,6 +1321,10 @@ msgstr "Could not find the source of this manga. Check your installed extensions
 msgid "Could not install the extension"
 msgstr "Could not install the extension"
 
+#: src/features/manga/screens/Manga.tsx
+msgid "Could not link to server manga. Return to Browse to select your downloaded titles."
+msgstr "Could not link to server manga. Return to Browse to select your downloaded titles."
+
 #: src/features/category/screens/CategorySettings.tsx
 #: src/features/manga/hooks/useManageMangaLibraryState.tsx
 msgid "Could not load categories"
@@ -2749,6 +2753,10 @@ msgstr "Links"
 msgid "List"
 msgstr "List"
 
+#: src/features/manga/screens/Manga.tsx
+msgid "Loading Manga..."
+msgstr "Loading Manga..."
+
 #: src/features/theme/components/ThemePreview.tsx
 msgid "Loading theme fonts…"
 msgstr "Loading theme fonts…"
@@ -2756,10 +2764,6 @@ msgstr "Loading theme fonts…"
 #: src/base/components/settings/SelectSetting.tsx
 msgid "Loading…"
 msgstr "Loading…"
-
-#: src/features/manga/screens/Manga.tsx
-msgid "Local Offline Manga"
-msgstr "Local Offline Manga"
 
 #: src/features/browse/sources/components/SourceCard.tsx
 #: src/features/manga/components/details/MangaDetails.tsx
@@ -3228,6 +3232,10 @@ msgstr "Obsolete"
 msgid "OEL"
 msgstr "OEL"
 
+#: src/features/manga/screens/Manga.tsx
+msgid "Offline Local Manga"
+msgstr "Offline Local Manga"
+
 #: src/features/reader/overlay/navigation/desktop/quick-settings/components/ReaderNavBarDesktopOffsetDoubleSpread.tsx
 #: src/features/reader/settings/behaviour/ReaderBehaviourSettings.tsx
 msgid "Offset double spreads"
@@ -3642,8 +3650,8 @@ msgid "Reset to Default"
 msgstr "Reset to Default"
 
 #: src/features/manga/screens/Manga.tsx
-msgid "Resolving offline manga..."
-msgstr "Resolving offline manga..."
+msgid "Resolving manga details..."
+msgstr "Resolving manga details..."
 
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Response fallback"
