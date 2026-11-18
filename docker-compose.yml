@@ -8,6 +8,7 @@ services:
     volumes:
       - tsundoku-data:/data
       - ${DOWNLOADS_PATH:-tsundoku-downloads}:/data/downloads
+      - ./webui/build:/opt/tsundoku/webUI:ro
     environment:
       - TZ=Etc/UTC
       - BIND_IP=127.0.0.1
