@@ -97,6 +97,19 @@ function idbDelete(db: IDBDatabase, store: string, key: IDBValidKey): Promise<vo
     });
 }
 
+function idbClear(db: IDBDatabase, store: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).clear();
+        req.onsuccess = () => {
+            resolve();
+        };
+        req.onerror = () => {
+            reject(req.error);
+        };
+    });
+}
+
 function idbGetAllEntries<T = unknown>(db: IDBDatabase, store: string): Promise<Array<{ key: string; value: T }>> {
     return new Promise((resolve, reject) => {
         const tx = db.transaction(store, 'readonly');
@@ -196,6 +209,38 @@ class LocalFileSystemService {
     private coverUrlCache = new Map<string, string>();
     private mangaIdCache = new Map<string, number>();
     private idToTitleMap = new Map<number, string>();
+    private chapterPagesCache = new Map<number, { urls: string[]; count: number }>();
+
+    getCachedChapterPages(chapterId: number): string[] | undefined {
+        return this.chapterPagesCache.get(chapterId)?.urls;
+    }
+
+    cacheChapterPages(chapterId: number, urls: string[]): void {
+        this.chapterPagesCache.set(chapterId, { urls, count: urls.length });
+    }
+
+    clearChapterPagesCache(chapterId?: number): void {
+        if (chapterId != null) {
+            const entry = this.chapterPagesCache.get(chapterId);
+            if (entry) {
+                entry.urls.forEach((url) => {
+                    if (url.startsWith('blob:')) {
+                        URL.revokeObjectURL(url);
+                    }
+                });
+                this.chapterPagesCache.delete(chapterId);
+            }
+        } else {
+            this.chapterPagesCache.forEach((entry) => {
+                entry.urls.forEach((url) => {
+                    if (url.startsWith('blob:')) {
+                        URL.revokeObjectURL(url);
+                    }
+                });
+            });
+            this.chapterPagesCache.clear();
+        }
+    }
 
     // ── Manga metadata tracking ──────────────────────────────────────────────
 
@@ -414,6 +459,32 @@ class LocalFileSystemService {
     /** Disconnects the active handle (does not remove from IndexedDB). */
     disconnect(): void {
         this.directoryHandle = null;
+    }
+
+    /** Clears the directory handle from memory and IndexedDB. */
+    async forgetDirectoryHandle(): Promise<void> {
+        this.directoryHandle = null;
+        try {
+            const db = await openDb();
+            await idbDelete(db, HANDLE_STORE, HANDLE_KEY);
+        } catch {
+            // ignore
+        }
+        window.dispatchEvent(new CustomEvent('local-repository-updated'));
+    }
+
+    /** Deletes all offline chapters and cached covers from IndexedDB. */
+    async clearAllOfflineStorage(): Promise<void> {
+        this.clearChapterPagesCache();
+        try {
+            const db = await openDb();
+            await idbClear(db, OFFLINE_STORE);
+            await idbClear(db, COVER_STORE);
+            await idbClear(db, METADATA_STORE);
+        } catch {
+            // ignore
+        }
+        window.dispatchEvent(new CustomEvent('local-repository-updated'));
     }
 
     // ── CBZ save / read ──────────────────────────────────────────────────────
@@ -758,6 +829,69 @@ class LocalFileSystemService {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     }
 
+    static isBufferValidImage(buffer: ArrayBuffer): boolean {
+        if (!buffer || buffer.byteLength < 12) return false;
+        const view = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 32));
+
+        // Positive check for known image magic bytes:
+        // JPEG: FF D8 FF
+        const isJpeg = view.length >= 3 && view[0] === 0xff && view[1] === 0xd8 && view[2] === 0xff;
+        // PNG: 89 50 4E 47
+        const isPng = view.length >= 4 && view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4e && view[3] === 0x47;
+        // WebP: RIFF .... WEBP
+        const isWebp =
+            view.length >= 12 &&
+            view[0] === 0x52 && view[1] === 0x49 && view[2] === 0x46 && view[3] === 0x46 &&
+            view[8] === 0x57 && view[9] === 0x45 && view[10] === 0x42 && view[11] === 0x50;
+        // GIF: GIF8
+        const isGif = view.length >= 4 && view[0] === 0x47 && view[1] === 0x49 && view[2] === 0x46 && view[3] === 0x38;
+        // BMP: BM
+        const isBmp = view.length >= 2 && view[0] === 0x42 && view[1] === 0x4d;
+        // AVIF: ....ftyp
+        let isAvif = false;
+        if (view.length >= 12) {
+            const ftyp = String.fromCharCode(view[4], view[5], view[6], view[7]);
+            isAvif = ftyp === 'ftyp';
+        }
+        return isJpeg || isPng || isWebp || isGif || isBmp || isAvif;
+    }
+
+    static detectMimeType(buffer: ArrayBuffer, fileName: string): string {
+        const view = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 16));
+        if (view.length >= 2 && view[0] === 0xff && view[1] === 0xd8) {
+            return 'image/jpeg';
+        }
+        if (view.length >= 8 && view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4e && view[3] === 0x47) {
+            return 'image/png';
+        }
+        if (
+            view.length >= 12 &&
+            view[0] === 0x52 && view[1] === 0x49 && view[2] === 0x46 && view[3] === 0x46 &&
+            view[8] === 0x57 && view[9] === 0x45 && view[10] === 0x42 && view[11] === 0x50
+        ) {
+            return 'image/webp';
+        }
+        if (view.length >= 4 && view[0] === 0x47 && view[1] === 0x49 && view[2] === 0x46 && view[3] === 0x38) {
+            return 'image/gif';
+        }
+        if (view.length >= 12) {
+            const ftyp = String.fromCharCode(view[4], view[5], view[6], view[7]);
+            const brand = String.fromCharCode(view[8], view[9], view[10], view[11]);
+            if (ftyp === 'ftyp' && (brand === 'avif' || brand === 'avis')) {
+                return 'image/avif';
+            }
+        }
+        if (view.length >= 2 && view[0] === 0x42 && view[1] === 0x4d) {
+            return 'image/bmp';
+        }
+        // Fallback to file extension
+        if (/\.png$/i.test(fileName)) return 'image/png';
+        if (/\.webp$/i.test(fileName)) return 'image/webp';
+        if (/\.avif$/i.test(fileName)) return 'image/avif';
+        if (/\.gif$/i.test(fileName)) return 'image/gif';
+        return 'image/jpeg';
+    }
+
     /**
      * Unzips a CBZ blob and returns object URLs for all image files, sorted
      * numerically/alphabetically.
@@ -766,30 +900,30 @@ class LocalFileSystemService {
         const zip = await JSZip.loadAsync(blob);
 
         const imageEntries = Object.entries(zip.files).filter(
-            ([name, file]) => !file.dir && LocalFileSystemService.IMAGE_EXTENSIONS.test(name),
+            ([name, file]) => !file.dir && !name.startsWith('__MACOSX/') && LocalFileSystemService.IMAGE_EXTENSIONS.test(name),
         );
+
+        if (imageEntries.length === 0) {
+            return [];
+        }
 
         // Sort numerically/alphabetically by filename
         imageEntries.sort(([nameA], [nameB]) => LocalFileSystemService.naturalCompare(nameA, nameB));
 
-        const pages = await Promise.all(
-            imageEntries.map(async ([name, file], index) => {
-                const buffer = await file.async('arraybuffer');
-                let mimeType = 'image/jpeg';
-                if (/\.png$/i.test(name)) {
-                    mimeType = 'image/png';
-                } else if (/\.webp$/i.test(name)) {
-                    mimeType = 'image/webp';
-                } else if (/\.gif$/i.test(name)) {
-                    mimeType = 'image/gif';
-                } else if (/\.avif$/i.test(name)) {
-                    mimeType = 'image/avif';
-                }
-                const imgBlob = new Blob([buffer], { type: mimeType });
-                const url = URL.createObjectURL(imgBlob);
-                return { url, index, name };
-            }),
-        );
+        const pages: { url: string; index: number; name: string }[] = [];
+        for (let index = 0; index < imageEntries.length; index++) {
+            const [name, file] = imageEntries[index];
+            /* eslint-disable-next-line no-await-in-loop */
+            const buffer = await file.async('arraybuffer');
+            if (!LocalFileSystemService.isBufferValidImage(buffer)) {
+                // Archive contains corrupted non-image files (e.g. from previous broken download)
+                throw new Error(`Corrupted non-image file found in CBZ: ${name}`);
+            }
+            const mimeType = LocalFileSystemService.detectMimeType(buffer, name);
+            const imgBlob = new Blob([buffer], { type: mimeType });
+            const url = URL.createObjectURL(imgBlob);
+            pages.push({ url, index, name });
+        }
 
         return pages;
     }
@@ -801,7 +935,7 @@ class LocalFileSystemService {
         try {
             const zip = await JSZip.loadAsync(blob);
             const imageEntries = Object.entries(zip.files).filter(
-                ([name, file]) => !file.dir && LocalFileSystemService.IMAGE_EXTENSIONS.test(name),
+                ([name, file]) => !file.dir && !name.startsWith('__MACOSX/') && LocalFileSystemService.IMAGE_EXTENSIONS.test(name),
             );
             if (imageEntries.length === 0) {
                 return undefined;
@@ -809,21 +943,65 @@ class LocalFileSystemService {
             imageEntries.sort(([nameA], [nameB]) => LocalFileSystemService.naturalCompare(nameA, nameB));
             const [coverName, coverFile] = imageEntries[0];
             const buffer = await coverFile.async('arraybuffer');
-            let mimeType = 'image/jpeg';
-            if (/\.png$/i.test(coverName)) {
-                mimeType = 'image/png';
-            } else if (/\.webp$/i.test(coverName)) {
-                mimeType = 'image/webp';
-            } else if (/\.gif$/i.test(coverName)) {
-                mimeType = 'image/gif';
-            } else if (/\.avif$/i.test(coverName)) {
-                mimeType = 'image/avif';
-            }
+            const mimeType = LocalFileSystemService.detectMimeType(buffer, coverName);
             const imgBlob = new Blob([buffer], { type: mimeType });
             return URL.createObjectURL(imgBlob);
         } catch {
             return undefined;
         }
+    }
+
+    /**
+     * Checks if local storage has any downloaded chapters for a given manga id or title.
+     */
+    async hasLocalChaptersForManga(idOrTitle: number | string): Promise<boolean> {
+        let title: string | undefined;
+        if (typeof idOrTitle === 'number') {
+            title = await this.resolveTitleById(idOrTitle);
+        } else {
+            title = idOrTitle;
+        }
+        if (!title) {
+            return false;
+        }
+        const chapters = await this.getLocalMangaChapters(title);
+        return chapters.length > 0;
+    }
+
+    /**
+     * Retrieves offline manga details (title, coverUrl, chapters) for standalone/orphan viewing.
+     */
+    async getOfflineMangaDetails(idOrTitle: number | string): Promise<{
+        title: string;
+        coverUrl?: string;
+        chapters: LocalChapterItem[];
+    } | null> {
+        let title: string | undefined;
+        if (typeof idOrTitle === 'number') {
+            title = await this.resolveTitleById(idOrTitle);
+        } else {
+            title = idOrTitle;
+        }
+        if (!title) {
+            return null;
+        }
+        const chapters = await this.getLocalMangaChapters(title);
+        if (chapters.length === 0) {
+            return null;
+        }
+
+        let coverUrl = this.coverUrlCache.get(title);
+        try {
+            const db = await openDb();
+            const meta = await idbGet<{ thumbnailUrl?: string }>(db, METADATA_STORE, title);
+            if (meta?.thumbnailUrl) {
+                coverUrl = meta.thumbnailUrl;
+            }
+        } catch {
+            // ignore
+        }
+
+        return { title, coverUrl, chapters };
     }
 
     /**

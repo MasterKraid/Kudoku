@@ -11,7 +11,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { isNetworkRequestInFlight } from '@apollo/client/utilities';
 import { useLingui } from '@lingui/react/macro';
@@ -30,6 +30,8 @@ import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { STABLE_EMPTY_OBJECT } from '@/base/Base.constants.ts';
 import { useAppTitleAndAction } from '@/features/navigation-bar/hooks/useAppTitleAndAction.ts';
 import type { MangaLocationState } from '@/features/manga/Manga.types.ts';
+import { OfflineMangaView } from '@/features/manga/components/OfflineMangaView.tsx';
+import type { LocalChapterItem } from '@/features/local-repository/services/LocalFileSystem.ts';
 
 export const Manga: React.FC = () => {
     const { t } = useLingui();
@@ -41,7 +43,28 @@ export const Manga: React.FC = () => {
 
     const numericId = Number(id);
     const isSyntheticLocalId = !isNaN(numericId) && numericId < 0;
-    const [resolvingFailed, setResolvingFailed] = React.useState(false);
+    const [resolvingFailed, setResolvingFailed] = useState(false);
+    const [offlineDetails, setOfflineDetails] = useState<{
+        title: string;
+        coverUrl?: string;
+        chapters: LocalChapterItem[];
+    } | null>(null);
+
+    const loadOfflineDetails = useCallback(async () => {
+        try {
+            const { LocalFileSystem } = await import('@/features/local-repository/services/LocalFileSystem.ts');
+            const details = await LocalFileSystem.getOfflineMangaDetails(numericId);
+            if (details) {
+                setOfflineDetails(details);
+            }
+        } catch {
+            // ignore
+        }
+    }, [numericId]);
+
+    useEffect(() => {
+        loadOfflineDetails();
+    }, [loadOfflineDetails]);
 
     useEffect(() => {
         if (isSyntheticLocalId) {
@@ -96,7 +119,7 @@ export const Manga: React.FC = () => {
     }, [manga]);
 
     useAppTitleAndAction(
-        manga?.title ?? t`Manga`,
+        manga?.title ?? offlineDetails?.title ?? t`Manga`,
         <Stack
             direction="row"
             sx={{
@@ -125,8 +148,21 @@ export const Manga: React.FC = () => {
             )}
             {manga && <MangaToolbarMenu manga={manga} onRefresh={refresh} refreshing={refreshing} />}
         </Stack>,
-        [t, error, isValidating, refreshing, manga, refresh],
+        [t, error, isValidating, refreshing, manga, refresh, offlineDetails],
     );
+
+    // If offline chapters exist for an orphan or offline manga, render the offline view
+    if ((isSyntheticLocalId || (error && !manga)) && offlineDetails) {
+        return (
+            <OfflineMangaView
+                mangaId={numericId}
+                title={offlineDetails.title}
+                coverUrl={offlineDetails.coverUrl}
+                chapters={offlineDetails.chapters}
+                onUpdated={loadOfflineDetails}
+            />
+        );
+    }
 
     if (isSyntheticLocalId && !manga) {
         return (
@@ -134,7 +170,7 @@ export const Manga: React.FC = () => {
                 message={resolvingFailed ? t`Offline Local Manga` : t`Loading Manga...`}
                 messageExtra={
                     resolvingFailed
-                        ? t`Could not link to server manga. Return to Browse to select your downloaded titles.`
+                        ? t`No local downloaded chapters found for this title.`
                         : t`Resolving manga details...`
                 }
             />

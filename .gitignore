@@ -34,3 +34,4 @@ HANDOFF.md
 *.mv.db*
 db_snapshots/
 .UPSTREAM_MERGE_PENDING
+__pycache__/

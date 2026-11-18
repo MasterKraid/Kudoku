@@ -246,7 +246,13 @@ export const getImageMarginStyling = (doublePage: boolean, objectFitPosition?: '
 export const createSinglePageData = (url: string, index: number): ReaderStatePages['pages'][number]['primary'] => ({
     index,
     alt: `Page #${index + 1}`,
-    url: `${requestManager.getBaseUrl()}${url}`,
+    url:
+        url.startsWith('blob:') ||
+        url.startsWith('data:') ||
+        url.startsWith('http://') ||
+        url.startsWith('https://')
+            ? url
+            : `${requestManager.getBaseUrl()}${url}`,
 });
 
 export const createPageData = (url: string, index: number): ReaderStatePages['pages'][number] => ({

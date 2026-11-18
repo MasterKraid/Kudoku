@@ -134,6 +134,11 @@ msgstr "{0} / {1}"
 msgid "{0} / {1}{2}"
 msgstr "{0} / {1}{2}"
 
+#. placeholder {0}: chapters.length
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "{0} chapters"
+msgstr "{0} chapters"
+
 #. placeholder {0}: otherOf(editing.shares[0])
 #: src/features/library/screens/LibraryShare.tsx
 msgid "{0} has to confirm the change before it applies."
@@ -369,6 +374,10 @@ msgstr "{otherResultsCount, plural, one {# more match} other {# more matches}}"
 msgid "{progress}% | Updating…"
 msgstr "{progress}% | Updating…"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "{totalChapters} chapters across {mangaCount} manga"
+msgstr "{totalChapters} chapters across {mangaCount} manga"
+
 #: src/features/backup/Backup.utils.ts
 msgid "{ttl, plural, one {Delete backups that are older than # day} other {Delete backups that are older than # days}}"
 msgstr "{ttl, plural, one {Delete backups that are older than # day} other {Delete backups that are older than # days}}"
@@ -542,6 +551,10 @@ msgstr "Age rating"
 msgid "All"
 msgstr "All"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "All offline downloads cleared"
+msgstr "All offline downloads cleared"
+
 #: src/features/reader/overlay/navigation/components/ReaderPageThumbnails.tsx
 msgid "All pages"
 msgstr "All pages"
@@ -583,6 +596,15 @@ msgstr "Apply safe area padding"
 #: src/features/migration/MigrationManager.ts
 msgid "Are you sure you want to abort the migration?"
 msgstr "Are you sure you want to abort the migration?"
+
+#. placeholder {0}: chapterToDelete?.name
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Are you sure you want to delete \"{0}\" from this device?"
+msgstr "Are you sure you want to delete \"{0}\" from this device?"
+
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Are you sure you want to delete all offline chapters for \"{title}\" from this device?"
+msgstr "Are you sure you want to delete all offline chapters for \"{title}\" from this device?"
 
 #: src/features/authentication/components/UserAccountsDialog.tsx
 #: src/features/category/components/CategorySettingsCard.tsx
@@ -711,6 +733,10 @@ msgstr "Automatically use webtoon mode for entries that are detected to likely u
 msgid "Available"
 msgstr "Available"
 
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Back"
+msgstr "Back"
+
 #: src/features/backup/screens/Backup.tsx
 msgid "Back up every account and the server settings in one file (includes the logins, keep it private)"
 msgstr "Back up every account and the server settings in one file (includes the logins, keep it private)"
@@ -837,6 +863,11 @@ msgstr "Browse"
 msgid "Browser"
 msgstr "Browser"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+#: src/features/downloads/screens/DownloadSettings.tsx
+msgid "Browser Storage (IndexedDB)"
+msgstr "Browser Storage (IndexedDB)"
+
 #: src/features/settings/screens/About.tsx
 msgid "Build time"
 msgstr "Build time"
@@ -899,10 +930,12 @@ msgstr "Can't migrate an entry to itself"
 #: src/features/category/components/CategoriesInclusionSetting.tsx
 #: src/features/category/components/CategorySelect.tsx
 #: src/features/category/components/CreateOrEditCategoryDialog.tsx
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
 #: src/features/downloads/components/DownloadQueueChapterCard.tsx
 #: src/features/library/screens/LibrarySettings.tsx
 #: src/features/library/screens/LibraryShare.tsx
 #: src/features/manga/components/details/MangaNotes.tsx
+#: src/features/manga/components/OfflineMangaView.tsx
 #: src/features/migration/components/MigrationBulkSearchOptionsDialog.tsx
 #: src/features/migration/components/MigrationOptionsDialog.tsx
 #: src/features/reader/hotkeys/settings/components/RecordHotkey.tsx
@@ -974,6 +1007,10 @@ msgstr "Change categories"
 #: src/features/manga/Manga.constants.ts
 msgid "Change categories of selected"
 msgstr "Change categories of selected"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Change Local Folder..."
+msgstr "Change Local Folder..."
 
 #. placeholder {0}: otherOf(halves[0])
 #: src/features/library/screens/LibraryShare.tsx
@@ -1061,6 +1098,10 @@ msgstr "Check for new cover and details when updating library"
 msgid "Checking for update"
 msgstr "Checking for update"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Choose Local Folder..."
+msgstr "Choose Local Folder..."
+
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Choose the order in which chapters are displayed."
 msgstr "Choose the order in which chapters are displayed."
@@ -1072,6 +1113,14 @@ msgstr "Cleanup database"
 #: src/base/collection/components/SelectableCollectionSelectAll.tsx
 msgid "Clear"
 msgstr "Clear"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Clear All Offline Downloads?"
+msgstr "Clear All Offline Downloads?"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Clear all offline downloads..."
+msgstr "Clear all offline downloads..."
 
 #: src/features/settings/screens/ImagesSettings.tsx
 msgid "Clear cache"
@@ -1112,6 +1161,7 @@ msgstr "Client data"
 
 #: src/base/components/feedback/SnackbarWithDescription.tsx
 #: src/features/app-updates/components/VersionUpdateInfoDialog.tsx
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
 #: src/features/migration/components/migration-entry/MigrationDestinationEntry.tsx
 #: src/features/reader/overlay/navigation/components/ReaderPageThumbnails.tsx
 #: src/features/webview/components/WebViewModal.tsx
@@ -1320,10 +1370,6 @@ msgstr "Could not find the source of this manga. Check your installed extensions
 #: src/features/browse/extensions/Extensions.tsx
 msgid "Could not install the extension"
 msgstr "Could not install the extension"
-
-#: src/features/manga/screens/Manga.tsx
-msgid "Could not link to server manga. Return to Browse to select your downloaded titles."
-msgstr "Could not link to server manga. Return to Browse to select your downloaded titles."
 
 #: src/features/category/screens/CategorySettings.tsx
 #: src/features/manga/hooks/useManageMangaLibraryState.tsx
@@ -1542,6 +1588,10 @@ msgstr "Crimson"
 msgid "Current source"
 msgstr "Current source"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Current storage location"
+msgstr "Current storage location"
+
 #: src/features/reader/viewer/components/ReaderTransitionPage.tsx
 msgid "Current:"
 msgstr "Current:"
@@ -1644,7 +1694,6 @@ msgstr "Decrease auto scroll speed"
 #: src/features/backup/screens/Backup.tsx
 #: src/features/browse/screens/BrowseSettings.tsx
 #: src/features/device/screens/DeviceSetting.tsx
-#: src/features/downloads/screens/DownloadSettings.tsx
 #: src/features/reader/settings/ReaderSettings.constants.tsx
 #: src/features/settings/screens/Appearance.tsx
 #: src/features/settings/screens/WebUISettings.tsx
@@ -1671,6 +1720,7 @@ msgstr "Default sorting"
 #: src/features/downloads/components/DownloadQueueChapterCard.tsx
 #: src/features/extension/store/screens/ExtensionStores.tsx
 #: src/features/manga/components/MangaBadges.tsx
+#: src/features/manga/components/OfflineMangaView.tsx
 #: src/features/reader/hotkeys/settings/components/Hotkey.tsx
 #: src/features/settings/components/images/KeyValueItem.tsx
 #: src/features/settings/components/images/Processing.tsx
@@ -1688,9 +1738,18 @@ msgstr "Delete account"
 msgid "Delete all"
 msgstr "Delete all"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Delete All"
+msgstr "Delete All"
+
 #: src/features/downloads/screens/DownloadSettings.tsx
 msgid "Delete chapter after manually marking it as read"
 msgstr "Delete chapter after manually marking it as read"
+
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Delete Chapter?"
+msgstr "Delete Chapter?"
 
 #: src/features/downloads/screens/DownloadSettings.tsx
 msgid "Delete chapters"
@@ -1712,6 +1771,14 @@ msgstr "Delete Downloaded Manga?"
 msgid "Delete finished chapters while reading"
 msgstr "Delete finished chapters while reading"
 
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Delete Manga?"
+msgstr "Delete Manga?"
+
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Delete Offline Manga"
+msgstr "Delete Offline Manga"
+
 #: src/features/source/browse/components/SourceOptions.tsx
 msgid "Delete search"
 msgstr "Delete search"
@@ -1723,6 +1790,15 @@ msgstr "Delete selected"
 #: src/features/manga/components/MangaBadges.tsx
 msgid "Deleted {mangaTitle} from local storage"
 msgstr "Deleted {mangaTitle} from local storage"
+
+#. placeholder {0}: ch.name
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Deleted chapter: {0}"
+msgstr "Deleted chapter: {0}"
+
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Deleted offline manga and chapters"
+msgstr "Deleted offline manga and chapters"
 
 #. placeholder {0}: theme.getName()
 #: src/features/theme/components/ThemeList.tsx
@@ -1842,6 +1918,10 @@ msgstr "Download badges"
 msgid "Download location"
 msgstr "Download location"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Download Location & Storage"
+msgstr "Download Location & Storage"
+
 #: src/features/downloads/screens/DownloadSettings.tsx
 msgid "Download new chapters"
 msgstr "Download new chapters"
@@ -1858,8 +1938,13 @@ msgstr "Download selected"
 #: src/features/chapter/components/cards/ChapterCard.tsx
 #: src/features/chapter/components/ChapterOptions.tsx
 #: src/features/library/components/LibraryOptionsPanel.tsx
+#: src/features/manga/components/OfflineMangaView.tsx
 msgid "Downloaded"
 msgstr "Downloaded"
+
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Downloaded Chapters"
+msgstr "Downloaded Chapters"
 
 #: src/base/components/downloads/DownloadStateIndicatorCircular.tsx
 #: src/features/settings/Settings.constants.ts
@@ -1988,6 +2073,10 @@ msgstr "Entry \"{id}\" not found"
 #: src/features/settings/Settings.constants.ts
 msgid "Error"
 msgstr "Error"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Estimated browser storage used"
+msgstr "Estimated browser storage used"
 
 #: src/features/settings/Settings.constants.ts
 msgid "Every 12 hours"
@@ -2163,6 +2252,14 @@ msgstr "Fifth to last read chapter"
 msgid "Filename"
 msgstr "Filename"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Files are cached securely in your browser's local offline database."
+msgstr "Files are cached securely in your browser's local offline database."
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Files are saved as CBZ archives directly to this local directory."
+msgstr "Files are saved as CBZ archives directly to this local directory."
+
 #: src/features/chapter/components/ChapterOptions.tsx
 #: src/features/library/components/LibraryOptionsPanel.tsx
 #: src/features/source/browse/components/SourceOptions.tsx
@@ -2255,6 +2352,10 @@ msgstr "FlareSolverr will automatically rotate expired sessions based on the TTL
 #: src/features/settings/screens/WebUISettings.tsx
 msgid "Flavor"
 msgstr "Flavor"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Folder: {directoryName}"
+msgstr "Folder: {directoryName}"
 
 #: src/features/theme/Themes.ts
 msgid "Forest Dew"
@@ -2757,6 +2858,11 @@ msgstr "Limit reader width"
 msgid "Limit the amount of new chapters that are going to get downloaded."
 msgstr "Limit the amount of new chapters that are going to get downloaded."
 
+#. placeholder {0}: handle.name
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Linked to folder: {0}"
+msgstr "Linked to folder: {0}"
+
 #: src/features/settings/screens/About.tsx
 msgid "Links"
 msgstr "Links"
@@ -2777,6 +2883,14 @@ msgstr "Loading theme fonts…"
 #: src/base/components/settings/SelectSetting.tsx
 msgid "Loading…"
 msgstr "Loading…"
+
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "Local / Offline"
+msgstr "Local / Offline"
+
+#: src/features/downloads/screens/DownloadSettings.tsx
+msgid "Local Folder: {directoryName}"
+msgstr "Local Folder: {directoryName}"
 
 #: src/features/browse/sources/components/SourceCard.tsx
 #: src/features/manga/components/details/MangaDetails.tsx
@@ -2858,6 +2972,10 @@ msgstr "Manga"
 #: src/features/manga/Manga.constants.ts
 msgid "entry-type-detection-manga"
 msgstr "Manga"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Manga chapters are downloaded client-side and saved to this device for offline reading."
+msgstr "Manga chapters are downloaded client-side and saved to this device for offline reading."
 
 #: src/features/settings/screens/Appearance.tsx
 msgid "Manga item width"
@@ -3136,6 +3254,10 @@ msgstr "No chapters found"
 msgid "No chapters matching filter"
 msgstr "No chapters matching filter"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "No downloaded chapters"
+msgstr "No downloaded chapters"
+
 #: src/features/downloads/screens/DownloadQueue.tsx
 msgid "No downloads"
 msgstr "No downloads"
@@ -3143,6 +3265,10 @@ msgstr "No downloads"
 #: src/features/global-search/screens/SearchAll.tsx
 msgid "No exact match, showing results for \"{activeQuery}\""
 msgstr "No exact match, showing results for \"{activeQuery}\""
+
+#: src/features/manga/screens/Manga.tsx
+msgid "No local downloaded chapters found for this title."
+msgstr "No local downloaded chapters found for this title."
 
 #: src/features/source/browse/screens/SourceMangas.tsx
 msgid "No local manga found. Connect your local directory or download chapters for offline reading."
@@ -3244,6 +3370,10 @@ msgstr "Obsolete"
 #: src/features/tracker/Tracker.constants.ts
 msgid "OEL"
 msgstr "OEL"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Offline downloads"
+msgstr "Offline downloads"
 
 #: src/features/manga/screens/Manga.tsx
 msgid "Offline Local Manga"
@@ -3742,6 +3872,10 @@ msgstr "Save as CBZ archive"
 #: src/features/source/browse/components/SourceOptions.tsx
 msgid "Save current search"
 msgstr "Save current search"
+
+#: src/features/downloads/screens/DownloadSettings.tsx
+msgid "Save downloaded chapters as .cbz comic archives"
+msgstr "Save downloaded chapters as .cbz comic archives"
 
 #: src/features/manga/components/MangaToolbarMenu.tsx
 #: src/features/theme/components/CreateThemeDialog.tsx
@@ -4341,6 +4475,10 @@ msgstr "Swipe between categories"
 msgid "Switch account"
 msgstr "Switch account"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Switched to browser offline storage (IndexedDB)"
+msgstr "Switched to browser offline storage (IndexedDB)"
+
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Sync"
 msgstr "Sync"
@@ -4493,10 +4631,6 @@ msgstr "The other person can choose to follow it automatically. Reading progress
 msgid "The path to the directory on the server where automated backups should get saved in"
 msgstr "The path to the directory on the server where automated backups should get saved in"
 
-#: src/features/downloads/screens/DownloadSettings.tsx
-msgid "The path to the directory on the server where downloaded files should get saved in"
-msgstr "The path to the directory on the server where downloaded files should get saved in"
-
 #: src/features/browse/screens/BrowseSettings.tsx
 msgid "The path to the directory on the server where local source files are saved in"
 msgstr "The path to the directory on the server where local source files are saved in"
@@ -4563,6 +4697,10 @@ msgstr "This icon will be shown on the system that is running the server"
 msgid "This is the latest version"
 msgstr "This is the latest version"
 
+#: src/features/manga/components/OfflineMangaView.tsx
+msgid "This manga is stored offline on this device and can be read without a server connection."
+msgstr "This manga is stored offline on this device and can be read without a server connection."
+
 #: src/features/manga/components/MangaBadges.tsx
 msgid "This will delete \"{mangaTitle}\" and all downloaded chapters from this device."
 msgstr "This will delete \"{mangaTitle}\" and all downloaded chapters from this device."
@@ -4570,6 +4708,10 @@ msgstr "This will delete \"{mangaTitle}\" and all downloaded chapters from this 
 #: src/features/source/browse/components/SourceOptions.tsx
 msgid "This will delete the saved search \"{savedSearch}\""
 msgstr "This will delete the saved search \"{savedSearch}\""
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "This will permanently remove all downloaded chapter CBZ archives and cached data from this device."
+msgstr "This will permanently remove all downloaded chapter CBZ archives and cached data from this device."
 
 #: src/features/tracker/components/cards/TrackerActiveCard.tsx
 msgid "This will remove the tracking locally."
@@ -4872,6 +5014,10 @@ msgid "Use a custom WebUI.\n"
 msgstr "Use a custom WebUI.\n"
 "To use a custom WebUI replace the content of the \"webUI\" directory in the root directory on the server with the files of the custom WebUI"
 
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Use Browser Storage Instead"
+msgstr "Use Browser Storage Instead"
+
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Use SOCKS proxy"
 msgstr "Use SOCKS proxy"
@@ -5102,6 +5248,10 @@ msgstr "You have not read any series yet."
 #: src/features/browse/extensions/Extensions.tsx
 msgid "You have to add a extension store to be able to install extensions"
 msgstr "You have to add a extension store to be able to install extensions"
+
+#: src/features/downloads/components/ClientDownloadLocationDialog.tsx
+msgid "Your browser does not support the File System Access API. All chapters will be stored in offline browser storage."
+msgstr "Your browser does not support the File System Access API. All chapters will be stored in offline browser storage."
 
 #: src/features/settings/Settings.constants.ts
 msgid "Your browser will prompt you to enter credentials with a dialog."

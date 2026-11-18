@@ -51,7 +51,6 @@ export const useReaderSetPagesState = (
 ) => {
     const previousPageData = useRef<string[]>(undefined);
     const isLocalBlobLoaded = useRef(false);
-    const localBlobUrlsRef = useRef<string[]>([]);
 
     const applyPages = (newPages: string[]) => {
         const initialReaderPageIndex = getInitialReaderPageIndex(resumeMode, lastPageRead ?? 0, newPages.length - 1);
@@ -93,6 +92,14 @@ export const useReaderSetPagesState = (
         let isCancelled = false;
 
         async function loadLocalBlob() {
+            // 1. Check if pages are already cached in LocalFileSystem
+            const cachedUrls = LocalFileSystem.getCachedChapterPages(chapterId);
+            if (cachedUrls && cachedUrls.length > 0) {
+                isLocalBlobLoaded.current = true;
+                applyPages(cachedUrls);
+                return;
+            }
+
             const chapter =
                 storeChapters.find((c) => c.id === chapterId) ??
                 getReaderStore().chapters.chapters.find((c) => c.id === chapterId) ??
@@ -120,7 +127,7 @@ export const useReaderSetPagesState = (
                 }
 
                 const blobUrls = pageEntries.map((p) => p.url);
-                localBlobUrlsRef.current = blobUrls;
+                LocalFileSystem.cacheChapterPages(chapterId, blobUrls);
                 isLocalBlobLoaded.current = true;
                 applyPages(blobUrls);
             } catch (_) {
@@ -132,13 +139,6 @@ export const useReaderSetPagesState = (
 
         return () => {
             isCancelled = true;
-            localBlobUrlsRef.current.forEach((url) => {
-                if (url.startsWith('blob:')) {
-                    URL.revokeObjectURL(url);
-                }
-            });
-            localBlobUrlsRef.current = [];
-            isLocalBlobLoaded.current = false;
         };
     }, [chapterId, readerManga?.title, storeChapters.length]);
 

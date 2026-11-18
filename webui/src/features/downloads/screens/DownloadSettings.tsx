@@ -9,12 +9,12 @@
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
+import ListItemButton from '@mui/material/ListItemButton';
 import Switch from '@mui/material/Switch';
 import { CARD_LIST_SX } from '@/base/components/lists/cardListSx.ts';
 import { ListSubheader } from '@/base/components/lists/ListSubheader.tsx';
 import { useLingui } from '@lingui/react/macro';
 import { plural } from '@lingui/core/macro';
-import { TextSetting } from '@/base/components/settings/text/TextSetting.tsx';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import { DownloadAheadSetting } from '@/features/downloads/components/DownloadAheadSetting.tsx';
 import {
@@ -39,6 +39,9 @@ import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
 import { ListItemLink } from '@/base/components/lists/ListItemLink.tsx';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
+import { useState } from 'react';
+import { ClientDownloadLocationDialog } from '@/features/downloads/components/ClientDownloadLocationDialog.tsx';
+import { useLocalRepository } from '@/features/local-repository/hooks/useLocalRepository.ts';
 
 type DownloadSettingsType = Pick<
     ServerSettings,
@@ -100,6 +103,19 @@ export const DownloadSettings = () => {
     }
 
     const downloadSettings = serverSettings.data!.settings;
+    const { directoryName } = useLocalRepository();
+    const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
+
+    const [clientSaveAsCbz, setClientSaveAsCbz] = useState<boolean>(() => {
+        const stored = localStorage.getItem('client_download_save_cbz');
+        return stored != null ? stored === 'true' : true;
+    });
+
+    const handleToggleCbz = (checked: boolean) => {
+        setClientSaveAsCbz(checked);
+        localStorage.setItem('client_download_save_cbz', String(checked));
+        updateSetting('downloadAsCbz', checked).catch(() => {});
+    };
 
     const updateSetting = <Setting extends keyof DownloadSettingsType>(
         setting: Setting,
@@ -117,21 +133,29 @@ export const DownloadSettings = () => {
 
     return (
         <List sx={CARD_LIST_SX}>
-            <TextSetting
-                settingName={t`Download location`}
-                dialogDescription={t`The path to the directory on the server where downloaded files should get saved in`}
-                value={downloadSettings?.downloadsPath}
-                settingDescription={
-                    downloadSettings?.downloadsPath.length ? downloadSettings.downloadsPath : t`Default`
-                }
-                handleChange={(path) => updateSetting('downloadsPath', path)}
+            <ListItemButton onClick={() => setIsLocationDialogOpen(true)}>
+                <ListItemText
+                    primary={t`Download location`}
+                    secondary={
+                        directoryName
+                            ? t`Local Folder: ${directoryName}`
+                            : t`Browser Storage (IndexedDB)`
+                    }
+                />
+            </ListItemButton>
+            <ClientDownloadLocationDialog
+                open={isLocationDialogOpen}
+                onClose={() => setIsLocationDialogOpen(false)}
             />
             <ListItem>
-                <ListItemText primary={t`Save as CBZ archive`} />
+                <ListItemText
+                    primary={t`Save as CBZ archive`}
+                    secondary={t`Save downloaded chapters as .cbz comic archives`}
+                />
                 <Switch
                     edge="end"
-                    checked={!!downloadSettings?.downloadAsCbz}
-                    onChange={(e) => updateSetting('downloadAsCbz', e.target.checked)}
+                    checked={clientSaveAsCbz}
+                    onChange={(e) => handleToggleCbz(e.target.checked)}
                 />
             </ListItem>
             <ListItemLink to={AppRoutes.settings.children.images.children.processingDownloads.path}>

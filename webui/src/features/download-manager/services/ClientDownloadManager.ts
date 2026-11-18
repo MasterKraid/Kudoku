@@ -16,6 +16,11 @@ import Button from '@mui/material/Button';
 import { createElement } from 'react';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import type { RestClient } from '@/lib/requests/client/RestClient.ts';
+import { GET_CHAPTER_PAGES_FETCH } from '@/lib/graphql/chapter/ChapterMutation.ts';
+import type {
+    GetChapterPagesFetchMutation,
+    GetChapterPagesFetchMutationVariables,
+} from '@/lib/graphql/generated/graphql.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -149,20 +154,71 @@ function buildComicInfoXml(mangaTitle: string, chapterName: string, chapterNumbe
     ].join('\n');
 }
 
+/** Validates that buffer starts with valid image magic bytes */
+function isValidImageBuffer(buffer: ArrayBuffer): boolean {
+    if (!buffer || buffer.byteLength < 12) return false;
+    const view = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 32));
+
+    // JPEG: FF D8 FF
+    if (view.length >= 3 && view[0] === 0xff && view[1] === 0xd8 && view[2] === 0xff) return true;
+    // PNG: 89 50 4E 47
+    if (view.length >= 4 && view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4e && view[3] === 0x47) return true;
+    // WebP: RIFF .... WEBP
+    if (
+        view.length >= 12 &&
+        view[0] === 0x52 &&
+        view[1] === 0x49 &&
+        view[2] === 0x46 &&
+        view[3] === 0x46 &&
+        view[8] === 0x57 &&
+        view[9] === 0x45 &&
+        view[10] === 0x42 &&
+        view[11] === 0x50
+    ) {
+        return true;
+    }
+    // GIF: GIF8
+    if (view.length >= 4 && view[0] === 0x47 && view[1] === 0x49 && view[2] === 0x46 && view[3] === 0x38) return true;
+    // BMP: BM
+    if (view.length >= 2 && view[0] === 0x42 && view[1] === 0x4d) return true;
+    // AVIF: ....ftyp
+    if (view.length >= 12) {
+        const ftyp = String.fromCharCode(view[4], view[5], view[6], view[7]);
+        if (ftyp === 'ftyp') return true;
+    }
+    return false;
+}
+
 /** Guess a file extension from an ArrayBuffer (magic bytes) or fallback to .jpg */
 function guessExtension(buffer: ArrayBuffer): string {
-    const view = new Uint8Array(buffer, 0, 12);
-    if (view[0] === 0x89 && view[1] === 0x50) {
+    const view = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 16));
+    if (view.length >= 4 && view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4e && view[3] === 0x47) {
         return 'png';
     }
-    if (view[0] === 0xff && view[1] === 0xd8) {
+    if (view.length >= 3 && view[0] === 0xff && view[1] === 0xd8 && view[2] === 0xff) {
         return 'jpg';
     }
-    if (view[0] === 0x47 && view[1] === 0x49) {
+    if (view.length >= 4 && view[0] === 0x47 && view[1] === 0x49 && view[2] === 0x46) {
         return 'gif';
     }
-    if (view[0] === 0x52 && view[1] === 0x49 && view[8] === 0x57 && view[9] === 0x45) {
+    if (
+        view.length >= 12 &&
+        view[0] === 0x52 &&
+        view[1] === 0x49 &&
+        view[2] === 0x46 &&
+        view[3] === 0x46 &&
+        view[8] === 0x57 &&
+        view[9] === 0x45 &&
+        view[10] === 0x42 &&
+        view[11] === 0x50
+    ) {
         return 'webp';
+    }
+    if (view.length >= 12) {
+        const ftyp = String.fromCharCode(view[4], view[5], view[6], view[7]);
+        if (ftyp === 'ftyp') {
+            return 'avif';
+        }
     }
     return 'jpg';
 }
@@ -209,16 +265,25 @@ async function downloadChapter(
 
     const restClient = requestManager.getClient() as RestClient;
 
-    // 1. Fetch page list from server REST API
-    const listRes = await restClient.fetcher(
-        `/api/v1/manga/${mangaId}/chapter/${chapter.sourceOrder}`,
-        { checkResponseIsJson: false, config: { signal } },
-    );
-    const chapterMeta: { pageCount: number } = await listRes.json();
-    const pageCount: number = chapterMeta.pageCount ?? chapter.pageCount ?? 0;
-    if (pageCount === 0) {
-        throw new Error('Chapter has no pages');
+    // 1. Fetch exact page list from GraphQL mutation fetchChapterPages
+    // This tells the Suwayomi server to invoke Page.INSTANCE.prefetchChapter(...) to prefetch from upstream extension
+    const pagesMutation = await requestManager.graphQLClient.client.mutate<
+        GetChapterPagesFetchMutation,
+        GetChapterPagesFetchMutationVariables
+    >({
+        mutation: GET_CHAPTER_PAGES_FETCH,
+        variables: {
+            input: { chapterId },
+        },
+        context: { fetchOptions: { signal } },
+    });
+
+    const pages = pagesMutation.data?.fetchChapterPages?.pages;
+    if (!pages || pages.length === 0) {
+        throw new Error('Chapter has no pages or failed to prefetch from source');
     }
+
+    const pageCount = pages.length;
 
     // 2. Fetch each page as ArrayBuffer
     const pageBuffers: { buffer: ArrayBuffer; ext: string }[] = [];
@@ -229,13 +294,24 @@ async function downloadChapter(
         if (signal.aborted) {
             throw new DOMException('Cancelled', 'AbortError');
         }
+        const pageUrl = pages[i];
         /* eslint-disable-next-line no-await-in-loop */
         const pageRes = await restClient.fetcher(
-            `/api/v1/manga/${mangaId}/chapter/${chapter.sourceOrder}/page/${i}`,
+            pageUrl,
             { checkResponseIsJson: false, config: { signal } },
         );
         /* eslint-disable-next-line no-await-in-loop */
         const buffer = await pageRes.arrayBuffer();
+
+        // Validate buffer
+        if (!buffer || buffer.byteLength === 0) {
+            throw new Error(`Downloaded empty buffer for page ${i + 1}`);
+        }
+        if (!isValidImageBuffer(buffer)) {
+            const preview = new TextDecoder().decode(new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 80)));
+            throw new Error(`Server returned non-image response for page ${i + 1}: ${preview}`);
+        }
+
         const ext = guessExtension(buffer);
         pageBuffers.push({ buffer, ext });
 
@@ -275,6 +351,9 @@ async function downloadChapter(
     } catch {
         // ignore
     }
+    // Invalidate cached pages in memory if re-downloading
+    LocalFileSystem.clearChapterPagesCache(chapterId);
+
     const { savedToDisk } = await LocalFileSystem.saveChapterCbz(mangaTitle, chapterName, cbzBlob, mangaId, thumbnailUrl);
 
     if (!savedToDisk) {

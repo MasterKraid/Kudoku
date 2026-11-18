@@ -106,9 +106,88 @@ const BaseReader = ({
     }>();
     const chapterSourceOrder = Number(paramChapterSourceOrder);
     const mangaId = Number(paramMangaId);
+    const isSyntheticLocalId = !isNaN(mangaId) && mangaId < 0;
 
-    const mangaResponse = requestManager.useGetManga<GetMangaReaderQuery>(GET_MANGA_READER, mangaId);
-    const chaptersResponse = requestManager.useGetMangaChapters<GetChaptersReaderQuery>(GET_CHAPTERS_READER, mangaId);
+    const [offlineReady, setOfflineReady] = useState(false);
+
+    const mangaResponse = requestManager.useGetManga<GetMangaReaderQuery>(
+        GET_MANGA_READER,
+        mangaId,
+        { skip: isSyntheticLocalId },
+    );
+    const chaptersResponse = requestManager.useGetMangaChapters<GetChaptersReaderQuery>(
+        GET_CHAPTERS_READER,
+        mangaId,
+        { skip: isSyntheticLocalId },
+    );
+
+    useEffect(() => {
+        let active = true;
+        async function checkOffline() {
+            try {
+                const { LocalFileSystem } = await import('@/features/local-repository/services/LocalFileSystem.ts');
+                const details = await LocalFileSystem.getOfflineMangaDetails(mangaId);
+                if (!active || !details) return;
+
+                const targetChapter =
+                    details.chapters.find(
+                        (c) => c.chapterNumber === chapterSourceOrder || c.name.includes(String(chapterSourceOrder)),
+                    ) ?? details.chapters[0];
+
+                if (!targetChapter) return;
+
+                const syntheticManga: any = {
+                    id: mangaId,
+                    title: details.title,
+                    sourceId: -1,
+                    thumbnailUrl: details.coverUrl,
+                    inLibrary: false,
+                    initialized: true,
+                };
+
+                const syntheticChapter: any = {
+                    id: targetChapter.id || -1,
+                    name: targetChapter.name,
+                    chapterNumber: targetChapter.chapterNumber || chapterSourceOrder,
+                    sourceOrder: chapterSourceOrder,
+                    mangaId,
+                    read: false,
+                    bookmark: false,
+                    lastPageRead: 0,
+                    lastPageOffset: 0,
+                };
+
+                getReaderStore().setManga(syntheticManga);
+                getReaderChaptersStore().setChapters({
+                    mangaChapters: [syntheticChapter],
+                    initialChapter: syntheticChapter,
+                    currentChapter: syntheticChapter,
+                    chapterForDuplicatesHandling: syntheticChapter,
+                    visibleChapters: {
+                        current: syntheticChapter,
+                        previous: undefined,
+                        next: undefined,
+                        scrollIntoView: true,
+                    },
+                });
+
+                if (active) {
+                    setOfflineReady(true);
+                    setAreSettingsSet(true);
+                }
+            } catch {
+                // ignore
+            }
+        }
+
+        if (isSyntheticLocalId || mangaResponse.error || chaptersResponse.error) {
+            checkOffline();
+        }
+
+        return () => {
+            active = false;
+        };
+    }, [mangaId, chapterSourceOrder, isSyntheticLocalId, mangaResponse.error, chaptersResponse.error]);
 
     useAppTitle(
         !manga || !currentChapter
@@ -123,13 +202,17 @@ const BaseReader = ({
     } = useDefaultReaderSettings();
     const chapterListOptions = useChapterListOptions(manga ?? FALLBACK_MANGA);
 
+    const isOffline = offlineReady;
     const isLoading =
-        currentChapter === undefined ||
-        !areSettingsSet ||
-        mangaResponse.loading ||
-        (chaptersResponse.loading && chaptersResponse.dataState !== 'complete') ||
-        defaultSettingsResponse.loading;
-    const error = mangaResponse.error ?? chaptersResponse.error ?? defaultSettingsResponse.error;
+        !isOffline &&
+        (currentChapter === undefined ||
+            !areSettingsSet ||
+            mangaResponse.loading ||
+            (chaptersResponse.loading && chaptersResponse.dataState !== 'complete') ||
+            defaultSettingsResponse.loading);
+    const error = isOffline
+        ? undefined
+        : (mangaResponse.error ?? chaptersResponse.error ?? defaultSettingsResponse.error);
 
     const page = getPage(currentPageIndex, pages);
     const primaryPageBackground = getReaderBackgroundColor(
