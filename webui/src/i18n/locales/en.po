@@ -3048,10 +3048,12 @@ msgid "Mark all as read"
 msgstr "Mark all as read"
 
 #: src/features/chapter/Chapter.constants.ts
+#: src/features/history/components/ChapterHistoryCard.tsx
 msgid "Mark as read"
 msgstr "Mark as read"
 
 #: src/features/chapter/Chapter.constants.ts
+#: src/features/history/components/ChapterHistoryCard.tsx
 msgid "Mark as unread"
 msgstr "Mark as unread"
 

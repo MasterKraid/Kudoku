@@ -27,6 +27,12 @@ import Collapse from '@mui/material/Collapse';
 import { Virtuoso } from 'react-virtuoso';
 import Stack from '@mui/material/Stack';
 import { ChapterCardExpandButton } from '@/features/chapter/components/buttons/ChapterCardExpandButton.tsx';
+import IconButton from '@mui/material/IconButton';
+import RemoveDoneIcon from '@mui/icons-material/RemoveDone';
+import DoneIcon from '@mui/icons-material/Done';
+import { CustomTooltip } from '@/base/components/CustomTooltip.tsx';
+import { useLingui } from '@lingui/react/macro';
+import { MUIUtil } from '@/lib/mui/MUI.util.ts';
 
 export const ChapterHistoryCard = memo(
     ({
@@ -36,11 +42,22 @@ export const ChapterHistoryCard = memo(
         chapter: ChapterHistoryListFieldsFragment;
         otherChapters?: ChapterHistoryListFieldsFragment[];
     }) => {
+        const { t } = useLingui();
         const { manga } = chapter;
 
         const [isExpanded, setIsExpanded] = useState(false);
 
         const isGroup = !!otherChapters.length;
+
+        const handleToggleRead = (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (chapter.isRead) {
+                Chapters.markAsUnread([chapter.id]);
+            } else {
+                Chapters.markAsRead([chapter as any], true, chapter.manga.id);
+            }
+        };
 
         return (
             <Card>
@@ -85,6 +102,16 @@ export const ChapterHistoryCard = memo(
                         <DownloadStateIndicatorCircular chapterId={chapter.id} />
                         <ChapterDownloadRetryButton chapterId={chapter.id} />
                         <ChapterDownloadButton chapterId={chapter.id} isDownloaded={chapter.isDownloaded} />
+                        <CustomTooltip title={chapter.isRead ? t`Mark as unread` : t`Mark as read`}>
+                            <IconButton
+                                {...MUIUtil.preventRippleProp()}
+                                onClick={handleToggleRead}
+                                aria-label={chapter.isRead ? t`Mark as unread` : t`Mark as read`}
+                                sx={{ color: 'inherit' }}
+                            >
+                                {chapter.isRead ? <RemoveDoneIcon /> : <DoneIcon />}
+                            </IconButton>
+                        </CustomTooltip>
                     </ListCardContent>
                 </CardActionArea>
                 {isGroup && (
