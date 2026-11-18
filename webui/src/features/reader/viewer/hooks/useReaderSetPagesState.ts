@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { getInitialReaderPageIndex } from '@/features/reader/Reader.utils.ts';
 import { createPagesData } from '@/features/reader/viewer/pager/ReaderPager.utils.tsx';
 import type {
@@ -21,6 +21,8 @@ import type { TChapterReader } from '@/features/chapter/Chapter.types.ts';
 import type { ReaderChaptersStoreSlice } from '@/features/reader/stores/ReaderChaptersStore.ts';
 import { getReaderStore } from '@/features/reader/stores/ReaderStore.ts';
 import { UrlUtil } from '@/lib/UrlUtil.ts';
+import { LocalFileSystem } from '@/features/local-repository/services/LocalFileSystem.ts';
+import { Chapters } from '@/features/chapter/services/Chapters.ts';
 
 export const useReaderSetPagesState = (
     isCurrentChapter: boolean,
@@ -47,8 +49,102 @@ export const useReaderSetPagesState = (
     setTransitionPageMode: ReaderStatePages['setTransitionPageMode'],
 ) => {
     const previousPageData = useRef<string[]>(undefined);
+    const isLocalBlobLoaded = useRef(false);
+    const localBlobUrlsRef = useRef<string[]>([]);
+
+    const applyPages = (newPages: string[]) => {
+        const initialReaderPageIndex = getInitialReaderPageIndex(resumeMode, lastPageRead ?? 0, newPages.length - 1);
+        if (isCurrentChapter) {
+            // webtoon style reading resumes at the exact spot in the page, not only at its top
+            ReaderScrollOffset.setPendingResume(
+                chapterId,
+                initialReaderPageIndex,
+                resumeMode === ReaderResumeMode.LAST_READ ? (lastPageOffset ?? 0) : 0,
+            );
+        }
+
+        previousPageData.current = newPages;
+        const newPageData = createPagesData(newPages);
+
+        setArePagesFetched(true);
+        setPages(newPageData);
+        setPageUrls(newPages);
+        setPageLoadStates(newPageData.map(({ primary: { url } }) => ({ url, loaded: false })));
+        setPagesToSpreadState(newPageData.map(({ primary: { url } }) => ({ url, isSpread: false })));
+        setPageBackgroundColors(newPageData.map(({ primary: { url } }) => ({ url, color: undefined })));
+
+        setTotalPages(newPages.length);
+        setCurrentPageIndex(initialReaderPageIndex);
+        setPageToScrollToIndex(initialReaderPageIndex);
+        setReaderStateChapters((prevState) => ({
+            ...prevState,
+            isCurrentChapterReady: true,
+        }));
+
+        setTransitionPageMode(ReaderTransitionPageMode.NONE);
+    };
+
+    // Offline / Local CBZ check
+    useEffect(() => {
+        let isCancelled = false;
+
+        async function loadLocalBlob() {
+            const { manga } = getReaderStore();
+            const mangaTitle = manga?.title;
+            const chapter =
+                getReaderStore().chapters.chapters.find((c) => c.id === chapterId) ??
+                Chapters.getFromCache(chapterId);
+            const chapterName =
+                chapter?.name || (chapter?.chapterNumber != null ? `Chapter ${chapter.chapterNumber}` : undefined);
+
+            if (!mangaTitle || !chapterName) {
+                return;
+            }
+
+            try {
+                let blob = await LocalFileSystem.getChapterBlob(mangaTitle, chapterName);
+                if (!blob && chapter?.chapterNumber != null) {
+                    blob = await LocalFileSystem.getChapterBlob(mangaTitle, `Chapter ${chapter.chapterNumber}`);
+                }
+
+                if (!blob || isCancelled) {
+                    return;
+                }
+
+                const pageEntries = await LocalFileSystem.extractPagesFromCbz(blob);
+                if (isCancelled || !pageEntries.length) {
+                    return;
+                }
+
+                const blobUrls = pageEntries.map((p) => p.url);
+                localBlobUrlsRef.current = blobUrls;
+                isLocalBlobLoaded.current = true;
+                applyPages(blobUrls);
+            } catch (_) {
+                // Ignore local blob load error and fallback to server streaming
+            }
+        }
+
+        loadLocalBlob();
+
+        return () => {
+            isCancelled = true;
+            localBlobUrlsRef.current.forEach((url) => {
+                if (url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+            localBlobUrlsRef.current = [];
+            isLocalBlobLoaded.current = false;
+        };
+    }, [chapterId]);
 
     useLayoutEffect(() => {
+        if (isLocalBlobLoaded.current) {
+            // Offline local CBZ pages already loaded
+            return;
+        }
+
         const pagesPayload = pagesResponse.data?.fetchChapterPages;
         if (!pagesPayload) {
             return;

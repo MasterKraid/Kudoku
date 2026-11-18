@@ -41,6 +41,31 @@ import { assertIsDefined } from '@/base/Asserts.ts';
 import { DirectionOffset } from '@/base/Base.types.ts';
 import { Confirmation } from '@/base/AppAwaitableComponent.ts';
 import { i18n } from '@/i18n';
+import { ClientDownloadManager, useClientDownloadStore, type ChapterInfo } from '@/features/download-manager/services/ClientDownloadManager.ts';
+import { LocalFileSystem } from '@/features/local-repository/services/LocalFileSystem.ts';
+
+const clientDownloadedChapterIds = new Set<number>();
+
+ClientDownloadManager.subscribe((event) => {
+    if (event.type === 'done') {
+        clientDownloadedChapterIds.add(event.chapterId);
+        try {
+            requestManager.graphQLClient.client.cache.modify({
+                id: requestManager.graphQLClient.client.cache.identify({
+                    __typename: 'ChapterType',
+                    id: event.chapterId,
+                }),
+                fields: {
+                    isDownloaded() {
+                        return true;
+                    },
+                },
+            });
+        } catch {
+            // ignore
+        }
+    }
+});
 
 export class Chapters {
     static getIds(chapters: { id: number }[]): number[] {
@@ -104,6 +129,10 @@ export class Chapters {
     }
 
     static isDownloading(id: number): boolean {
+        if (ClientDownloadManager.isDownloading(id)) {
+            return true;
+        }
+
         const activeDownloadStates = [DownloadState.Downloading, DownloadState.Queued];
         const downloadStatus = Chapters.getDownloadStatusFromCache(id);
 
@@ -114,15 +143,63 @@ export class Chapters {
         return chapters.filter((chapter) => Chapters.isDownloading(chapter.id));
     }
 
-    static isDownloaded({ isDownloaded }: ChapterDownloadInfo): boolean {
-        return isDownloaded;
+    static isDownloaded(chapter: ChapterDownloadInfo & Partial<ChapterIdInfo>): boolean {
+        if (chapter.isDownloaded) {
+            return true;
+        }
+
+        if (chapter.id != null) {
+            if (clientDownloadedChapterIds.has(chapter.id)) {
+                return true;
+            }
+            const queueEntry = useClientDownloadStore.getState().queue.find((e) => e.chapterId === chapter.id);
+            if (queueEntry?.status === 'done') {
+                clientDownloadedChapterIds.add(chapter.id);
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    static getDownloaded<Chapter extends ChapterDownloadInfo>(chapters: Chapter[]): Chapter[] {
+    static async checkIsDownloadedLocally(
+        mangaTitle: string,
+        chapter: { id?: number; name?: string; chapterNumber?: number; isDownloaded?: boolean },
+    ): Promise<boolean> {
+        if (chapter.isDownloaded || (chapter.id != null && clientDownloadedChapterIds.has(chapter.id))) {
+            return true;
+        }
+        const chapterName = chapter.name || `Chapter ${chapter.chapterNumber}`;
+        const has = await LocalFileSystem.hasChapter(mangaTitle, chapterName);
+        if (has && chapter.id != null) {
+            clientDownloadedChapterIds.add(chapter.id);
+            try {
+                requestManager.graphQLClient.client.cache.modify({
+                    id: requestManager.graphQLClient.client.cache.identify({
+                        __typename: 'ChapterType',
+                        id: chapter.id,
+                    }),
+                    fields: {
+                        isDownloaded() {
+                            return true;
+                        },
+                    },
+                });
+            } catch {
+                // ignore
+            }
+        }
+        return has;
+    }
+
+    static getDownloaded<Chapter extends ChapterDownloadInfo & Partial<ChapterIdInfo>>(chapters: Chapter[]): Chapter[] {
         return chapters.filter(Chapters.isDownloaded);
     }
 
     static isDownloadable<Chapter extends ChapterIdInfo & ChapterDownloadInfo>(chapter: Chapter): boolean {
+        if (ClientDownloadManager.isDownloading(chapter.id)) {
+            return false;
+        }
         const downloadStatus = Chapters.getDownloadStatusFromCache(chapter.id);
         return !Chapters.isDownloaded(chapter) && (!downloadStatus || downloadStatus.state === DownloadState.Error);
     }
@@ -186,11 +263,102 @@ export class Chapters {
             .filter((matchingChapters): matchingChapters is [ChapterA, ChapterB] => matchingChapters !== null);
     }
 
+    static async downloadChapters(
+        chaptersOrIds: (number | (ChapterInfo & { mangaId?: number }))[],
+        customMangaTitle?: string,
+        customMangaId?: number,
+    ): Promise<void> {
+        const mangaTitleCache = new Map<number, string>();
+        if (customMangaId && customMangaTitle) {
+            mangaTitleCache.set(customMangaId, customMangaTitle);
+        }
+
+        const resolvedItems: { chapterInfo: ChapterInfo; mangaId: number }[] = [];
+
+        for (const item of chaptersOrIds) {
+            let chapterInfo: ChapterInfo;
+            let mId: number | undefined = customMangaId;
+
+            if (typeof item === 'number') {
+                const cached = Chapters.getFromCache(item);
+                if (!cached) {
+                    continue;
+                }
+                chapterInfo = {
+                    id: cached.id,
+                    name: cached.name,
+                    chapterNumber: cached.chapterNumber,
+                    sourceOrder: cached.sourceOrder,
+                };
+                mId = mId ?? cached.mangaId;
+            } else {
+                chapterInfo = {
+                    id: item.id,
+                    name: item.name,
+                    chapterNumber: item.chapterNumber,
+                    sourceOrder: item.sourceOrder,
+                    pageCount: item.pageCount,
+                };
+                mId = mId ?? item.mangaId;
+            }
+
+            if (mId) {
+                resolvedItems.push({ chapterInfo, mangaId: mId });
+            }
+        }
+
+        const missingMangaIds = [...new Set(resolvedItems.map((r) => r.mangaId))].filter(
+            (id) => !mangaTitleCache.has(id),
+        );
+
+        if (missingMangaIds.length > 0) {
+            const [{ Mangas }, { GET_MANGA_META }] = await Promise.all([
+                import('@/features/manga/services/Mangas.ts'),
+                import('@/lib/graphql/manga/MangaQuery.ts'),
+            ]);
+
+            await Promise.all(
+                missingMangaIds.map(async (mId) => {
+                    const cachedManga = Mangas.getFromCache(mId);
+                    if (cachedManga?.title) {
+                        mangaTitleCache.set(mId, cachedManga.title);
+                        return;
+                    }
+                    try {
+                        const res = await requestManager.getManga<{ manga: { title: string } }>(
+                            GET_MANGA_META,
+                            mId,
+                        ).response;
+                        mangaTitleCache.set(mId, res.data?.manga?.title ?? 'Manga');
+                    } catch {
+                        mangaTitleCache.set(mId, 'Manga');
+                    }
+                }),
+            );
+        }
+
+        const groups = new Map<number, { mangaTitle: string; chapters: ChapterInfo[] }>();
+
+        for (const { chapterInfo, mangaId } of resolvedItems) {
+            const title = mangaTitleCache.get(mangaId) ?? 'Manga';
+            let group = groups.get(mangaId);
+            if (!group) {
+                group = { mangaTitle: title, chapters: [] };
+                groups.set(mangaId, group);
+            }
+            group.chapters.push(chapterInfo);
+        }
+
+        for (const [groupId, { mangaTitle: title, chapters }] of groups.entries()) {
+            ClientDownloadManager.queueChapters(chapters, title, groupId);
+        }
+    }
+
     static async download(chapterIds: number[], disableConfirmation?: boolean): Promise<void> {
         return Chapters.executeAction(
             'download',
             chapterIds.length,
-            () => requestManager.addChaptersToDownloadQueue(chapterIds).response,
+            () => Chapters.downloadChapters(chapterIds),
             disableConfirmation,
         );
     }

@@ -11,7 +11,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { useLingui } from '@lingui/react/macro';
 import { CustomTooltip } from '@/base/components/CustomTooltip.tsx';
 import { Chapters } from '@/features/chapter/services/Chapters.ts';
-import { requestManager } from '@/lib/requests/RequestManager.ts';
+import { useClientDownloadStore } from '@/features/download-manager/services/ClientDownloadManager.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
 import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { MUIUtil } from '@/lib/mui/MUI.util.ts';
@@ -27,13 +27,22 @@ export const ChapterDownloadButton = ({
     const { t } = useLingui();
     const download = Chapters.useDownloadStatusFromCache(chapterId);
 
+    const isClientActive = useClientDownloadStore((state) =>
+        state.queue.some(
+            (entry) =>
+                entry.chapterId === chapterId && entry.status !== 'error' && entry.status !== 'cancelled',
+        ),
+    );
+
+    const isAlreadyDownloaded = Chapters.isDownloaded({ isDownloaded, id: chapterId });
+
     const downloadChapter = () => {
-        requestManager
-            .addChapterToDownloadQueue(chapterId)
-            .response.catch((e) => makeToast(t`Failed to save changes`, 'error', getErrorMessage(e)));
+        Chapters.downloadChapters([chapterId]).catch((e) =>
+            makeToast(t`Failed to save changes`, 'error', getErrorMessage(e)),
+        );
     };
 
-    if (download != null || isDownloaded) {
+    if (download != null || isAlreadyDownloaded || isClientActive) {
         return null;
     }
 

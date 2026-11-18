@@ -2074,6 +2074,10 @@ msgstr "Failed to connect to KOReader Sync server."
 msgid "Failed to determine source manga for migration"
 msgstr "Failed to determine source manga for migration"
 
+#: src/features/manga/components/cards/MangaCard.tsx
+msgid "Failed to determine target manga for migration"
+msgstr "Failed to determine target manga for migration"
+
 #: src/features/settings/components/koreaderSync/KoreaderSyncSettings.tsx
 msgid "Failed to disconnect from KOReader Sync server."
 msgstr "Failed to disconnect from KOReader Sync server."

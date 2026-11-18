@@ -36,6 +36,7 @@ import { AuthManager } from '@/features/authentication/AuthManager.ts';
 import { ImageProcessingType } from '@/features/settings/Settings.types.ts';
 import { MigrationFABIndicator } from '@/features/migration/components/MigrationFABIndicator.tsx';
 import { MigrationManager } from '@/features/migration/MigrationManager.ts';
+import { ClientDownloadDrawer } from '@/features/download-manager';
 import { usePinchZoomOnlyInReader } from '@/lib/utils/PinchZoom.ts';
 import { useBlurInputOnScroll } from '@/lib/utils/BlurInputOnScroll.ts';
 import { SplashScreen } from '@/features/authentication/components/SplashScreen.tsx';
@@ -458,6 +459,7 @@ export const App: React.FC = () => (
                     </OffsetContainerRoot>
                 </Box>
                 <MigrationFABIndicator />
+                <ClientDownloadDrawer />
                 <WebViewModal />
             </InitializeGuard>
         </AuthGuard>
