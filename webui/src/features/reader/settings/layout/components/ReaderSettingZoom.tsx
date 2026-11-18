@@ -35,8 +35,14 @@ export const ReaderSettingZoom = ({
     }) => {
     const { t } = useLingui();
 
-    const zoom = readerZoom ?? DEFAULT_READER_SETTINGS.readerZoom;
-    const currentVal = zoom?.value ?? 100;
+    const currentVal =
+        typeof readerZoom === 'number'
+            ? readerZoom
+            : typeof (readerZoom as any)?.value === 'number'
+              ? (readerZoom as any).value
+              : typeof (readerZoom as any)?.value?.value === 'number'
+                ? (readerZoom as any).value.value
+                : (DEFAULT_READER_SETTINGS.readerZoom?.value ?? 100);
 
     const applyZoom = (val: number, isCommitted = true) => {
         const clamped = coerceIn(Math.round(val), 30, 200);

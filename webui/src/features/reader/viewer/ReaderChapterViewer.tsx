@@ -413,10 +413,9 @@ const BaseReaderChapterViewer = ({
                     overflow: 'hidden',
                     margin: 'unset',
                 }),
-                ...applyStyles(
-                    isContinuousVerticalReadingMode(readingMode) && shouldApplyReaderWidth(readerWidth, pageScaleMode),
-                    { alignItems: 'center' },
-                ),
+                ...applyStyles(isContinuousVerticalReadingMode(readingMode), {
+                    alignItems: 'center',
+                }),
                 ...applyStyles(readingMode === ReadingMode.CONTINUOUS_HORIZONTAL, {
                     ...applyStyles(themeDirection === 'ltr', {
                         flexDirection: isLtrReadingDirection ? 'row' : 'row-reverse',

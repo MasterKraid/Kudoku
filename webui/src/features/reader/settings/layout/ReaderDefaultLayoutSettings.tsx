@@ -7,6 +7,7 @@
  */
 
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
@@ -18,10 +19,12 @@ import {
 } from '@/features/reader/settings/ReaderSettings.constants.tsx';
 import { ReaderSettingReadingMode } from '@/features/reader/settings/layout/components/ReaderSettingReadingMode.tsx';
 import type { IReaderSettingsWithDefaultFlag, ReadingMode } from '@/features/reader/Reader.types.ts';
+import { useDefaultReaderSettingsWithDefaultFlag } from '@/features/reader/settings/ReaderSettingsMetadata.ts';
+import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 
 export const ReaderDefaultLayoutSettings = ({
     profiles = READING_MODE_VALUES,
-    readingMode,
+    readingMode: propReadingMode,
     ...props
 }: Omit<ComponentProps<typeof ReaderLayoutSettings>, 'setShowPreview' | 'settings'> & {
     profiles?: ReadingMode[];
@@ -31,26 +34,32 @@ export const ReaderDefaultLayoutSettings = ({
 
     const { t } = useLingui();
 
+    const { settings: defaultGlobalSettings } = useDefaultReaderSettingsWithDefaultFlag();
+    const effectiveReadingMode = propReadingMode ?? defaultGlobalSettings?.readingMode;
+
     const [selectedProfile, setSelectedProfile] = useState<ReadingMode>(
-        readingMode?.value ?? profiles[0] ?? READING_MODE_VALUES[0],
+        effectiveReadingMode?.value ?? profiles[0] ?? READING_MODE_VALUES[0],
     );
 
     useEffect(() => {
-        if (readingMode?.value !== undefined && profiles.includes(readingMode.value)) {
-            setSelectedProfile(readingMode.value);
+        if (effectiveReadingMode?.value !== undefined && profiles.includes(effectiveReadingMode.value)) {
+            setSelectedProfile(effectiveReadingMode.value);
         }
-    }, [readingMode?.value, profiles]);
+    }, [effectiveReadingMode?.value, profiles]);
 
     const activeProfile = profiles.includes(selectedProfile) ? selectedProfile : profiles[0];
 
     return (
         <Stack sx={{ gap: 2, pb: Number(!isSeriesMode) * 2 }}>
-            {readingMode !== undefined && (
-                <Stack sx={{ pt: 2, px: 2 }}>
+            {effectiveReadingMode !== undefined && (
+                <Stack sx={{ pt: 2, px: 2, gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {t`Default reading mode`}
+                    </Typography>
                     <ReaderSettingReadingMode
-                        readingMode={readingMode}
+                        readingMode={effectiveReadingMode}
                         setReadingMode={(value) => {
-                            updateSetting('readingMode', value);
+                            ReaderService.updateSetting('readingMode', value, true, true);
                             setSelectedProfile(value);
                         }}
                     />

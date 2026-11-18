@@ -50,8 +50,12 @@ const BaseReaderDoublePagedPager = ({
 
     const { direction: themeDirection } = useTheme();
 
-    const currentPage = useMemo(() => getPage(currentPageIndex, pages), [currentPageIndex, pages]);
+    const currentPage = useMemo(() => (pages.length ? getPage(currentPageIndex, pages) : undefined), [currentPageIndex, pages]);
     const isLtrReadingDirection = readingDirection === ReadingDirection.LTR;
+
+    if (!pages.length || !currentPage?.primary) {
+        return null;
+    }
 
     return (
         <BasePager

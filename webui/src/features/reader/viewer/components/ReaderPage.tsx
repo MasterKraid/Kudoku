@@ -20,7 +20,7 @@ import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
 import type { NavbarContextType } from '@/features/navigation-bar/NavigationBar.types.ts';
 import { useReaderScrollbarStore } from '@/features/reader/stores/ReaderStore.ts';
 import { ScrollDirection } from '@/base/Base.types.ts';
-import { getSafeAreaInsets } from '@/features/reader/settings/ReaderSettings.utils.tsx';
+import { getSafeAreaInsets, isContinuousVerticalReadingMode } from '@/features/reader/settings/ReaderSettings.utils.tsx';
 
 const getCustomFilterString = (customFilter: ReaderCustomFilter): string =>
     Object.keys(customFilter)
@@ -130,7 +130,7 @@ const BaseReaderPage = ({
                 ...applyStyles(!display, {
                     display: 'none',
                 }),
-                ...applyStyles(!!readerZoom?.enabled && readerZoom.value !== 100, {
+                ...applyStyles(!isContinuousVerticalReadingMode(readingMode) && !!readerZoom?.enabled && readerZoom.value !== 100, {
                     zoom: `${readerZoom.value / 100}`,
                 }),
                 ...getImageMarginStyling(doublePage, position),
@@ -149,7 +149,7 @@ const BaseReaderPage = ({
                 objectFit: 'contain',
                 objectPosition: position,
                 userSelect: 'none',
-                ...applyStyles(!!readerZoom?.enabled && readerZoom.value !== 100, {
+                ...applyStyles(!isContinuousVerticalReadingMode(readingMode) && !!readerZoom?.enabled && readerZoom.value !== 100, {
                     zoom: `${readerZoom.value / 100}`,
                 }),
                 ...getImageMarginStyling(doublePage, position),
@@ -159,9 +159,6 @@ const BaseReaderPage = ({
                 display: 'block',
                 ...applyStyles(!display, {
                     display: 'none',
-                }),
-                ...applyStyles(!isLoaded, {
-                    margin: 'unset',
                 }),
             }}
             hideImgStyle={{

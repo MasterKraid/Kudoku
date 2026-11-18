@@ -264,10 +264,9 @@ const BaseReaderViewer = ({
                 ...applyStyles(isContinuousReadingModeActive && !shouldShowTransitionPage, {
                     gap: `${getPageGap(pageGap, readingMode)}px`,
                 }),
-                ...applyStyles(
-                    isContinuousVerticalReadingModeActive && shouldApplyReaderWidth(readerWidth, pageScaleMode),
-                    { alignItems: 'center' },
-                ),
+                ...applyStyles(isContinuousVerticalReadingModeActive, {
+                    alignItems: 'center',
+                }),
                 ...applyStyles(!isContinuousVerticalReadingModeActive, {
                     ...applyStyles(themeDirection === 'ltr', {
                         flexDirection: isLtrReadingDirection ? 'row' : 'row-reverse',

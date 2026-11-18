@@ -25,6 +25,10 @@ export const useReaderConvertPagesForReadingMode = (
     const [wasDoublePageMode, setWasDoublePageMode] = useState(readingMode === ReadingMode.DOUBLE_PAGE);
 
     useLayoutEffect(() => {
+        if (!actualPages?.length) {
+            return;
+        }
+
         const convertPagesToNormalPageMode = wasDoublePageMode && readingMode !== ReadingMode.DOUBLE_PAGE;
         if (convertPagesToNormalPageMode) {
             setWasDoublePageMode(false);

@@ -23,6 +23,7 @@ import { ReaderSettingZoom } from '@/features/reader/settings/layout/components/
 import { DefaultSettingFootnote } from '@/features/reader/settings/components/DefaultSettingFootnote.tsx';
 import { getReaderTapZoneStore } from '@/features/reader/stores/ReaderStore.ts';
 import { ReaderDefaultLayoutSettings } from '@/features/reader/settings/layout/ReaderDefaultLayoutSettings.tsx';
+import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 
 export const ReaderLayoutSettings = ({
     settings,
@@ -117,8 +118,9 @@ export const ReaderLayoutSettings = ({
                 <>
                     <Divider />
                     <ReaderDefaultLayoutSettings
-                        profiles={[settings.readingMode.value]}
-                        updateSetting={updateSetting}
+                        updateSetting={(setting, value, commit, _, profile) =>
+                            ReaderService.updateSetting(setting, value, commit, true, profile)
+                        }
                         isSeriesMode={isSeriesMode}
                         setTransparent={setTransparent}
                     />

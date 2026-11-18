@@ -11,6 +11,7 @@ import { BasePager } from '@/features/reader/viewer/pager/components/BasePager.t
 import type { ReaderPagerProps } from '@/features/reader/Reader.types.ts';
 import { createReaderPage } from '@/features/reader/viewer/pager/ReaderPager.utils.tsx';
 import { getPageGap } from '@/features/reader/settings/ReaderSettings.utils.tsx';
+import { applyStyles } from '@/base/utils/ApplyStyles.ts';
 
 const BaseReaderVerticalPager = ({
     onLoad,
@@ -20,7 +21,7 @@ const BaseReaderVerticalPager = ({
     isPreloadMode,
     ...props
 }: ReaderPagerProps) => {
-    const { currentPageIndex, totalPages, readingMode, pageGap } = props;
+    const { currentPageIndex, totalPages, readingMode, pageGap, readerZoom } = props;
 
     return (
         <BasePager
@@ -46,7 +47,19 @@ const BaseReaderVerticalPager = ({
                     setRef,
                 )
             }
-            slots={{ boxProps: { sx: { margin: 'auto' } } }}
+            slots={{
+                boxProps: {
+                    sx: {
+                        margin: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        ...applyStyles(!!readerZoom?.enabled && readerZoom.value !== 100, {
+                            zoom: `${readerZoom.value / 100}`,
+                        }),
+                    },
+                },
+            }}
         />
     );
 };

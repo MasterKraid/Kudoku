@@ -33,7 +33,7 @@ export const useReaderHandlePageSelection = (
     scrollElementRef: { current: HTMLElement | null },
 ) => {
     useLayoutEffect(() => {
-        if (pageToScrollToIndex == null) {
+        if (pageToScrollToIndex == null || !pages?.length) {
             return;
         }
 

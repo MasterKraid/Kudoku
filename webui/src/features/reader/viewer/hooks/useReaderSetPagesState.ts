@@ -94,6 +94,10 @@ export const useReaderSetPagesState = (
         let isCancelled = false;
 
         async function loadLocalBlob() {
+            if (pagesResponse.data?.fetchChapterPages?.pages?.length) {
+                return;
+            }
+
             // 1. Check if pages are already cached in LocalFileSystem
             const cachedUrls = LocalFileSystem.getCachedChapterPages(chapterId);
             if (cachedUrls && cachedUrls.length > 0) {
@@ -153,28 +157,7 @@ export const useReaderSetPagesState = (
         }
 
         const pagesPayload = pagesResponse.data?.fetchChapterPages;
-        if (!pagesPayload) {
-            return;
-        }
-
-        if (!pagesPayload.pages.length && isLocalBlobLoaded.current) {
-            return;
-        }
-
-        if (!pagesPayload.pages.length) {
-            previousPageData.current = [];
-            setArePagesFetched(true);
-            setPages([]);
-            setPageUrls([]);
-            setTotalPages(0);
-            setPageLoadStates([]);
-            setPagesToSpreadState([]);
-            setPageBackgroundColors([]);
-            setReaderStateChapters((prevState) => ({
-                ...prevState,
-                isCurrentChapterReady: true,
-            }));
-            setTransitionPageMode(ReaderTransitionPageMode.NONE);
+        if (!pagesPayload || !pagesPayload.pages || pagesPayload.pages.length === 0) {
             return;
         }
 
@@ -217,7 +200,7 @@ export const useReaderSetPagesState = (
         setPageToScrollToIndex(initialReaderPageIndex);
         setReaderStateChapters((prevState) => ({
             ...prevState,
-            isCurrentChapterReady: arePagesFetched || didPagesChange,
+            isCurrentChapterReady: true,
         }));
 
         setTransitionPageMode(ReaderTransitionPageMode.NONE);

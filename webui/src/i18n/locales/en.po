@@ -1725,6 +1725,10 @@ msgstr "Default"
 msgid "Default category when adding new manga to the library"
 msgstr "Default category when adding new manga to the library"
 
+#: src/features/reader/settings/layout/ReaderDefaultLayoutSettings.tsx
+msgid "Default reading mode"
+msgstr "Default reading mode"
+
 #: src/features/library/screens/LibrarySettings.tsx
 msgid "Default sort rule"
 msgstr "Default sort rule"
