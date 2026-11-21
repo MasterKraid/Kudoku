@@ -119,7 +119,9 @@ object MangaAPI {
                 post("unlink", GitHubBackupController.unlink)
                 post("settings", GitHubBackupController.updateSettings)
                 post("backup", GitHubBackupController.backupNow)
+                post("backup-now", GitHubBackupController.backupNow)
                 post("sync", GitHubBackupController.checkSync)
+                post("check-sync", GitHubBackupController.checkSync)
             }
         }
 

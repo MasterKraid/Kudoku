@@ -18,7 +18,12 @@ services:
       - DATABASE_USERNAME=tsundoku
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - FLARESOLVERR_ENABLED=true
-      - FLARESOLVERR_URL=https://flaresolver.kivx.in
+      - FLARESOLVERR_URL=http://127.0.0.1:8191
+    deploy:
+      resources:
+        limits:
+          cpus: '5.6'
+          memory: 9G
     depends_on:
       - flaresolverr
 

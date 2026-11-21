@@ -294,9 +294,12 @@ const BaseReaderViewer = ({
                 const chapterIndex = Math.max(0, chaptersToRender.length - index - 1);
                 const chapter = chaptersToRender[chapterIndex];
 
-                const previousChapter = isPreviousChapterLocked
-                    ? undefined
-                    : chaptersToRender[chapterIndex + 1] ?? chapters[initialChapterIndex + visibleChapters.leading + 1];
+                const candidatePrev =
+                    chaptersToRender[chapterIndex + 1] ?? chapters[initialChapterIndex + visibleChapters.leading + 1];
+                const previousChapter =
+                    candidatePrev && isPreviousChapterLocked && candidatePrev.sourceOrder < initialChapter.sourceOrder
+                        ? undefined
+                        : candidatePrev;
                 const nextChapter =
                     chaptersToRender[chapterIndex - 1] ?? chapters[initialChapterIndex - visibleChapters.trailing - 1];
 

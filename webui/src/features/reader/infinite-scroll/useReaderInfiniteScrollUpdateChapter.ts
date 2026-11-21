@@ -266,8 +266,6 @@ export const useReaderInfiniteScrollUpdateChapter = (
         const isContinuousVerticalReadingModeActive = isContinuousVerticalReadingMode(readingMode);
 
         if (
-            !image ||
-            shouldShowTransitionPage ||
             !scrollElement ||
             !isContinuousReadingModeActive ||
             !shouldUseInfiniteScroll ||
@@ -279,25 +277,24 @@ export const useReaderInfiniteScrollUpdateChapter = (
         }
 
         const onScroll = () => {
-            const THRESHOLD = 1;
+            const LOAD_THRESHOLD = 800;
+            const START_THRESHOLD = 400;
 
-            const isAtStartX = Math.abs(scrollElement.scrollLeft) <= THRESHOLD;
-            const distanceEndX = Math.abs(
-                Math.abs(scrollElement.scrollLeft) - (scrollElement.scrollWidth - scrollElement.clientWidth),
-            );
-            const isAtEndX = distanceEndX >= 0 && distanceEndX <= THRESHOLD;
+            const distanceEndX =
+                scrollElement.scrollWidth - (Math.abs(scrollElement.scrollLeft) + scrollElement.clientWidth);
+            const isNearEndX = distanceEndX <= LOAD_THRESHOLD;
+            const isNearStartX = Math.abs(scrollElement.scrollLeft) <= START_THRESHOLD;
 
-            const isAtStartY = scrollElement.scrollTop <= THRESHOLD;
-            const distanceStartY = Math.abs(
-                Math.abs(scrollElement.scrollTop) - (scrollElement.scrollHeight - scrollElement.clientHeight),
-            );
-            const isAtEndY = distanceStartY >= 0 && distanceStartY <= THRESHOLD;
+            const distanceEndY =
+                scrollElement.scrollHeight - (Math.abs(scrollElement.scrollTop) + scrollElement.clientHeight);
+            const isNearEndY = distanceEndY <= LOAD_THRESHOLD;
+            const isNearStartY = scrollElement.scrollTop <= START_THRESHOLD;
 
-            const isAtStart = isContinuousVerticalReadingModeActive ? isAtStartY : isAtStartX;
-            const isAtEnd = isContinuousVerticalReadingModeActive ? isAtEndY : isAtEndX;
+            const isNearStart = isContinuousVerticalReadingModeActive ? isNearStartY : isNearStartX;
+            const isNearEnd = isContinuousVerticalReadingModeActive ? isNearEndY : isNearEndX;
 
-            const loadPreviousChapter = pageType === 'first' && isAtStart;
-            const loadNextChapter = pageType === 'last' && isAtEnd;
+            const loadPreviousChapter = pageType === 'first' && isNearStart;
+            const loadNextChapter = pageType === 'last' && isNearEnd;
 
             const loadChapter = loadPreviousChapter || loadNextChapter;
             if (loadChapter) {
@@ -305,25 +302,17 @@ export const useReaderInfiniteScrollUpdateChapter = (
             }
         };
 
-        const isInitialChapterRender =
-            previousChapterId === undefined ||
-            (initialChapterIdRef.current === chapterId && previousChapterId === chapterId);
-        clearTimeout(eventListenerTimeoutRef.current);
-        eventListenerTimeoutRef.current = maybeExecuteWithDelay(
-            () => scrollElement.addEventListener('scroll', onScroll, { passive: true }),
-            d(5).seconds.inWholeMilliseconds,
-            isInitialChapterRender,
-        );
+        scrollElement.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
         return () => scrollElement.removeEventListener('scroll', onScroll);
     }, [
         readingMode,
         scrollElement,
-        shouldShowTransitionPage,
         shouldUseInfiniteScroll,
         isCurrentChapter,
         isChapterToOpenVisible,
         chapterToOpenId,
-        !!image,
+        pageType,
     ]);
 
     useIntersectionObserver(
@@ -335,10 +324,6 @@ export const useReaderInfiniteScrollUpdateChapter = (
                     !isContinuousReadingMode(readingMode) ||
                     chapterToOpenId === undefined
                 ) {
-                    return;
-                }
-
-                if (!shouldShowTransitionPage && !isChapterToOpenVisible) {
                     return;
                 }
 
@@ -354,7 +339,6 @@ export const useReaderInfiniteScrollUpdateChapter = (
                     elementIntersectionInfo,
                     readingMode,
                 );
-                const wasPageScrolledOutOfView = entry.intersectionRatio <= OPEN_CHAPTER_INTERSECTION_RATIO;
 
                 if (!shouldHandleIntersectionEvent(elementIntersectionInfo, readingMode)) {
                     return;
@@ -365,7 +349,7 @@ export const useReaderInfiniteScrollUpdateChapter = (
                 const initialOpenPreviousChapter =
                     pageType === 'first' && isStartIntersecting && !isChapterToOpenVisible;
                 const openPreviousChapter = pageType === 'last' && !isCurrentChapter && isEndIntersecting;
-                const openNextChapter = pageType === 'last' && isEndIntersecting && wasPageScrolledOutOfView;
+                const openNextChapter = pageType === 'last' && isEndIntersecting && !isChapterToOpenVisible;
 
                 const openChapterToOpen = initialOpenPreviousChapter || openNextChapter;
                 if (openChapterToOpen) {
@@ -392,7 +376,6 @@ export const useReaderInfiniteScrollUpdateChapter = (
                 readingMode,
                 readingDirection,
                 shouldUseInfiniteScroll,
-                shouldShowTransitionPage,
             ],
         ),
         useMemo(
@@ -403,7 +386,7 @@ export const useReaderInfiniteScrollUpdateChapter = (
                 // gets immediately observed once on initial render
                 ignoreInitialObserve: true,
             }),
-            [pageType, readingMode, readingDirection],
+            [pageType, readingMode, readingDirection, scrollElement],
         ),
     );
 };

@@ -30,12 +30,21 @@ const BaseReaderInfiniteScrollUpdateChapter = ({
     imageWrapper: HTMLElement | null;
     scrollElement: HTMLElement | null;
 }) => {
-    const isPreviousChapterLocked = useReaderChaptersStore('isPreviousChapterLocked');
+    const { initialChapter, isPreviousChapterLocked, chapters } = useReaderChaptersStore((state) => ({
+        initialChapter: state.initialChapter,
+        isPreviousChapterLocked: state.isPreviousChapterLocked,
+        chapters: state.chapters,
+    }));
+
+    const prevChapterObj = previousChapterId != null ? chapters.find((c) => c.id === previousChapterId) : undefined;
+    const isPrevBeforeStart =
+        initialChapter && prevChapterObj ? prevChapterObj.sourceOrder < initialChapter.sourceOrder : true;
+    const shouldBlockPrevious = isPreviousChapterLocked && isPrevBeforeStart;
 
     useReaderInfiniteScrollUpdateChapter(
         'first',
         chapterId,
-        isPreviousChapterLocked ? undefined : previousChapterId,
+        shouldBlockPrevious ? undefined : previousChapterId,
         isCurrentChapter,
         isPreviousChapterVisible,
         imageWrapper,

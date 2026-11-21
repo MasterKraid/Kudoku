@@ -35,3 +35,6 @@ HANDOFF.md
 db_snapshots/
 .UPSTREAM_MERGE_PENDING
 __pycache__/
+.pnpm-store/
+node_modules/
+.oxlintrc.jsonc

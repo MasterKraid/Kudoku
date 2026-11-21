@@ -593,6 +593,23 @@ export const getPageIndexesToLoad = (
         return [];
     }
 
+    if (isContinuousReadingMode(readingMode)) {
+        if (isCurrentChapter) {
+            // Eagerly preload all pages in current chapter so users never see loading spinners when scrolling
+            return pages.map((_, index) => index);
+        }
+        if (isNextChapter) {
+            // Preload ahead the first pages of next chapter
+            const preloadCount = Math.min(pages.length, Math.max(10, imagePreLoadAmount * 2));
+            return Array.from({ length: preloadCount }, (_, i) => i);
+        }
+        if (isPreviousChapter) {
+            // Preload the last pages of previous chapter
+            const preloadCount = Math.min(pages.length, Math.max(5, imagePreLoadAmount));
+            return Array.from({ length: preloadCount }, (_, i) => pages.length - 1 - i);
+        }
+    }
+
     const currentPagesIndex = getPage(currentPageIndex, pages)?.pagesIndex ?? 0;
     const finalImagePreLoadAmount = getImagePreLoadAmount(
         isCurrentChapter,

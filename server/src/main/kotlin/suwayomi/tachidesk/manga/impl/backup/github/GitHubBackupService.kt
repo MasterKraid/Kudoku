@@ -218,6 +218,29 @@ object GitHubBackupService {
         }
     }
 
+    private fun getFileContentBase64(token: String, fileObj: JsonObject): String? {
+        val directContent = fileObj["content"]?.jsonPrimitive?.contentOrNull?.replace("\n", "")
+        if (!directContent.isNullOrEmpty()) {
+            return directContent
+        }
+        val downloadUrl = fileObj["download_url"]?.jsonPrimitive?.contentOrNull
+        if (!downloadUrl.isNullOrEmpty()) {
+            val dlReq = Request.Builder()
+                .url(downloadUrl)
+                .header("Authorization", "Bearer $token")
+                .header("User-Agent", "Tsundoku-Manga-Server")
+                .get()
+                .build()
+            val bytes = httpClient.newCall(dlReq).execute().use { resp ->
+                if (resp.isSuccessful) resp.body?.bytes() else null
+            }
+            if (bytes != null && bytes.isNotEmpty()) {
+                return Base64.getEncoder().encodeToString(bytes)
+            }
+        }
+        return null
+    }
+
     private fun listFolder(token: String, owner: String, repo: String, path: String): List<JsonObject> {
         val encodedPath = path.replace(" ", "%20")
         val req = Request.Builder()
@@ -328,9 +351,9 @@ object GitHubBackupService {
 
             if (currentFile != null) {
                 // Fetch the content of the existing current backup
-                val existingContentBase64 = currentFile["content"]?.jsonPrimitive?.contentOrNull?.replace("\n", "")
+                val existingContentBase64 = getFileContentBase64(token, currentFile)
                 if (!existingContentBase64.isNullOrEmpty()) {
-                    // Rotate old Current to Past Week/backup-<date>.proto.gz
+                    // Rotate old Current to Past Week/backup-$timestampStr.proto.gz
                     val rotatedPath = "Past Week/backup-$timestampStr.proto.gz"
                     createOrUpdateFile(token, owner, repo, rotatedPath, existingContentBase64, "Rotate previous backup to Past Week")
                 }
@@ -347,7 +370,7 @@ object GitHubBackupService {
                     val itemName = item["name"]?.jsonPrimitive?.contentOrNull ?: continue
                     val itemSha = item["sha"]?.jsonPrimitive?.contentOrNull ?: continue
                     val itemDetails = getFile(token, owner, repo, "Past Week/$itemName")
-                    val itemContent = itemDetails?.get("content")?.jsonPrimitive?.contentOrNull?.replace("\n", "")
+                    val itemContent = itemDetails?.let { getFileContentBase64(token, it) }
 
                     if (!itemContent.isNullOrEmpty()) {
                         // Move to Archived/

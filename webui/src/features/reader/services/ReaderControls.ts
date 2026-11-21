@@ -250,8 +250,12 @@ class ReaderControlsClass {
             }
 
             const isPreviousChapter = chapterToOpen.sourceOrder < currentChapter.sourceOrder;
+            const { initialChapter, isPreviousChapterLocked } = getReaderChaptersStore();
+            const isBeforeStartChapter = initialChapter
+                ? chapterToOpen.sourceOrder < initialChapter.sourceOrder
+                : isPreviousChapter;
 
-            if (isPreviousChapter && getReaderChaptersStore().isPreviousChapterLocked && !scrollIntoView) {
+            if (isBeforeStartChapter && isPreviousChapterLocked && !scrollIntoView) {
                 return;
             }
 
