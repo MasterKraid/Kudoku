@@ -88,18 +88,6 @@ export const ReaderBehaviourSettings = ({
             <CheckboxInput
                 label={
                     <Box>
-                        <Typography>{t`Stream full chapter eagerly`}</Typography>
-                        <Typography variant="body2" color="textDisabled">
-                            {t`Preload and stream all pages of the current chapter at once in continuous reading modes instead of chunk-by-chunk.`}
-                        </Typography>
-                    </Box>
-                }
-                checked={settings.shouldStreamFullChapterEagerly}
-                onChange={(_, checked) => updateSetting('shouldStreamFullChapterEagerly', checked)}
-            />
-            <CheckboxInput
-                label={
-                    <Box>
                         <Typography>{t`Show reading mode`}</Typography>
                         <Typography variant="body2" color="textDisabled">
                             {t`Briefly show current mode when reader is opened or mode got changed`}
@@ -160,9 +148,16 @@ export const ReaderBehaviourSettings = ({
             <SliderInput
                 label={t`Preload images`}
                 value={settings.imagePreLoadAmount}
-                onDefault={() => onDefault?.('imagePreLoadAmount')}
+                onDefault={settings.shouldStreamFullChapterEagerly ? undefined : () => onDefault?.('imagePreLoadAmount')}
                 slotProps={{
+                    label: {
+                        color: settings.shouldStreamFullChapterEagerly ? 'textDisabled' : undefined,
+                    },
+                    value: {
+                        color: settings.shouldStreamFullChapterEagerly ? 'textDisabled' : undefined,
+                    },
                     slider: {
+                        disabled: settings.shouldStreamFullChapterEagerly,
                         defaultValue: DEFAULT_READER_SETTINGS.imagePreLoadAmount,
                         value: settings.imagePreLoadAmount,
                         step: IMAGE_PRE_LOAD_AMOUNT.step,
@@ -176,6 +171,18 @@ export const ReaderBehaviourSettings = ({
                         },
                     },
                 }}
+            />
+            <CheckboxInput
+                label={
+                    <Box>
+                        <Typography>{t`Stream full chapter eagerly`}</Typography>
+                        <Typography variant="body2" color="textDisabled">
+                            {t`Preload and stream all pages of the current chapter at once in continuous reading modes instead of chunk-by-chunk.`}
+                        </Typography>
+                    </Box>
+                }
+                checked={settings.shouldStreamFullChapterEagerly}
+                onChange={(_, checked) => updateSetting('shouldStreamFullChapterEagerly', checked)}
             />
         </Stack>
     );
