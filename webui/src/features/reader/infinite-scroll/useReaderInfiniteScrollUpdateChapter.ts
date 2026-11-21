@@ -277,8 +277,8 @@ export const useReaderInfiniteScrollUpdateChapter = (
         }
 
         const onScroll = () => {
-            const LOAD_THRESHOLD = 800;
-            const START_THRESHOLD = 400;
+            const LOAD_THRESHOLD = 1200;
+            const START_THRESHOLD = 600;
 
             const distanceEndX =
                 scrollElement.scrollWidth - (Math.abs(scrollElement.scrollLeft) + scrollElement.clientWidth);

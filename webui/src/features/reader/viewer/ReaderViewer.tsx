@@ -120,14 +120,32 @@ const BaseReaderViewer = ({
     const safeAreaInset = useReaderSettingsStore('safeAreaInset');
     const { resumeMode = ReaderResumeMode.START } = useLocation<RouteStateReader>().state ?? STABLE_EMPTY_OBJECT;
 
+    const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
     const scrollElementRef = useRef<HTMLDivElement | null>(null);
-    const mergedRef = useMergedRef(ref, scrollElementRef);
+    const setScrollElementRef = useCallback((node: HTMLDivElement | null) => {
+        scrollElementRef.current = node;
+        setScrollElement(node);
+    }, []);
+    const mergedRef = useMergedRef(ref, setScrollElementRef);
 
     const isContinuousVerticalReadingModeActive = isContinuousVerticalReadingMode(readingMode);
     const isContinuousReadingModeActive = isContinuousReadingMode(readingMode);
     const isDragging = useMouseDragScroll(scrollElementRef);
 
-    useEffect(() => getReaderAutoScrollStore().setScrollRef(scrollElementRef.current), []);
+    useEffect(() => {
+        if (scrollElement) {
+            getReaderAutoScrollStore().setScrollRef(scrollElement);
+        }
+    }, [scrollElement]);
+
+    const chapterElementRefs = useRef<Map<number, HTMLElement>>(new Map());
+    const setChapterElementRef = useCallback((chapterId: ChapterIdInfo['id'], element: HTMLElement | null) => {
+        if (element) {
+            chapterElementRefs.current.set(chapterId, element);
+        } else {
+            chapterElementRefs.current.delete(chapterId);
+        }
+    }, []);
 
     const scrollbarXSize = MediaQuery.useGetScrollbarSize('X', scrollElementRef.current);
     const scrollbarYSize = MediaQuery.useGetScrollbarSize('Y', scrollElementRef.current);
@@ -250,6 +268,104 @@ const BaseReaderViewer = ({
         setTriggerReRender({});
     }, [readingMode]);
 
+    const handleViewerScroll = useCallback(() => {
+        if (isContinuousReadingModeActive && chaptersToRender.length > 1) {
+            const focusY = isContinuousVerticalReadingModeActive ? window.innerHeight * 0.35 : 0;
+            const focusX = !isContinuousVerticalReadingModeActive ? window.innerWidth * 0.5 : 0;
+
+            let focusedChapterId: number | undefined;
+            for (const ch of chaptersToRender) {
+                const el = chapterElementRefs.current.get(ch.id);
+                if (!el) continue;
+                const rect = el.getBoundingClientRect();
+                const isUnderFocus = isContinuousVerticalReadingModeActive
+                    ? rect.top <= focusY && rect.bottom > focusY
+                    : rect.left <= focusX && rect.right > focusX;
+                if (isUnderFocus) {
+                    focusedChapterId = ch.id;
+                    break;
+                }
+            }
+
+            if (focusedChapterId === undefined) {
+                let maxVisible = 0;
+                for (const ch of chaptersToRender) {
+                    const el = chapterElementRefs.current.get(ch.id);
+                    if (!el) continue;
+                    const rect = el.getBoundingClientRect();
+                    const visible = isContinuousVerticalReadingModeActive
+                        ? Math.max(0, Math.min(window.innerHeight, rect.bottom) - Math.max(0, rect.top))
+                        : Math.max(0, Math.min(window.innerWidth, rect.right) - Math.max(0, rect.left));
+                    if (visible > maxVisible) {
+                        maxVisible = visible;
+                        focusedChapterId = ch.id;
+                    }
+                }
+            }
+
+            if (focusedChapterId !== undefined && focusedChapterId !== currentChapter.id) {
+                const prevChapter = currentChapter;
+                const nextChapterId = focusedChapterId;
+                const nextChapterObj = chapters.find((c) => c.id === nextChapterId);
+                const isForward =
+                    nextChapterObj && prevChapter ? nextChapterObj.sourceOrder > prevChapter.sourceOrder : true;
+
+                if (prevChapter && isForward) {
+                    // Mark previous chapter as read only if 90% was read
+                    const prevPageCount = prevChapter.pageCount || 1;
+                    const isNinetyPercent = (prevChapter.lastPageRead + 1) >= Math.ceil(prevPageCount * 0.9);
+                    ReaderService.getOrCreateChapterUpdateQueue(prevChapter.id).enqueue(
+                        `${prevChapter.id}`,
+                        async () => {
+                            await requestManager.updateChapters(
+                                [prevChapter.id],
+                                {
+                                    lastPageRead: Math.max(0, prevChapter.pageCount - 1),
+                                    ...(isNinetyPercent ? { isRead: true } : {}),
+                                },
+                                { errorPolicy: 'all' },
+                            ).response;
+                        },
+                    );
+                }
+                ReaderControls.openChapter(nextChapterId, {
+                    doTransitionCheck: false,
+                    scrollIntoView: false,
+                });
+                // Record new chapter entry in history
+                ReaderService.getOrCreateChapterUpdateQueue(nextChapterId).enqueue(
+                    `${nextChapterId}`,
+                    async () => {
+                        await requestManager.updateChapters(
+                            [nextChapterId],
+                            { lastPageRead: 0 },
+                            { errorPolicy: 'all' },
+                        ).response;
+                    },
+                );
+            }
+        }
+
+        const currentChapterEl = chapterElementRefs.current.get(currentChapter.id);
+        ReaderControls.updateCurrentPageOnScroll(
+            imageRefs,
+            totalPages - 1,
+            updateCurrentPageIndex,
+            inViewportType,
+            readingDirection,
+            currentChapterEl,
+        );
+    }, [
+        isContinuousReadingModeActive,
+        chaptersToRender,
+        isContinuousVerticalReadingModeActive,
+        currentChapter,
+        totalPages,
+        updateCurrentPageIndex,
+        inViewportType,
+        readingDirection,
+    ]);
+
     if (!initialChapter || !currentChapter) {
         throw new Error('ReaderViewer: illegal state - initialChapter and currentChapter should not be undefined');
     }
@@ -279,15 +395,7 @@ const BaseReaderViewer = ({
                 }),
             }}
             onClick={(e) => !isDragging && ReaderControls.handleClick(scrollElementRef.current, e)}
-            onScroll={() =>
-                ReaderControls.updateCurrentPageOnScroll(
-                    imageRefs,
-                    totalPages - 1,
-                    updateCurrentPageIndex,
-                    inViewportType,
-                    readingDirection,
-                )
-            }
+            onScroll={handleViewerScroll}
         >
             {chaptersToRender.map((_, index) => {
                 // chapters are sorted by latest to oldest, thus, loop over it in reversed order
@@ -317,8 +425,9 @@ const BaseReaderViewer = ({
                 const isLastTrailingChapter = visibleChapters.lastTrailingChapterSourceOrder === chapter.sourceOrder;
 
                 const isPreloadMode =
-                    (isLastLeadingChapter && visibleChapters.isLeadingChapterPreloadMode) ||
-                    (isLastTrailingChapter && visibleChapters.isTrailingChapterPreloadMode);
+                    !isContinuousReadingModeActive &&
+                    ((isLastLeadingChapter && visibleChapters.isLeadingChapterPreloadMode) ||
+                        (isLastTrailingChapter && visibleChapters.isTrailingChapterPreloadMode));
 
                 const previousNextChapterVisibility = getPreviousNextChapterVisibility(
                     chapterIndex,
@@ -405,7 +514,8 @@ const BaseReaderViewer = ({
                         onSizeChange={onChapterViewerSizeChange}
                         minWidth={isChapterViewerSourceChapter ? 0 : minChapterViewerWidth}
                         minHeight={isChapterViewerSourceChapter ? 0 : minChapterViewerHeight}
-                        scrollElement={scrollElementRef.current}
+                        scrollElement={scrollElement}
+                        setChapterElementRef={setChapterElementRef}
                     />
                 );
             })}

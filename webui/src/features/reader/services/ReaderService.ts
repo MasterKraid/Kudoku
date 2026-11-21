@@ -23,6 +23,11 @@ import type { IReaderSettings, RouteStateReader } from '@/features/reader/Reader
 import { ReaderExitMode, ReaderOverlayMode, ReadingDirection, ReadingMode } from '@/features/reader/Reader.types.ts';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import { MANGA_META_FIELDS } from '@/lib/graphql/manga/MangaFragments.ts';
+import { GET_CHAPTER_PAGES_FETCH } from '@/lib/graphql/chapter/ChapterMutation.ts';
+import type {
+    GetChapterPagesFetchMutation,
+    GetChapterPagesFetchMutationVariables,
+} from '@/lib/graphql/generated/graphql.ts';
 import { makeToast } from '@/base/utils/Toast.ts';
 import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
 import { READER_REGEX, useBackButton } from '@/base/hooks/useBackButton.ts';
@@ -40,7 +45,7 @@ import {
     updateReaderStateVisibleChapters,
 } from '@/features/reader/Reader.utils.ts';
 import { defaultPromiseErrorHandler } from '@/lib/DefaultPromiseErrorHandler.ts';
-import { Queue } from '@/lib/Queue.ts';
+import { Queue, Priority } from '@/lib/Queue.ts';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { getErrorMessage } from '@/lib/HelperFunctions.ts';
 import { FALLBACK_MANGA, GLOBAL_READER_SETTINGS_MANGA } from '@/features/manga/Manga.constants.ts';
@@ -171,6 +176,43 @@ export class ReaderService {
                 defaultPromiseErrorHandler('ReaderService::useUpdateCurrentPageIndex: download ahead')(e);
             }
         });
+    }
+
+    private static autoCachedChapters = new Set<number>();
+
+    static autoCacheNextChapter(nextChapter: TChapterReader | undefined | null): void {
+        if (!nextChapter || ReaderService.autoCachedChapters.has(nextChapter.id)) {
+            return;
+        }
+
+        ReaderService.autoCachedChapters.add(nextChapter.id);
+
+        requestManager.graphQLClient.client
+            .mutate<GetChapterPagesFetchMutation, GetChapterPagesFetchMutationVariables>({
+                mutation: GET_CHAPTER_PAGES_FETCH,
+                variables: {
+                    input: { chapterId: nextChapter.id },
+                },
+            })
+            .then((res) => {
+                const pages = res.data?.fetchChapterPages?.pages;
+                if (!pages || !pages.length) {
+                    return;
+                }
+
+                pages.forEach((pageUrl) => {
+                    const finalUrl = UrlUtil.addParams(pageUrl, { sourceId: getReaderStore().manga?.sourceId });
+                    requestManager
+                        .requestImage(finalUrl, {
+                            priority: Priority.LOW,
+                            ignoreQueue: false,
+                        })
+                        .catch(() => {});
+                });
+            })
+            .catch(() => {
+                ReaderService.autoCachedChapters.delete(nextChapter.id);
+            });
     }
 
     static preloadChapter(

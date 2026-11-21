@@ -22,13 +22,17 @@ import {
 import { getOptionForDirection } from '@/features/theme/services/ThemeCreator.ts';
 import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 import type {
-    PageInViewportType,
     ProgressBarPosition,
     ReaderResumeMode,
     ReaderStatePages,
     ReadingDirection,
 } from '@/features/reader/Reader.types.ts';
-import { ReaderScrollAmount, ReaderTransitionPageMode, ReadingMode } from '@/features/reader/Reader.types.ts';
+import {
+    PageInViewportType,
+    ReaderScrollAmount,
+    ReaderTransitionPageMode,
+    ReadingMode,
+} from '@/features/reader/Reader.types.ts';
 import { DirectionOffset, ScrollDirection, ScrollOffset } from '@/base/Base.types';
 import { READING_DIRECTION_TO_THEME_DIRECTION } from '@/features/reader/settings/ReaderSettings.constants.tsx';
 import {
@@ -513,6 +517,14 @@ class ReaderControlsClass {
 
                 const direction = currentPageIndex > pageIndex ? DirectionOffset.PREVIOUS : DirectionOffset.NEXT;
 
+                // Auto cache next chapter at 70% reading progress
+                const currentChapterUpToDate = getReaderChapterFromCache(currentChapter.id) ?? currentChapter;
+                const readingProgress =
+                    currentChapterUpToDate.pageCount > 0 ? (pageIndex + 1) / currentChapterUpToDate.pageCount : 0;
+                if (readingProgress >= 0.7 && nextChapter) {
+                    ReaderService.autoCacheNextChapter(nextChapter);
+                }
+
                 ReaderService.downloadAhead(currentChapter, nextChapter, nextChapters, pageIndex, downloadAheadLimit);
                 ReaderService.preloadChapter(
                     pageIndex,
@@ -548,7 +560,7 @@ class ReaderControlsClass {
                 if (debounceChapterUpdate) {
                     this.updateCurrentPageTimeout = setTimeout(
                         handleCurrentPageIndexChange,
-                        d(1).seconds.inWholeMilliseconds,
+                        300,
                     );
                     return;
                 }
@@ -565,57 +577,91 @@ class ReaderControlsClass {
         updateCurrentPageIndex: ReturnType<typeof this.useUpdateCurrentPageIndex>,
         type: PageInViewportType,
         readingDirection: ReadingDirection,
+        currentChapterElement?: HTMLElement | null,
     ) {
         const themeDirectionOfReadingDirection = READING_DIRECTION_TO_THEME_DIRECTION[readingDirection];
-        // In case the reader navigation bar is static, the readers "viewport" x position gets moved, thus, this needs to be considered as a threshold.
-        const scrollContainerX = getReaderStore().autoScroll.scrollRef?.current?.getBoundingClientRect().x ?? 0;
+        const scrollElement = getReaderStore().autoScroll.scrollRef?.current;
+        const scrollContainerX = scrollElement?.getBoundingClientRect().x ?? 0;
         const pageHorizontalEndInViewportThreshold = getOptionForDirection(
             scrollContainerX + 1,
             window.innerWidth + 1,
             themeDirectionOfReadingDirection,
         );
 
-        const firstVisibleImageIndex = imageRefs.current.findIndex(
-            (image) =>
-                image &&
-                isPageInViewport(image, type, {
-                    bounds: {
-                        bottom: {
-                            min: 1,
-                        },
-                        left: {
-                            min: getOptionForDirection(
-                                0,
-                                pageHorizontalEndInViewportThreshold,
-                                themeDirectionOfReadingDirection,
-                            ),
-                        },
-                        right: {
-                            min: getOptionForDirection(
-                                pageHorizontalEndInViewportThreshold,
-                                0,
-                                themeDirectionOfReadingDirection,
-                            ),
-                        },
-                    },
-                }),
-        );
-        const lastPage = imageRefs.current?.[imageRefs.current.length - 1];
+        let images: HTMLElement[] = [];
+        if (currentChapterElement) {
+            images = Array.from(currentChapterElement.querySelectorAll<HTMLElement>('[data-reader-page="true"]'));
+        }
+        if (!images.length) {
+            images = (imageRefs.current.filter(Boolean) as HTMLElement[]);
+        }
+        if (!images.length && scrollElement) {
+            images = Array.from(scrollElement.querySelectorAll<HTMLElement>('[data-reader-page="true"]'));
+        }
+
+        let activeImageIndex = -1;
+        if (type === PageInViewportType.Y) {
+            const focusY = window.innerHeight * 0.35;
+            activeImageIndex = images.findIndex((image) => {
+                if (!image) return false;
+                const rect = image.getBoundingClientRect();
+                return rect.top <= focusY && rect.bottom > focusY;
+            });
+        } else {
+            const focusX = window.innerWidth * 0.5;
+            activeImageIndex = images.findIndex((image) => {
+                if (!image) return false;
+                const rect = image.getBoundingClientRect();
+                return rect.left <= focusX && rect.right > focusX;
+            });
+        }
+
+        const firstVisibleImageIndex =
+            activeImageIndex !== -1
+                ? activeImageIndex
+                : images.findIndex(
+                      (image) =>
+                          image &&
+                          isPageInViewport(image, type, {
+                              bounds: {
+                                  bottom: {
+                                      min: 1,
+                                  },
+                                  left: {
+                                      min: getOptionForDirection(
+                                          0,
+                                          pageHorizontalEndInViewportThreshold,
+                                          themeDirectionOfReadingDirection,
+                                      ),
+                                  },
+                                  right: {
+                                      min: getOptionForDirection(
+                                          pageHorizontalEndInViewportThreshold,
+                                          0,
+                                          themeDirectionOfReadingDirection,
+                                      ),
+                                  },
+                              },
+                          }),
+                  );
+        const lastPage = images?.[images.length - 1];
         const isEndReached = lastPage && isEndOfPageInViewport(lastPage, type, readingDirection);
+
+        // handle cases where the last page is too small to ever be the "firstVisibleImageIndex"
+        if (isEndReached) {
+            updateCurrentPageIndex(
+                firstVisibleImageIndex !== -1 ? firstVisibleImageIndex : images.length - 1,
+                false,
+                true,
+            );
+            return;
+        }
 
         if (firstVisibleImageIndex === -1) {
             return;
         }
 
-        // handle cases where the last page is too small to ever be the "firstVisibleImageIndex"
-        if (isEndReached) {
-            updateCurrentPageIndex(firstVisibleImageIndex, false, true);
-            return;
-        }
-
-        // how far into the page the reader is, to be able to resume at the exact spot in webtoon style reading
-        const scrollElement = getReaderStore().autoScroll.scrollRef?.current;
-        const firstVisibleImage = imageRefs.current[firstVisibleImageIndex];
+        const firstVisibleImage = images[firstVisibleImageIndex];
         const offset =
             scrollElement &&
             firstVisibleImage &&

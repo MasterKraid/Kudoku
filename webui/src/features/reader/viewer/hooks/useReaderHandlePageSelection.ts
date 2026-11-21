@@ -44,10 +44,26 @@ export const useReaderHandlePageSelection = (
 
         if (isContinuousReadingModeActive) {
             const doScroll = () => {
-                const imageRef = imageRefs.current[pageToScrollTo.pagesIndex];
+                let imageRef = imageRefs.current[pageToScrollTo.pagesIndex];
+                if (!imageRef && scrollElementRef.current) {
+                    imageRef = (scrollElementRef.current.querySelector(
+                        `img[alt="Page #${pageToScrollTo.primary.index + 1}"]`,
+                    ) ||
+                        scrollElementRef.current.querySelector(
+                            `[data-reader-page="true"][alt="Page #${pageToScrollTo.primary.index + 1}"]`,
+                        ) ||
+                        scrollElementRef.current.querySelectorAll('[data-reader-page="true"]')[
+                            pageToScrollTo.pagesIndex
+                        ]) as HTMLElement | null;
+                }
                 if (!imageRef) {
                     return false;
                 }
+
+                imageRef.scrollIntoView({
+                    block: 'start',
+                    behavior: 'auto',
+                });
 
                 if (
                     scrollElementRef.current &&
@@ -56,11 +72,6 @@ export const useReaderHandlePageSelection = (
                     const pageRect = imageRef.getBoundingClientRect();
                     const containerRect = scrollElementRef.current.getBoundingClientRect();
                     scrollElementRef.current.scrollTop += pageRect.top - containerRect.top;
-                } else {
-                    imageRef.scrollIntoView({
-                        block: 'start',
-                        inline: getScrollIntoViewInlineOption(themeDirection, readingDirection),
-                    });
                 }
 
                 const { currentChapter } = getReaderChaptersStore();

@@ -43,6 +43,8 @@ import { LoadingPlaceholder } from '@/base/components/feedback/LoadingPlaceholde
 import { ReaderInfiniteScrollUpdateChapter } from '@/features/reader/infinite-scroll/ReaderInfiniteScrollUpdateChapter.tsx';
 import { useResizeObserver } from '@/base/hooks/useResizeObserver.tsx';
 import type { ChapterIdInfo } from '@/features/chapter/Chapter.types.ts';
+import { Chapters } from '@/features/chapter/services/Chapters.ts';
+import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 import { READER_DEFAULT_PAGES_STATE } from '@/features/reader/stores/ReaderPagesStore.ts';
 
 import { getReaderChaptersStore, getReaderPagesStore, useReaderChaptersStore } from '@/features/reader/stores/ReaderStore.ts';
@@ -86,6 +88,7 @@ const BaseReaderChapterViewer = ({
     minHeight,
     scrollElement,
     currentChapterRemainingPages,
+    setChapterElementRef,
 }: Pick<ReaderStatePages, 'currentPageIndex' | 'transitionPageMode' | 'retryFailedPagesKeyPrefix'> &
     Omit<ReaderPagerProps, 'pages' | 'totalPages' | 'pageLoadStates' | 'handleAsInitialRender' | 'resumeMode'> &
     Pick<
@@ -113,6 +116,7 @@ const BaseReaderChapterViewer = ({
         minWidth: number;
         minHeight: number;
         scrollElement: HTMLElement | null;
+        setChapterElementRef?: (chapterId: ChapterIdInfo['id'], element: HTMLElement | null) => void;
     }) => {
     const { t } = useLingui();
     const { direction: themeDirection } = useTheme();
@@ -133,7 +137,16 @@ const BaseReaderChapterViewer = ({
         READER_DEFAULT_PAGES_STATE.pageBackgroundColors,
     );
 
-    const ref = useRef<HTMLDivElement>(null);
+    const [chapterElement, setChapterElement] = useState<HTMLDivElement | null>(null);
+    const ref = useRef<HTMLDivElement | null>(null);
+    const setChapterRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            ref.current = node;
+            setChapterElement(node);
+            setChapterElementRef?.(chapterId, node);
+        },
+        [chapterId, setChapterElementRef],
+    );
     const isCurrentChapterRef = useRef(isCurrentChapter);
     const imageRefs = useRef<(HTMLElement | null)[]>(pages.map(() => null));
     const pagerRef = useRef<HTMLDivElement>(null);
@@ -235,12 +248,45 @@ const BaseReaderChapterViewer = ({
         doFetchPages();
     }, [chapterId]);
 
+    // When a chapter is loaded into the reader, record it in history as reading/in progress
+    // without marking it as read (marked as read only when >= 90% read).
+    useEffect(() => {
+        if (!chapterId) {
+            return;
+        }
+
+        ReaderService.getOrCreateChapterUpdateQueue(chapterId).enqueue(
+            `${chapterId}_loaded_history`,
+            async () => {
+                const chapterData = Chapters.getFromCache(chapterId);
+                const page = chapterData?.lastPageRead ?? 0;
+                await requestManager.updateChapters(
+                    [chapterId],
+                    { lastPageRead: page },
+                    { errorPolicy: 'all' },
+                ).response;
+            },
+        );
+    }, [chapterId]);
+
     // pages change their height while they load: keep the resumed spot in view until the reader scrolls on its own
     useEffect(() => {
         if (isCurrentChapter) {
             ReaderScrollOffset.reapplyPendingResume(chapterId, globalImageRefs.current, scrollElement);
         }
     }, [pageLoadStates]);
+
+    useEffect(() => {
+        if (isCurrentChapter && actualPages.length > 0) {
+            const store = getReaderPagesStore();
+            store.setPages(actualPages);
+            store.setTotalPages(totalPages);
+            store.setPageLoadStates(pageLoadStates);
+            store.setPageSpreadStates(pagesToSpreadState);
+            store.setPageBackgroundColor(pageBackgroundColors);
+            globalImageRefs.current = imageRefs.current;
+        }
+    }, [isCurrentChapter, actualPages, totalPages, pageLoadStates, pagesToSpreadState, pageBackgroundColors]);
 
     useResizeObserver(
         ref,
@@ -395,7 +441,7 @@ const BaseReaderChapterViewer = ({
 
     return (
         <Stack
-            ref={ref}
+            ref={setChapterRef}
             sx={{
                 width: 'fit-content',
                 height: 'fit-content',
@@ -436,7 +482,7 @@ const BaseReaderChapterViewer = ({
                     isCurrentChapter={isCurrentChapter}
                     isPreviousChapterVisible={isPreviousChapterVisible}
                     isNextChapterVisible={isNextChapterVisible}
-                    imageWrapper={pagerRef.current}
+                    imageWrapper={chapterElement}
                     scrollElement={scrollElement}
                 />
             )}

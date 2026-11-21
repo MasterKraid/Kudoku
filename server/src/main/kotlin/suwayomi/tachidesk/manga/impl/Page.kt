@@ -66,7 +66,7 @@ object Page {
         if (pageCount <= 0 || !prefetching.add(chapterId)) return
         prefetchScope.launch {
             try {
-                val permits = Semaphore(2)
+                val permits = Semaphore(6)
                 (0 until pageCount)
                     .map { (it + startAt) % pageCount }
                     .map { index ->
