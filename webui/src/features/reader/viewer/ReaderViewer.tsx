@@ -16,6 +16,7 @@ import type { RouteStateReader } from '@/features/reader/Reader.types.ts';
 import { PageInViewportType, ReaderResumeMode, ReadingDirection, ReadingMode } from '@/features/reader/Reader.types.ts';
 import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
 import { ReaderControls } from '@/features/reader/services/ReaderControls.ts';
+import { ReaderService } from '@/features/reader/services/ReaderService.ts';
 import {
     getPageGap,
     isContinuousReadingMode,
@@ -418,6 +419,10 @@ const BaseReaderViewer = ({
                 const isPreviousChapter = chapter.id === chaptersToRender[currentChapterIndex + 1]?.id;
                 const isNextChapter = chapter.id === chaptersToRender[currentChapterIndex - 1]?.id;
                 const isAdjacentChapterToCurrentChapter = isPreviousChapter || isNextChapter;
+                const isUnloaded =
+                    isContinuousReadingModeActive &&
+                    currentChapter != null &&
+                    Math.abs(chapter.sourceOrder - currentChapter.sourceOrder) >= 2;
 
                 const isLeadingChapter = initialChapter.sourceOrder > chapter.sourceOrder;
                 const isTrailingChapter = initialChapter.sourceOrder < chapter.sourceOrder;
@@ -516,6 +521,7 @@ const BaseReaderViewer = ({
                         minHeight={isChapterViewerSourceChapter ? 0 : minChapterViewerHeight}
                         scrollElement={scrollElement}
                         setChapterElementRef={setChapterElementRef}
+                        isUnloaded={isUnloaded}
                     />
                 );
             })}

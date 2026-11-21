@@ -592,29 +592,56 @@ export const getPageIndexesToLoad = (
     isCurrentChapter: boolean,
     isPreviousChapter: boolean,
     isNextChapter: boolean,
+    shouldStreamFullChapterEagerly: boolean = true,
 ): number[] => {
     if (!pages?.length || (!isCurrentChapter && !isPreviousChapter && !isNextChapter)) {
         return [];
     }
 
-    if (isCurrentChapter) {
-        // Eagerly preload and stream all pages in current chapter so users never see loading spinners when scrolling/flipping
-        return pages.map((_, index) => index);
+    if (shouldStreamFullChapterEagerly && isContinuousReadingMode(readingMode)) {
+        if (isCurrentChapter) {
+            // Eagerly preload and stream all pages in current chapter so users never see loading spinners when scrolling
+            return pages.map((_, index) => index);
+        }
+
+        if (isNextChapter) {
+            // Preload ahead pages of next chapter
+            const preloadCount = Math.min(pages.length, Math.max(10, imagePreLoadAmount * 2));
+            return Array.from({ length: preloadCount }, (_, i) => i);
+        }
+
+        if (isPreviousChapter) {
+            // Preload the last pages of previous chapter
+            const preloadCount = Math.min(pages.length, Math.max(5, imagePreLoadAmount));
+            return Array.from({ length: preloadCount }, (_, i) => pages.length - 1 - i);
+        }
     }
 
-    if (isNextChapter) {
-        // Preload ahead pages of next chapter
-        const preloadCount = Math.min(pages.length, Math.max(10, imagePreLoadAmount * 2));
-        return Array.from({ length: preloadCount }, (_, i) => i);
-    }
+    const currentPagesIndex = getPage(currentPageIndex, pages)?.pagesIndex ?? 0;
+    const finalImagePreLoadAmount = getImagePreLoadAmount(
+        isCurrentChapter,
+        isPreviousChapter,
+        isNextChapter,
+        imagePreLoadAmount,
+        currentChapterRemainingPages,
+    );
 
-    if (isPreviousChapter) {
-        // Preload the last pages of previous chapter
-        const preloadCount = Math.min(pages.length, Math.max(5, imagePreLoadAmount));
-        return Array.from({ length: preloadCount }, (_, i) => pages.length - 1 - i);
-    }
+    const directionInvert = previousCurrentPageIndex <= currentPageIndex && !isPreviousChapter ? 1 : -1;
+    // load at most PREVIOUS_IMAGE_LOAD_AMOUNT of the previous pages to ensure that you do not have to wait too long
+    // when going back to the previous pages
+    const startPagesIndexTrailingIncluded = Math.max(
+        0,
+        currentPagesIndex - Math.min(PREVIOUS_IMAGE_LOAD_AMOUNT, finalImagePreLoadAmount) * directionInvert,
+    );
+    // do not load previous pages for continuous pagers to prevent layout shifts due to leading pages getting loaded
+    const startPagesIndex = !isContinuousReadingMode(readingMode) ? startPagesIndexTrailingIncluded : currentPageIndex;
+    const endPagesIndex = currentPagesIndex + finalImagePreLoadAmount * directionInvert;
+    // add 1 for the current page in case it's the current chapter, otherwise, only the preload amount should get rendered
+    const pagesToRenderLength = Math.max(1, Math.abs(endPagesIndex - startPagesIndex) + Number(isCurrentChapter));
 
-    return [];
+    return Array(pagesToRenderLength)
+        .fill(1)
+        .map((_, index) => startPagesIndex + index * directionInvert);
 };
 
 export const isTransitionPageVisible = (

@@ -156,6 +156,7 @@ const GLOBAL_READER_SETTING_OBJECT: Record<keyof IReaderSettingsGlobal, undefine
     shouldWakeLockScreen: undefined,
     scrollAmount: undefined,
     shouldUseInfiniteScroll: undefined,
+    shouldStreamFullChapterEagerly: undefined,
     shouldShowTransitionPage: undefined,
     safeAreaInset: undefined,
     shouldEnterFullscreen: undefined,
@@ -248,6 +249,7 @@ export const DEFAULT_READER_SETTINGS: IReaderSettings = {
     shouldWakeLockScreen: true,
     scrollAmount: ReaderScrollAmount.LARGE,
     shouldUseInfiniteScroll: true,
+    shouldStreamFullChapterEagerly: true,
     shouldShowTransitionPage: true,
     safeAreaInset: {
         top: false,

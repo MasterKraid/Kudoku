@@ -178,6 +178,7 @@ export interface IReaderSettingsGlobal {
     shouldWakeLockScreen: boolean;
     scrollAmount: ReaderScrollAmount;
     shouldUseInfiniteScroll: boolean;
+    shouldStreamFullChapterEagerly: boolean;
     shouldShowTransitionPage: boolean;
     safeAreaInset: SafeAreaInset;
     shouldEnterFullscreen: boolean;

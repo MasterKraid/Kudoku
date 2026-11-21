@@ -15,6 +15,7 @@ import type { IReaderSettings, ReaderPagerProps, ReaderStatePages } from '@/feat
 import { ReaderResumeMode, ReaderTransitionPageMode } from '@/features/reader/Reader.types.ts';
 import { applyStyles } from '@/base/utils/ApplyStyles.ts';
 import { isContinuousReadingMode } from '@/features/reader/settings/ReaderSettings.utils.tsx';
+import { useReaderSettingsStore } from '@/features/reader/stores/ReaderStore.ts';
 
 const getPreviousCurrentPageIndex = (resumeMode: ReaderResumeMode): number =>
     resumeMode === ReaderResumeMode.END ? Number.MAX_SAFE_INTEGER : -1;
@@ -67,6 +68,10 @@ const BaseBasePager = ({
         previousCurrentPageIndex.current = getPreviousCurrentPageIndex(resumeMode);
     }
 
+    const shouldStreamFullChapterEagerly = useReaderSettingsStore(
+        (state) => state.shouldStreamFullChapterEagerly ?? true,
+    );
+
     const pagesIndexesToRender = useMemo(
         () =>
             getPageIndexesToLoad(
@@ -79,6 +84,7 @@ const BaseBasePager = ({
                 isCurrentChapter,
                 isPreviousChapter,
                 isNextChapter,
+                shouldStreamFullChapterEagerly,
             ),
         [
             currentChapterRemainingPages,
@@ -89,6 +95,7 @@ const BaseBasePager = ({
             isCurrentChapter,
             isPreviousChapter,
             isNextChapter,
+            shouldStreamFullChapterEagerly,
         ],
     );
     useEffect(() => {

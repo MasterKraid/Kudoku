@@ -89,6 +89,7 @@ const BaseReaderChapterViewer = ({
     scrollElement,
     currentChapterRemainingPages,
     setChapterElementRef,
+    isUnloaded = false,
 }: Pick<ReaderStatePages, 'currentPageIndex' | 'transitionPageMode' | 'retryFailedPagesKeyPrefix'> &
     Omit<ReaderPagerProps, 'pages' | 'totalPages' | 'pageLoadStates' | 'handleAsInitialRender' | 'resumeMode'> &
     Pick<
@@ -117,6 +118,7 @@ const BaseReaderChapterViewer = ({
         minHeight: number;
         scrollElement: HTMLElement | null;
         setChapterElementRef?: (chapterId: ChapterIdInfo['id'], element: HTMLElement | null) => void;
+        isUnloaded?: boolean;
     }) => {
     const { t } = useLingui();
     const { direction: themeDirection } = useTheme();
@@ -138,12 +140,22 @@ const BaseReaderChapterViewer = ({
     );
 
     const [chapterElement, setChapterElement] = useState<HTMLDivElement | null>(null);
+    const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(undefined);
+    const [measuredWidth, setMeasuredWidth] = useState<number | undefined>(undefined);
     const ref = useRef<HTMLDivElement | null>(null);
     const setChapterRef = useCallback(
         (node: HTMLDivElement | null) => {
             ref.current = node;
             setChapterElement(node);
             setChapterElementRef?.(chapterId, node);
+            if (node) {
+                if (node.clientHeight > 0) {
+                    setMeasuredHeight(node.clientHeight);
+                }
+                if (node.clientWidth > 0) {
+                    setMeasuredWidth(node.clientWidth);
+                }
+            }
         },
         [chapterId, setChapterElementRef],
     );
@@ -436,6 +448,23 @@ const BaseReaderChapterViewer = ({
                     retry={doFetchPages}
                 />
             </Box>
+        );
+    }
+
+    if (isUnloaded) {
+        return (
+            <Stack
+                ref={setChapterRef}
+                data-chapter-id={chapterId}
+                sx={{
+                    width: isContinuousVerticalReadingMode(readingMode) ? '100%' : (measuredWidth || '100vw'),
+                    height: isContinuousVerticalReadingMode(readingMode) ? (measuredHeight || '100vh') : '100%',
+                    minHeight: isContinuousVerticalReadingMode(readingMode) ? (measuredHeight || '100vh') : undefined,
+                    minWidth: !isContinuousVerticalReadingMode(readingMode) ? (measuredWidth || '100vw') : undefined,
+                    margin: 'auto',
+                    visibility: 'hidden',
+                }}
+            />
         );
     }
 

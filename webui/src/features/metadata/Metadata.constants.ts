@@ -404,6 +404,9 @@ export const APP_METADATA: Record<
     shouldUseInfiniteScroll: {
         convert: convertToBoolean,
     },
+    shouldStreamFullChapterEagerly: {
+        convert: convertToBoolean,
+    },
     shouldShowTransitionPage: {
         convert: convertToBoolean,
     },
