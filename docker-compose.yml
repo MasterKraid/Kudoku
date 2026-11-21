@@ -1,13 +1,13 @@
 services:
-  tsundoku:
+  kudoku:
     build: .
-    image: tsundoku:local
-    container_name: tsundoku
+    image: kudoku:local
+    container_name: kudoku
     restart: unless-stopped
     network_mode: "host"
     volumes:
-      - tsundoku-data:/data
-      - ${DOWNLOADS_PATH:-tsundoku-downloads}:/data/downloads
+      - kudoku-data:/data
+      - ${DOWNLOADS_PATH:-kudoku-downloads}:/data/downloads
       - ./webui/build:/opt/tsundoku/webUI:ro
     environment:
       - TZ=Etc/UTC
@@ -44,5 +44,7 @@ services:
       - "127.0.0.1:8191:8191"
 
 volumes:
-  tsundoku-data:
-  tsundoku-downloads:
+  kudoku-data:
+    name: tsundoku_tsundoku-data
+  kudoku-downloads:
+    name: tsundoku_tsundoku-downloads

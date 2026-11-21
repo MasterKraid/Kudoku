@@ -129,7 +129,7 @@ object GitHubBackupService {
             .url("https://api.github.com/user")
             .header("Authorization", "Bearer $cleanToken")
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Tsundoku-Manga-Server")
+            .header("User-Agent", "Kudoku-Manga-Server")
             .get()
             .build()
 
@@ -144,10 +144,10 @@ object GitHubBackupService {
         val ghUsername = ghUser["login"]?.jsonPrimitive?.contentOrNull
             ?: throw IllegalStateException("Could not extract GitHub username")
 
-        // 2. Fetch Tsundoku user username
-        val tsundokuUser = UserManager.getUser(userId)
+        // 2. Fetch Kudoku user username
+        val kudokuUser = UserManager.getUser(userId)
             ?: throw IllegalStateException("User $userId does not exist")
-        val repoName = "${tsundokuUser.username}-Tsundoku-Backups"
+        val repoName = "${kudokuUser.username}-Kudoku-Backups"
 
         // 3. Ensure repository exists or create it
         ensureRepoExists(cleanToken, ghUsername, repoName)
@@ -163,7 +163,7 @@ object GitHubBackupService {
             .url("https://api.github.com/repos/$owner/$repoName")
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Tsundoku-Manga-Server")
+            .header("User-Agent", "Kudoku-Manga-Server")
             .get()
             .build()
 
@@ -174,7 +174,7 @@ object GitHubBackupService {
         if (!exists) {
             val payload = buildJsonObject {
                 put("name", repoName)
-                put("description", "Automated Tsundoku Backups for $owner")
+                put("description", "Automated Kudoku Backups for $owner")
                 put("private", true)
                 put("auto_init", true)
             }.toString()
@@ -183,7 +183,7 @@ object GitHubBackupService {
                 .url("https://api.github.com/user/repos")
                 .header("Authorization", "Bearer $token")
                 .header("Accept", "application/vnd.github+json")
-                .header("User-Agent", "Tsundoku-Manga-Server")
+                .header("User-Agent", "Kudoku-Manga-Server")
                 .post(payload.toRequestBody(jsonMediaType))
                 .build()
 
@@ -206,7 +206,7 @@ object GitHubBackupService {
             .url("https://api.github.com/repos/$owner/$repo/contents/$encodedPath")
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Tsundoku-Manga-Server")
+            .header("User-Agent", "Kudoku-Manga-Server")
             .get()
             .build()
 
@@ -295,7 +295,7 @@ object GitHubBackupService {
             .url("https://api.github.com/repos/$owner/$repo/contents/$encodedPath")
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Tsundoku-Manga-Server")
+            .header("User-Agent", "Kudoku-Manga-Server")
             .get()
             .build()
 
@@ -334,7 +334,7 @@ object GitHubBackupService {
             .url("https://api.github.com/repos/$owner/$repo/contents/$encodedPath")
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Tsundoku-Manga-Server")
+            .header("User-Agent", "Kudoku-Manga-Server")
             .put(payload.toRequestBody(jsonMediaType))
             .build()
 
@@ -359,7 +359,7 @@ object GitHubBackupService {
             .url("https://api.github.com/repos/$owner/$repo/contents/$encodedPath")
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Tsundoku-Manga-Server")
+            .header("User-Agent", "Kudoku-Manga-Server")
             .delete(payload.toRequestBody(jsonMediaType))
             .build()
 

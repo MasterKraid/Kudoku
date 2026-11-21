@@ -144,7 +144,12 @@ export function Backup() {
         setIsBackingUp(true);
         makeToast('Pushing backup to GitHub...', 'info');
         try {
-            const res = await requestManager.getClient().post('/api/v1/backup/github/backup-now');
+            let res: Response;
+            try {
+                res = await requestManager.getClient().post('/api/v1/backup/github/backup');
+            } catch {
+                res = await requestManager.getClient().post('/api/v1/backup/github/backup-now');
+            }
             const data = await res.json();
             if (data.success) {
                 makeToast('Backup successfully pushed to GitHub!', 'success');
@@ -163,7 +168,12 @@ export function Backup() {
         setIsCheckingSync(true);
         makeToast('Checking sync with GitHub...', 'info');
         try {
-            const res = await requestManager.getClient().post('/api/v1/backup/github/check-sync');
+            let res: Response;
+            try {
+                res = await requestManager.getClient().post('/api/v1/backup/github/sync');
+            } catch {
+                res = await requestManager.getClient().post('/api/v1/backup/github/check-sync');
+            }
             const data = await res.json();
             if (data.success) {
                 if (data.actionTaken === 'RESTORED') {

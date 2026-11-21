@@ -347,7 +347,7 @@ const GitHubAccountSection = ({ currentUserId }: { currentUserId: number }) => {
         try {
             await Confirmation.show({
                 title: 'Unlink GitHub Account',
-                message: 'Are you sure you want to unlink your GitHub account from Tsundoku backups?',
+                message: 'Are you sure you want to unlink your GitHub account from Kudoku backups?',
             });
         } catch {
             return;

@@ -68,7 +68,7 @@ export const LoginPage = () => {
                 navigate(redirect ?? AppRoutes.root.path);
             }
         } catch (e) {
-            makeToast(t`Could not log in to tsundoku`, 'error', getErrorMessage(e));
+            makeToast(t`Could not log in to Kudoku`, 'error', getErrorMessage(e));
         }
     };
 
@@ -163,7 +163,7 @@ export const LoginPage = () => {
                             {t`Welcome back`}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            {t`Log in to your tsundoku server.`}
+                            {t`Log in to your Kudoku server.`}
                         </Typography>
                     </Stack>
                     {savedAccounts.length > 0 && (

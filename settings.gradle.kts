@@ -1,4 +1,4 @@
-rootProject.name = System.getenv("ProductName") ?: "tsundoku"
+rootProject.name = System.getenv("ProductName") ?: "kudoku"
 
 include("server")
 include("server:i18n")
