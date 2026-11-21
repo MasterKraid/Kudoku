@@ -134,12 +134,7 @@ object WebInterfaceManager {
     }
 
     fun getAboutInfo(): AboutWebUI {
-        val currentVersion = getLocalVersion()
-
-        val failedToGetVersion = currentVersion == "r-1"
-        if (failedToGetVersion) {
-            throw Exception("Failed to get current version")
-        }
+        val currentVersion = getLocalVersion().let { if (it == "r-1") "v1.3.0-kudoku" else it }
 
         return AboutWebUI(
             channel = serverConfig.webUIChannel.value,

@@ -1,6 +1,6 @@
 {
-    "name": "tsundoku",
-    "short_name": "tsundoku",
+    "name": "Kudoku",
+    "short_name": "Kudoku",
     "start_url": ".",
     "icons": [
         {
@@ -21,7 +21,7 @@
             "purpose": "maskable"
         }
     ],
-    "theme_color": "#3181C0",
-    "background_color": "#3181C0",
+    "theme_color": "#E53935",
+    "background_color": "#1A1A1D",
     "display": "standalone"
 }

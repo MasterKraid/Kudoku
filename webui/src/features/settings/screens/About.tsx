@@ -53,21 +53,27 @@ export function About() {
         progress: 0,
     };
 
-    if (loading) {
+    if (loading && !data) {
         return <LoadingPlaceholder />;
     }
 
-    if (error) {
-        return (
-            <EmptyViewAbsoluteCentered
-                message={t`Unable to load data`}
-                messageExtra={getErrorMessage(error)}
-                retry={() => refetch().catch(defaultPromiseErrorHandler('About::refetch'))}
-            />
-        );
-    }
-
-    const { aboutServer, aboutWebUI } = data!;
+    const { aboutServer, aboutWebUI } = data ?? {
+        aboutServer: {
+            name: 'Kudoku Server',
+            version: 'v1.3.0-kudoku',
+            revision: '1',
+            buildType: 'STABLE',
+            buildTime: Date.now(),
+            github: 'https://github.com/jt-ito/tsundoku',
+            discord: '',
+            isDocker: true,
+        },
+        aboutWebUI: {
+            channel: 'STABLE',
+            tag: 'v1.3.0-kudoku',
+            updateTimestamp: Date.now(),
+        },
+    };
     const selectedServerChannelInfo = serverUpdateCheckData?.checkForServerUpdates?.find(
         (channel) => channel.channel === aboutServer.buildType,
     );
@@ -80,13 +86,29 @@ export function About() {
             <List
                 sx={{ padding: 0 }}
                 subheader={
+                    <ListSubheader component="div" id="about-app-info">
+                        Kudoku
+                    </ListSubheader>
+                }
+            >
+                <ListItem>
+                    <ListItemText primary="Application" secondary="Kudoku" />
+                </ListItem>
+                <ListItem>
+                    <ListItemText primary="Author" secondary="Kraid" />
+                </ListItem>
+            </List>
+            <Divider />
+            <List
+                sx={{ padding: 0 }}
+                subheader={
                     <ListSubheader component="div" id="about-server-info">
                         {t`Server`}
                     </ListSubheader>
                 }
             >
                 <ListItem>
-                    <ListItemText primary={t`Server`} secondary={`${aboutServer.name} (${aboutServer.buildType})`} />
+                    <ListItemText primary={t`Server`} secondary={`Kudoku Server (${aboutServer.buildType})`} />
                 </ListItem>
                 <ListItem>
                     <ListItemText
@@ -155,15 +177,18 @@ export function About() {
             <List
                 subheader={
                     <ListSubheader component="div" id="about-links">
-                        {t`Links`}
+                        Attribution & Parent Projects
                     </ListSubheader>
                 }
             >
-                <ListItemLink to={aboutServer.github} target="_blank" rel="noreferrer">
-                    <ListItemText primary={t`GitHub Server`} secondary={aboutServer.github} />
+                <ListItemLink to="https://github.com/jt-ito/tsundoku" target="_blank" rel="noreferrer">
+                    <ListItemText primary="Tsundoku (Parent Project)" secondary="https://github.com/jt-ito/tsundoku" />
                 </ListItemLink>
-                <ListItemLink to="https://github.com/jt-ito/tsundoku-WebUI" target="_blank" rel="noreferrer">
-                    <ListItemText primary={t`GitHub WebUI`} secondary="https://github.com/jt-ito/tsundoku-WebUI" />
+                <ListItemLink to="https://github.com/suwayomi/tachidesk-server" target="_blank" rel="noreferrer">
+                    <ListItemText primary="Suwayomi-Server (Upstream)" secondary="https://github.com/suwayomi/tachidesk-server" />
+                </ListItemLink>
+                <ListItemLink to="https://github.com/suwayomi/tachidesk-webui" target="_blank" rel="noreferrer">
+                    <ListItemText primary="Suwayomi-WebUI (Upstream)" secondary="https://github.com/suwayomi/tachidesk-webui" />
                 </ListItemLink>
             </List>
             <List

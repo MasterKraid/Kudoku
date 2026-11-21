@@ -257,7 +257,7 @@ export const AppbarSearch: React.FunctionComponent<IProps> = (props) => {
     if (isOpen) {
         return (
             <Autocomplete<SearchSuggestion, false, true, true>
-                open={focused && !hideSuggestions}
+                open={false}
                 freeSolo
                 disableClearable
                 forcePopupIcon={false}

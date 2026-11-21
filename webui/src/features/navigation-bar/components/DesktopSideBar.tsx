@@ -43,7 +43,7 @@ const BrandLogo = ({ size }: { size: number }) => (
     <Box
         component="img"
         src="./favicon.svg"
-        alt="tsundoku"
+        alt="Kudoku"
         width={size}
         height={size}
         sx={{
@@ -111,7 +111,7 @@ export const DesktopSideBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) =
                                 '&:hover img': { transform: 'scale(1.14)' },
                             }}
                         >
-                            <BrandLogo size={28} />
+                            <BrandLogo size={32} />
                         </ButtonBase>
                     ) : (
                         <>
@@ -121,35 +121,29 @@ export const DesktopSideBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) =
                                 sx={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: 1,
+                                    justifyContent: 'center',
+                                    flex: 1,
+                                    gap: 1.5,
                                     color: 'inherit',
                                     textDecoration: 'none',
                                     minWidth: 0,
-                                    '&:hover img': { transform: 'scale(1.1)' },
+                                    height: '100%',
+                                    '&:hover img': { transform: 'scale(1.08)' },
                                 }}
                             >
-                                <BrandLogo size={24} />
+                                <BrandLogo size={32} />
                                 <Typography
                                     noWrap
-                                    sx={{ fontSize: '0.94rem', fontWeight: 700, letterSpacing: '-0.02em' }}
+                                    sx={{
+                                        fontSize: '1.15rem',
+                                        fontWeight: 800,
+                                        letterSpacing: '-0.025em',
+                                        lineHeight: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    }}
                                 >
-                                    tsundoku
-                                </Typography>
-                                <Typography
-                                    sx={(theme) => ({
-                                        fontSize: '0.62rem',
-                                        fontWeight: 700,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.05em',
-                                        lineHeight: 1.1,
-                                        padding: '1.5px 5.5px',
-                                        borderRadius: '4px',
-                                        color: theme.palette.primary.main,
-                                        backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                    })}
-                                >
-                                    Server
+                                    Kudoku
                                 </Typography>
                             </Box>
                             <IconButton

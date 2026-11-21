@@ -186,6 +186,7 @@ export class ThemeFontLoader {
                 google: {
                     families: webFontFamilies,
                 },
+                timeout: 2000,
                 active: () => {
                     Object.entries(missingFontWeights).forEach(([fontName, weights]) => {
                         this.usableFonts[fontName] ??= new Set();
@@ -194,12 +195,12 @@ export class ThemeFontLoader {
                     loadFontsPromise.resolve();
                 },
                 inactive: () => {
-                    loadFontsPromise.reject();
+                    loadFontsPromise.resolve();
                 },
             });
         } catch (e) {
             defaultPromiseErrorHandler('ThemeFontLoader::load')(e);
-            loadFontsPromise.reject(e);
+            loadFontsPromise.resolve();
         }
 
         await loadFontsPromise.promise;

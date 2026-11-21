@@ -218,27 +218,75 @@ object GitHubBackupService {
         }
     }
 
-    private fun getFileContentBase64(token: String, fileObj: JsonObject): String? {
-        val directContent = fileObj["content"]?.jsonPrimitive?.contentOrNull?.replace("\n", "")
-        if (!directContent.isNullOrEmpty()) {
-            return directContent
+    private fun fetchRawFileBytes(
+        token: String,
+        owner: String,
+        repo: String,
+        path: String,
+        fileObj: JsonObject? = null,
+    ): ByteArray? {
+        // 1. Try inline base64 if present
+        val base64 = fileObj?.get("content")?.jsonPrimitive?.contentOrNull?.replace("\n", "")
+        if (!base64.isNullOrEmpty()) {
+            try {
+                return Base64.getDecoder().decode(base64)
+            } catch (_: Exception) {}
         }
-        val downloadUrl = fileObj["download_url"]?.jsonPrimitive?.contentOrNull
-        if (!downloadUrl.isNullOrEmpty()) {
-            val dlReq = Request.Builder()
-                .url(downloadUrl)
-                .header("Authorization", "Bearer $token")
-                .header("User-Agent", "Tsundoku-Manga-Server")
-                .get()
-                .build()
-            val bytes = httpClient.newCall(dlReq).execute().use { resp ->
+
+        // 2. Try fetching raw bytes via GitHub API (works for private repos of any size)
+        val encodedPath = path.replace(" ", "%20")
+        val apiReq = Request.Builder()
+            .url("https://api.github.com/repos/$owner/$repo/contents/$encodedPath")
+            .header("Authorization", "Bearer $token")
+            .header("Accept", "application/vnd.github.raw")
+            .header("User-Agent", "Kudoku-Manga-Server")
+            .get()
+            .build()
+
+        try {
+            val bytes = httpClient.newCall(apiReq).execute().use { resp ->
                 if (resp.isSuccessful) resp.body?.bytes() else null
             }
             if (bytes != null && bytes.isNotEmpty()) {
-                return Base64.getEncoder().encodeToString(bytes)
+                return bytes
+            }
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to fetch raw bytes via GitHub API for $path" }
+        }
+
+        // 3. Fallback to download_url if available
+        val downloadUrl = fileObj?.get("download_url")?.jsonPrimitive?.contentOrNull
+        if (!downloadUrl.isNullOrEmpty()) {
+            try {
+                val dlReq = Request.Builder()
+                    .url(downloadUrl)
+                    .header("Authorization", "token $token")
+                    .header("User-Agent", "Kudoku-Manga-Server")
+                    .get()
+                    .build()
+                val bytes = httpClient.newCall(dlReq).execute().use { resp ->
+                    if (resp.isSuccessful) resp.body?.bytes() else null
+                }
+                if (bytes != null && bytes.isNotEmpty()) {
+                    return bytes
+                }
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to fetch via download_url for $path" }
             }
         }
+
         return null
+    }
+
+    private fun getFileContentBase64(
+        token: String,
+        owner: String,
+        repo: String,
+        path: String,
+        fileObj: JsonObject,
+    ): String? {
+        val bytes = fetchRawFileBytes(token, owner, repo, path, fileObj)
+        return if (bytes != null && bytes.isNotEmpty()) Base64.getEncoder().encodeToString(bytes) else null
     }
 
     private fun listFolder(token: String, owner: String, repo: String, path: String): List<JsonObject> {
@@ -351,7 +399,7 @@ object GitHubBackupService {
 
             if (currentFile != null) {
                 // Fetch the content of the existing current backup
-                val existingContentBase64 = getFileContentBase64(token, currentFile)
+                val existingContentBase64 = getFileContentBase64(token, owner, repo, "Current/backup.proto.gz", currentFile)
                 if (!existingContentBase64.isNullOrEmpty()) {
                     // Rotate old Current to Past Week/backup-$timestampStr.proto.gz
                     val rotatedPath = "Past Week/backup-$timestampStr.proto.gz"
@@ -370,7 +418,7 @@ object GitHubBackupService {
                     val itemName = item["name"]?.jsonPrimitive?.contentOrNull ?: continue
                     val itemSha = item["sha"]?.jsonPrimitive?.contentOrNull ?: continue
                     val itemDetails = getFile(token, owner, repo, "Past Week/$itemName")
-                    val itemContent = itemDetails?.let { getFileContentBase64(token, it) }
+                    val itemContent = itemDetails?.let { getFileContentBase64(token, owner, repo, "Past Week/$itemName", it) }
 
                     if (!itemContent.isNullOrEmpty()) {
                         // Move to Archived/
@@ -437,19 +485,8 @@ object GitHubBackupService {
             }
 
             // Remote is different or we haven't synced it yet - download and restore!
-            val downloadUrl = currentFile["download_url"]?.jsonPrimitive?.contentOrNull
-            val backupBytes = if (!downloadUrl.isNullOrEmpty()) {
-                val dlReq = Request.Builder()
-                    .url(downloadUrl)
-                    .header("Authorization", "Bearer $token")
-                    .header("User-Agent", "Tsundoku-Manga-Server")
-                    .get()
-                    .build()
-                httpClient.newCall(dlReq).execute().use { it.body?.bytes() }
-            } else {
-                val base64 = currentFile["content"]?.jsonPrimitive?.contentOrNull?.replace("\n", "")
-                if (!base64.isNullOrEmpty()) Base64.getDecoder().decode(base64) else null
-            } ?: throw IllegalStateException("Could not read backup bytes from GitHub")
+            val backupBytes = fetchRawFileBytes(token, owner, repo, "Current/backup.proto.gz", currentFile)
+                ?: throw IllegalStateException("Could not read backup bytes from GitHub")
 
             ProtoBackupImport.restoreLegacy(
                 ByteArrayInputStream(backupBytes),

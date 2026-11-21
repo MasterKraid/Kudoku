@@ -456,8 +456,8 @@ export function Backup() {
 
                         <ListItemButton onClick={checkGitHubSync} disabled={isCheckingSync}>
                             <ListItemText
-                                primary="Check Sync"
-                                secondary="Checks if GitHub's Current backup is newer than memory and updates database"
+                                primary="Sync Now"
+                                secondary="Checks if GitHub's Current backup is newer than local database and syncs library"
                             />
                             {isCheckingSync ? <CircularProgress size={20} /> : null}
                         </ListItemButton>

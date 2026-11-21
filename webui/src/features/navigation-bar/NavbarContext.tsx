@@ -11,7 +11,7 @@ import type { INavbarOverride, NavbarContextType } from '@/features/navigation-b
 import { useLocalStorage } from '@/base/hooks/useStorage.tsx';
 
 export const NavBarContext = React.createContext<NavbarContextType>({
-    title: 'tsundoku',
+    title: 'Kudoku',
     setTitle: (): void => {},
     hideTitle: false,
     setHideTitle: (): void => {},
@@ -42,7 +42,7 @@ interface IProps {
 }
 
 export function NavBarContextProvider({ children }: IProps) {
-    const [title, setTitle] = useState<string | React.ReactNode>('tsundoku');
+    const [title, setTitle] = useState<string | React.ReactNode>('Kudoku');
     const [hideTitle, setHideTitle] = useState(false);
     const [action, setAction] = useState<any>(<div />);
     const [appBarHeight, setAppBarHeight] = useState(0);
@@ -59,7 +59,7 @@ export function NavBarContextProvider({ children }: IProps) {
 
     const updateTitle = useCallback(
         (newTitle: string | React.ReactNode, browserTitle: string = typeof newTitle === 'string' ? newTitle : '') => {
-            document.title = `${browserTitle} - tsundoku`;
+            document.title = browserTitle ? `${browserTitle} - Kudoku` : 'Kudoku';
             setTitle(newTitle);
         },
         [setTitle],
