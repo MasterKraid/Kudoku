@@ -76,7 +76,12 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
 
     const showMissingImageIcon = !src.length;
 
-    const [imageSourceUrl, setImageSourceUrl] = useState<string>();
+    const isBlobOrData = typeof src === 'string' && (src.startsWith('blob:') || src.startsWith('data:'));
+
+    const [imageSourceUrl, setImageSourceUrl] = useState<string | undefined>(() => {
+        if (isBlobOrData) return src;
+        return requestManager.getCachedImageUrl(src);
+    });
     const [imgLoadRetryKey, setImgLoadRetryKey] = useState(0);
     const [isLoading, setIsLoading] = useState<boolean>();
     const [hasError, setHasError] = useState(false);
@@ -104,8 +109,6 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
         useCallback((entries) => setIsVisible(entries[0].isIntersecting), []),
     );
 
-    const isBlobOrData = typeof src === 'string' && (src.startsWith('blob:') || src.startsWith('data:'));
-
     useEffect(() => {
         const didSrcChange = previousSrc !== src;
         const isLoadedAndSrcUnchanged = !!imageSourceUrl && !didSrcChange;
@@ -124,6 +127,12 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
 
         if (isRetry || didSrcChange) {
             setHasError(false);
+            const cached = requestManager.getCachedImageUrl(src);
+            if (cached) {
+                setImageSourceUrl(cached);
+                updateImageState(false);
+                return () => {};
+            }
         }
 
         let isAborted = false;
@@ -262,7 +271,7 @@ export const SpinnerImage = ({ ref, ...props }: SpinnerImageProps) => {
                             justifyContent: 'center',
                         }}
                     >
-                        {!hasError && <CircularProgress thickness={5} />}
+                        {!hasError && isVisible && !!isLoading && <CircularProgress thickness={5} />}
                         {hasError && (
                             <>
                                 <BrokenImageIcon />

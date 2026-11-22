@@ -113,7 +113,7 @@ export const MangaGridCard = memo(
                         >
                             <SpinnerImage
                                 alt={title}
-                                src={Mangas.getThumbnailUrl(manga)}
+                                src={Mangas.getThumbnailUrl({ ...manga, inLibrary: manga.inLibrary ?? isInLibrary })}
                                 imgStyle={
                                     inLibraryIndicator && isInLibrary
                                         ? {

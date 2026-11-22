@@ -26,6 +26,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.CacheControl
 import okhttp3.Response
+import okhttp3.internal.closeQuietly
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
@@ -67,6 +68,12 @@ import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 
 private val logger = KotlinLogging.logger { }
+
+data class MangaThumbnailResult(
+    val stream: InputStream,
+    val contentType: String,
+    val inLibrary: Boolean,
+)
 
 object Manga {
     val mangaInfoMutex: Cache<Int, Mutex> =
@@ -419,67 +426,90 @@ object Manga {
         }
     }
 
-    suspend fun fetchMangaThumbnail(mangaId: Int): Pair<InputStream, String> {
-        val cacheSaveDir = applicationDirs.tempThumbnailCacheRoot
-        val fileName = mangaId.toString()
-
-        val mangaEntry = transaction { MangaTable.selectAll().where { MangaTable.id eq mangaId }.first() }
-        val sourceId = mangaEntry[MangaTable.sourceReference]
-
-        return when (val source = getSourceOrStub(sourceId)) {
-            is HttpSource -> {
-                getImageResponse(cacheSaveDir, fileName) {
-                    fetchHttpSourceMangaThumbnail(source, mangaEntry)
-                }
+    private suspend fun streamHttpSourceThumbnail(source: HttpSource, manga: ResultRow): Pair<InputStream, String> {
+        val response = fetchHttpSourceMangaThumbnail(source, manga)
+        try {
+            if (response.code == 200) {
+                val bytes = response.body.bytes()
+                val contentType = response.header("Content-Type") ?: "image/jpeg"
+                return bytes.inputStream() to contentType
+            } else {
+                throw Exception("request error! ${response.code}")
             }
-
-            is LocalSource -> {
-                val imageFile =
-                    mangaEntry[MangaTable.thumbnail_url]?.let {
-                        val file = File(it)
-                        if (file.exists()) {
-                            file
-                        } else {
-                            null
-                        }
-                    } ?: throw IOException("Thumbnail does not exist")
-                val contentType =
-                    ImageUtil.findImageType { imageFile.inputStream() }?.mime
-                        ?: "image/jpeg"
-                imageFile.inputStream() to contentType
-            }
-
-            is StubSource -> {
-                getImageResponse(cacheSaveDir, fileName) {
-                    val thumbnailUrl =
-                        mangaEntry[MangaTable.thumbnail_url]
-                            ?: throw NullPointerException("No thumbnail found")
-                    network.client
-                        .newCall(
-                            GET(thumbnailUrl, cache = CacheControl.FORCE_NETWORK),
-                        ).await()
-                }
-            }
-
-            else -> {
-                throw IllegalArgumentException("Unknown source")
-            }
+        } finally {
+            response.closeQuietly()
         }
     }
 
-    suspend fun getMangaThumbnail(mangaId: Int): Pair<InputStream, String> {
-        val mangaEntry = transaction { MangaTable.selectAll().where { MangaTable.id eq mangaId }.first() }
+    private suspend fun streamStubSourceThumbnail(manga: ResultRow): Pair<InputStream, String> {
+        val thumbnailUrl = manga[MangaTable.thumbnail_url] ?: throw NullPointerException("No thumbnail found")
+        val response = network.client.newCall(GET(thumbnailUrl, cache = CacheControl.FORCE_NETWORK)).await()
+        try {
+            if (response.code == 200) {
+                val bytes = response.body.bytes()
+                val contentType = response.header("Content-Type") ?: "image/jpeg"
+                return bytes.inputStream() to contentType
+            } else {
+                throw Exception("request error! ${response.code}")
+            }
+        } finally {
+            response.closeQuietly()
+        }
+    }
 
-        if (mangaEntry[MangaTable.inLibrary] && mangaEntry[MangaTable.sourceReference] != LocalSource.ID) {
-            return try {
+    private fun fetchLocalSourceThumbnail(mangaEntry: ResultRow): Pair<InputStream, String> {
+        val imageFile =
+            mangaEntry[MangaTable.thumbnail_url]?.let {
+                val file = File(it)
+                if (file.exists()) {
+                    file
+                } else {
+                    null
+                }
+            } ?: throw IOException("Thumbnail does not exist")
+        val contentType =
+            ImageUtil.findImageType { imageFile.inputStream() }?.mime
+                ?: "image/jpeg"
+        return imageFile.inputStream() to contentType
+    }
+
+    private suspend fun fetchNonLibraryMangaThumbnail(mangaEntry: ResultRow): Pair<InputStream, String> {
+        val sourceId = mangaEntry[MangaTable.sourceReference]
+        return when (val source = getSourceOrStub(sourceId)) {
+            is HttpSource -> streamHttpSourceThumbnail(source, mangaEntry)
+            is LocalSource -> fetchLocalSourceThumbnail(mangaEntry)
+            is StubSource -> streamStubSourceThumbnail(mangaEntry)
+            else -> throw IllegalArgumentException("Unknown source")
+        }
+    }
+
+    suspend fun fetchMangaThumbnail(mangaId: Int): Pair<InputStream, String> {
+        val mangaEntry = transaction { MangaTable.selectAll().where { MangaTable.id eq mangaId }.first() }
+        return fetchNonLibraryMangaThumbnail(mangaEntry)
+    }
+
+    suspend fun getMangaThumbnail(mangaId: Int): MangaThumbnailResult {
+        val mangaEntry = transaction { MangaTable.selectAll().where { MangaTable.id eq mangaId }.first() }
+        val inLibrary = mangaEntry[MangaTable.inLibrary]
+
+        if (inLibrary && mangaEntry[MangaTable.sourceReference] != LocalSource.ID) {
+            val (stream, contentType) = try {
                 ThumbnailDownloadHelper.getImage(mangaId)
             } catch (_: MissingThumbnailException) {
                 ThumbnailDownloadHelper.download(mangaId)
                 ThumbnailDownloadHelper.getImage(mangaId)
             }
+            return MangaThumbnailResult(stream, contentType, true)
         }
 
-        return fetchMangaThumbnail(mangaId)
+        if (inLibrary && mangaEntry[MangaTable.sourceReference] == LocalSource.ID) {
+            val (stream, contentType) = fetchLocalSourceThumbnail(mangaEntry)
+            return MangaThumbnailResult(stream, contentType, true)
+        }
+
+        // Non-library manga (browsing extensions/sources): stream in-memory without saving to persistent disk cache
+        val (stream, contentType) = fetchNonLibraryMangaThumbnail(mangaEntry)
+        return MangaThumbnailResult(stream, contentType, false)
     }
 
     fun clearThumbnail(mangaId: Int) {

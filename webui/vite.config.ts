@@ -101,16 +101,20 @@ export default defineConfig(({ command }) => ({
                     }),
                     createCacheFirstRuntimeCache({
                         urlPattern: ({ url }) => {
-                            const { pathname } = url;
-                            return pathname.match(/\/manga\/[0-9]+\/thumbnail/g);
+                            const { pathname, searchParams } = url;
+                            return (
+                                pathname.match(/\/manga\/[0-9]+\/thumbnail/g) &&
+                                searchParams.get('inLibrary') === '1'
+                            );
                         },
                         options: {
                             // !!! IMPORTANT !!! - Update along with ImageCache.ts
                             cacheName: 'image-cache-manga-thumbnails',
                             expiration: {
-                                // Max age from server
-                                maxAgeSeconds: d(1).days.inWholeSeconds,
-                                maxEntries: 5000,
+                                // Permanent cache (never expires by age: 10 years), max 6000 entries keeping client cache < 1GB
+                                maxAgeSeconds: 315360000,
+                                maxEntries: 6000,
+                                purgeOnQuotaError: true,
                             },
                         },
                     }),
@@ -130,7 +134,12 @@ export default defineConfig(({ command }) => ({
                         },
                     }),
                     createCacheFirstRuntimeCache({
-                        urlPattern: ({ request }) => request.destination === 'image',
+                        urlPattern: ({ url, request }) => {
+                            if (url.pathname.includes('/thumbnail')) {
+                                return false; // Do not cache non-library thumbnails
+                            }
+                            return request.destination === 'image';
+                        },
                         options: {
                             // !!! IMPORTANT !!! - Update along with ImageCache.ts
                             cacheName: 'image-cache-other',

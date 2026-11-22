@@ -14,8 +14,12 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.atomic.AtomicInteger
 
 object ImageResponse {
+    const val MAX_CACHE_SIZE_BYTES = 1024L * 1024L * 1024L // 1 GB hard limit
+    const val TARGET_CACHE_SIZE_BYTES = 800L * 1024L * 1024L // 800 MB prune target
+    private val saveCounter = AtomicInteger(0)
     private fun pathToInputStream(path: String): InputStream = FileInputStream(path).buffered()
 
     /** find file with name when file extension is not known */
@@ -114,7 +118,39 @@ object ImageResponse {
         val actualSavePath = "$filePath.$extension"
 
         tmpSaveFile.renameTo(File(actualSavePath))
+
+        if (saveCounter.incrementAndGet() % 50 == 0) {
+            File(actualSavePath).parent?.let { parentDir ->
+                trimCacheToSize(parentDir)
+            }
+        }
+
         return Pair(actualSavePath, imageType?.mime ?: mimeType ?: "image/jpeg")
+    }
+
+    /**
+     * Enforces that the cache directory does not exceed maxSizeBytes (1 GB default).
+     * If exceeded, prunes oldest files (by last modified timestamp) down to targetSizeBytes (800 MB default).
+     */
+    fun trimCacheToSize(
+        saveDir: String,
+        maxSizeBytes: Long = MAX_CACHE_SIZE_BYTES,
+        targetSizeBytes: Long = TARGET_CACHE_SIZE_BYTES,
+    ) {
+        val dir = File(saveDir)
+        if (!dir.exists() || !dir.isDirectory) return
+        val files = dir.listFiles() ?: return
+        var totalSize = files.filter { it.isFile }.sumOf { it.length() }
+        if (totalSize > maxSizeBytes) {
+            val sortedFiles = files.filter { it.isFile }.sortedBy { it.lastModified() }
+            for (file in sortedFiles) {
+                val len = file.length()
+                if (file.delete()) {
+                    totalSize -= len
+                    if (totalSize <= targetSizeBytes) break
+                }
+            }
+        }
     }
 
     fun clearCachedImage(
@@ -127,5 +163,10 @@ object ImageResponse {
         }
     }
 
-    fun clearImages(saveDir: String): Boolean = File(saveDir).deleteRecursively()
+    fun clearImages(saveDir: String): Boolean {
+        val dir = File(saveDir)
+        val deleted = dir.deleteRecursively()
+        dir.mkdirs()
+        return deleted
+    }
 }

@@ -107,11 +107,17 @@ object MangaController {
                 ctx.getAttribute(Attribute.TachideskUser).requireUser()
                 ctx.future {
                     future { Manga.getMangaThumbnail(mangaId) }
-                        .thenApply {
-                            ctx.header("content-type", it.second)
-                            val httpCacheSeconds = 1.days.inWholeSeconds
-                            ctx.header("cache-control", "max-age=$httpCacheSeconds")
-                            ctx.result(it.first)
+                        .thenApply { res ->
+                            ctx.header("content-type", res.contentType)
+                            if (res.inLibrary) {
+                                val httpCacheSeconds = 315360000L // 10 years (permanent cache)
+                                ctx.header("cache-control", "public, max-age=$httpCacheSeconds, immutable")
+                                ctx.header("x-in-library", "true")
+                            } else {
+                                ctx.header("cache-control", "no-cache, no-store, must-revalidate")
+                                ctx.header("x-in-library", "false")
+                            }
+                            ctx.result(res.stream)
                         }
                 }
             },

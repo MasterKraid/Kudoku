@@ -30,7 +30,7 @@ export class ImageCache {
         }
 
         if (url.match(/\/manga\/[0-9]+\/thumbnail/g)) {
-            return ImageCacheKey.MANGA_THUMBNAILS;
+            return url.includes('inLibrary=1') ? ImageCacheKey.MANGA_THUMBNAILS : ImageCacheKey.OTHER;
         }
 
         if (url.includes('/extension/icon/')) {
@@ -41,6 +41,10 @@ export class ImageCache {
     }
 
     static async has(url: string, key: ImageCacheKey = this.getKeyFor(url)): Promise<boolean> {
+        // Only library manga thumbnails are cached
+        if (url.includes('/thumbnail') && !url.includes('inLibrary=1')) {
+            return false;
+        }
         try {
             const cache = await caches.open(key);
             const response = await cache.match(url, { ignoreVary: true });
@@ -70,6 +74,30 @@ export class ImageCache {
     }
 
     static async clearAll(): Promise<void> {
-        IMAGE_CACHE_KEYS.forEach(ImageCache.clear);
+        try {
+            const { requestManager } = await import('@/lib/requests/RequestManager.ts');
+            requestManager.clearImageMemoryCache();
+        } catch {
+            // ignore
+        }
+        await Promise.all(IMAGE_CACHE_KEYS.map((key) => ImageCache.clear(key)));
+    }
+
+    /**
+     * Enforces client storage quota (1 GB hard cap).
+     * If storage usage exceeds 1 GB, trims temporary chapter pages and caches.
+     */
+    static async enforceQuota(maxBytes: number = 1024 * 1024 * 1024): Promise<void> {
+        if (!('storage' in navigator) || !navigator.storage.estimate) return;
+        try {
+            const estimate = await navigator.storage.estimate();
+            if (estimate.usage && estimate.usage > maxBytes) {
+                // Evict non-essential chapter pages first
+                await ImageCache.clear(ImageCacheKey.CHAPTER_PAGES);
+                await ImageCache.clear(ImageCacheKey.OTHER);
+            }
+        } catch {
+            // Ignore quota check failures
+        }
     }
 }

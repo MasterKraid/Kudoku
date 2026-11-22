@@ -49,7 +49,9 @@ export type MangaHighestChapterNumberInfo = { highestNumberedChapter?: (ChapterI
 export type MangaInLibraryInfo = Pick<MangaTypeGql, 'inLibrary' | 'inLibraryAt'>;
 export type MangaDownloadInfo = Pick<MangaTypeGql, 'downloadCount'> & MangaChapterCountInfo;
 export type MangaUnreadInfo = Pick<MangaTypeGql, 'unreadCount'> & MangaChapterCountInfo;
-export type MangaThumbnailInfo = Pick<MangaTypeGql, 'thumbnailUrl' | 'thumbnailUrlLastFetched' | 'sourceId'>;
+export type MangaThumbnailInfo = Pick<MangaTypeGql, 'thumbnailUrl' | 'thumbnailUrlLastFetched' | 'sourceId'> & {
+    inLibrary?: boolean;
+};
 export type MangaTrackRecordInfo = MangaIdInfo & {
     trackRecords: { nodes: Pick<TrackRecordType, 'id' | 'trackerId'>[] };
 };

@@ -91,15 +91,14 @@ class ApplicationDirs(
     val automatedBackupRoot
         get() = serverConfig.backupPath.value.ifBlank { "$dataRoot/backups" }
 
-    val tempThumbnailCacheRoot = "$tempRoot/thumbnails"
+    val cacheDir = "$dataRoot/cache"
+    val tempThumbnailCacheRoot = "$cacheDir/thumbnails"
     val tempMangaCacheRoot = "$tempRoot/manga-cache"
 
     val thumbnailDownloadsRoot
         get() = "$downloadsRoot/thumbnails"
     val mangaDownloadsRoot
         get() = "$downloadsRoot/mangas"
-
-    val cacheDir = "$dataRoot/cache"
 }
 
 @Suppress("DEPRECATION")
@@ -222,12 +221,32 @@ fun applicationSetup() {
     // make dirs we need
     listOf(
         applicationDirs.dataRoot,
+        applicationDirs.cacheDir,
         applicationDirs.extensionsRoot,
         applicationDirs.extensionsRoot + "/icon",
         applicationDirs.tempThumbnailCacheRoot,
         applicationDirs.downloadsRoot,
         applicationDirs.localMangaRoot,
     ).forEach { File(it).mkdirs() }
+
+    // Migrate legacy temporary thumbnails from OS temp directory if present
+    try {
+        val legacyTmpThumbnails = File("${System.getProperty("java.io.tmpdir")}/Tachidesk/thumbnails")
+        if (legacyTmpThumbnails.exists() && legacyTmpThumbnails.isDirectory) {
+            val targetDir = File(applicationDirs.tempThumbnailCacheRoot)
+            legacyTmpThumbnails.listFiles()?.forEach { file ->
+                val target = File(targetDir, file.name)
+                if (!target.exists()) {
+                    file.copyTo(target, overwrite = false)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        logger.warn(e) { "Failed to migrate legacy temporary thumbnails: ${e.message}" }
+    }
+
+    // Enforce 1GB max cache limit on startup
+    suwayomi.tachidesk.manga.impl.util.storage.ImageResponse.trimCacheToSize(applicationDirs.tempThumbnailCacheRoot)
 
     // initialize Koin modules
     val app = App()

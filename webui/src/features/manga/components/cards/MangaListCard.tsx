@@ -74,7 +74,7 @@ export const MangaListCard = memo(
                         }}
                     >
                         <ListCardAvatar
-                            iconUrl={Mangas.getThumbnailUrl(manga)}
+                            iconUrl={Mangas.getThumbnailUrl({ ...manga, inLibrary: manga.inLibrary ?? isInLibrary })}
                             alt={manga.title}
                             slots={{
                                 spinnerImageProps: {

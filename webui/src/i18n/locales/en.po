@@ -305,9 +305,9 @@ msgstr "{count, plural, one {You are about to delete one download} other {You ar
 
 #: src/features/chapter/Chapter.constants.ts
 msgid "{count, plural, one {You are about to download one chapter} other {You are about to download # chapters.\n"
-"tsundoku is not a mass downloader and too many downloads can get you banned from sources and/or cause performance issues.}}"
+"Kudoku is not a mass downloader and too many downloads can get you banned from sources and/or cause performance issues.}}"
 msgstr "{count, plural, one {You are about to download one chapter} other {You are about to download # chapters.\n"
-"tsundoku is not a mass downloader and too many downloads can get you banned from sources and/or cause performance issues.}}"
+"Kudoku is not a mass downloader and too many downloads can get you banned from sources and/or cause performance issues.}}"
 
 #: src/features/chapter/Chapter.constants.ts
 msgid "{count, plural, one {You are about to mark one chapter as read} other {You are about to mark # chapters as read}}"
@@ -904,6 +904,10 @@ msgstr "By source name"
 msgid "By upload date"
 msgstr "By upload date"
 
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Cache expiration is active. Thumbnails older than the configured duration below will expire."
+msgstr "Cache expiration is active. Thumbnails older than the configured duration below will expire."
+
 #: src/features/settings/components/images/Processing.tsx
 msgid "Call timeout"
 msgstr "Call timeout"
@@ -971,6 +975,10 @@ msgstr "Cancel downloads of selected"
 #: src/features/tracker/Tracker.constants.ts
 msgid "Cancelled"
 msgstr "Cancelled"
+
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Capped at 1GB max across server disk storage and browser cache with automatic oldest-first pruning."
+msgstr "Capped at 1GB max across server disk storage and browser cache with automatic oldest-first pruning."
 
 #: src/features/backup/Backup.constants.ts
 #: src/features/library/components/LibraryOptionsPanel.tsx
@@ -1147,8 +1155,8 @@ msgid "Clear offline downloads"
 msgstr "Clear offline downloads"
 
 #: src/features/settings/screens/ImagesSettings.tsx
-msgid "Cleared the cache"
-msgstr "Cleared the cache"
+msgid "Cleared the image cache successfully"
+msgstr "Cleared the image cache successfully"
 
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Cleared WebView cookies and cache"
@@ -1279,9 +1287,9 @@ msgid "Continuous vertical"
 msgstr "Continuous vertical"
 
 #: src/features/settings/screens/ServerSettings.tsx
-msgid "Controls the MimeType that tsundoku sends in OPDS entries for CBZ archives. Also affects global CBZ download.\n"
+msgid "Controls the MimeType that Kudoku sends in OPDS entries for CBZ archives. Also affects global CBZ download.\n"
 "Modern follows recent IANA standard (2017), while LEGACY (deprecated mimetype for .cbz) and COMPATIBLE (deprecated mimetype for all comic archives) might be more compatible with older clients."
-msgstr "Controls the MimeType that tsundoku sends in OPDS entries for CBZ archives. Also affects global CBZ download.\n"
+msgstr "Controls the MimeType that Kudoku sends in OPDS entries for CBZ archives. Also affects global CBZ download.\n"
 "Modern follows recent IANA standard (2017), while LEGACY (deprecated mimetype for .cbz) and COMPATIBLE (deprecated mimetype for all comic archives) might be more compatible with older clients."
 
 #: src/features/settings/Settings.constants.ts
@@ -1426,8 +1434,11 @@ msgstr "Could not log in to {0}"
 msgid "Could not log in to {trackerName}"
 msgstr "Could not log in to {trackerName}"
 
-#: src/features/authentication/components/UserAccountsDialog.tsx
 #: src/features/authentication/screens/LoginPage.tsx
+msgid "Could not log in to Kudoku"
+msgstr "Could not log in to Kudoku"
+
+#: src/features/authentication/components/UserAccountsDialog.tsx
 msgid "Could not log in to tsundoku"
 msgstr "Could not log in to tsundoku"
 
@@ -1688,6 +1699,10 @@ msgstr "Database url"
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Day"
 msgstr "Day"
+
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "days"
+msgstr "days"
 
 #: src/features/settings/screens/About.tsx
 msgid "Debug information"
@@ -2342,8 +2357,8 @@ msgid "FlareSolverr enabled"
 msgstr "FlareSolverr enabled"
 
 #: src/features/settings/screens/ServerSettings.tsx
-msgid "Flaresolverr is a <0><1>separate</1></0>, tsundoku <2><3>unrelated</3></2> program that needs to be manually <4><5>installed</5></4> and <6><7>run</7></6>.<8/>See <9>FlareSolverr</9> for information on how to set it up<10/><11/>If it is <12><13>not</13></12> properly set up and running, enabling this setting <14><15>won't</15></14> do anything"
-msgstr "Flaresolverr is a <0><1>separate</1></0>, tsundoku <2><3>unrelated</3></2> program that needs to be manually <4><5>installed</5></4> and <6><7>run</7></6>.<8/>See <9>FlareSolverr</9> for information on how to set it up<10/><11/>If it is <12><13>not</13></12> properly set up and running, enabling this setting <14><15>won't</15></14> do anything"
+msgid "Flaresolverr is a <0><1>separate</1></0>, Kudoku <2><3>unrelated</3></2> program that needs to be manually <4><5>installed</5></4> and <6><7>run</7></6>.<8/>See <9>FlareSolverr</9> for information on how to set it up<10/><11/>If it is <12><13>not</13></12> properly set up and running, enabling this setting <14><15>won't</15></14> do anything"
+msgstr "Flaresolverr is a <0><1>separate</1></0>, Kudoku <2><3>unrelated</3></2> program that needs to be manually <4><5>installed</5></4> and <6><7>run</7></6>.<8/>See <9>FlareSolverr</9> for information on how to set it up<10/><11/>If it is <12><13>not</13></12> properly set up and running, enabling this setting <14><15>won't</15></14> do anything"
 
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "FlareSolverr request timeout"
@@ -2416,14 +2431,6 @@ msgstr "General"
 #: src/features/library/components/LibraryOptionsPanel.tsx
 msgid "Genre"
 msgstr "Genre"
-
-#: src/features/settings/screens/About.tsx
-msgid "GitHub Server"
-msgstr "GitHub Server"
-
-#: src/features/settings/screens/About.tsx
-msgid "GitHub WebUI"
-msgstr "GitHub WebUI"
 
 #: src/features/browse/sources/Sources.tsx
 #: src/features/global-search/screens/SearchAll.tsx
@@ -2773,6 +2780,10 @@ msgstr "Kindle"
 msgid "KOReader Sync"
 msgstr "KOReader Sync"
 
+#: src/features/backup/component/BackupFormatDialog.tsx
+msgid "Kudoku"
+msgstr "Kudoku"
+
 #: src/features/reader/settings/layout/components/ReaderSettingTapZoneLayout.tsx
 msgid "L-Shape"
 msgstr "L-Shape"
@@ -2891,10 +2902,6 @@ msgstr "Limit the amount of new chapters that are going to get downloaded."
 msgid "Linked to folder: {0}"
 msgstr "Linked to folder: {0}"
 
-#: src/features/settings/screens/About.tsx
-msgid "Links"
-msgstr "Links"
-
 #: src/base/components/GridLayouts.tsx
 #: src/features/library/components/LibraryOptionsPanel.tsx
 msgid "List"
@@ -2959,8 +2966,8 @@ msgid "Log in to {0}"
 msgstr "Log in to {0}"
 
 #: src/features/authentication/screens/LoginPage.tsx
-msgid "Log in to your tsundoku server."
-msgstr "Log in to your tsundoku server."
+msgid "Log in to your Kudoku server."
+msgstr "Log in to your Kudoku server."
 
 #: src/base/components/modals/LoginDialog.tsx
 msgid "Log out"
@@ -3100,6 +3107,10 @@ msgstr "Match the library search even with typos or words in a different order, 
 #: src/features/migration/components/migration-entry/MigrationEntry.tsx
 msgid "Matches"
 msgstr "Matches"
+
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Max cache age on client and server: {cacheMaxAgeDays} days"
+msgstr "Max cache age on client and server: {cacheMaxAgeDays} days"
 
 #: src/features/webview/components/WebViewModal.tsx
 msgid "Maximize"
@@ -3599,6 +3610,10 @@ msgstr "Pending…"
 msgid "Percentage Tolerance"
 msgstr "Percentage Tolerance"
 
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Permanent thumbnail cache (Never expire)"
+msgstr "Permanent thumbnail cache (Never expire)"
+
 #: src/features/browse/sources/components/SourceCard.tsx
 msgid "Pin source"
 msgstr "Pin source"
@@ -3620,6 +3635,10 @@ msgstr "Port"
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "PostgreSQL"
 msgstr "PostgreSQL"
+
+#: src/features/reader/settings/behaviour/ReaderBehaviourSettings.tsx
+msgid "Preload and stream all pages of the current chapter at once in continuous reading modes instead of chunk-by-chunk."
+msgstr "Preload and stream all pages of the current chapter at once in continuous reading modes instead of chunk-by-chunk."
 
 #: src/features/reader/settings/behaviour/ReaderBehaviourSettings.tsx
 msgid "Preload images"
@@ -4506,6 +4525,14 @@ msgstr "Stop global update"
 msgid "Stop syncing"
 msgstr "Stop syncing"
 
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Storage quota"
+msgstr "Storage quota"
+
+#: src/features/reader/settings/behaviour/ReaderBehaviourSettings.tsx
+msgid "Stream full chapter eagerly"
+msgstr "Stream full chapter eagerly"
+
 #: src/features/reader/overlay/navigation/desktop/quick-settings/components/ReaderNavBarDesktopPageScale.tsx
 #: src/features/reader/settings/layout/components/ReaderSettingStretchPage.tsx
 msgid "Stretch small pages"
@@ -4648,10 +4675,6 @@ msgstr "That haven't been started"
 msgid "The address of the FlareSolverr server"
 msgstr "The address of the FlareSolverr server"
 
-#: src/features/settings/screens/ImagesSettings.tsx
-msgid "The cache of the client (browser, electron) should get cleared alongside it, otherwise, the client cache will keep getting used"
-msgstr "The cache of the client (browser, electron) should get cleared alongside it, otherwise, the client cache will keep getting used"
-
 #. placeholder {0}: share.categoryNames.join(', ')
 #: src/features/library/screens/LibraryShare.tsx
 msgid "the categories {0}"
@@ -4791,6 +4814,14 @@ msgstr "This will permanently remove all downloaded chapter CBZ archives and cac
 msgid "This will remove the tracking locally."
 msgstr "This will remove the tracking locally."
 
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Thumbnail cache"
+msgstr "Thumbnail cache"
+
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Thumbnails are cached permanently without time expiration (never auto-deleted by age). Server and client maintain a strict 1GB cap with LRU eviction."
+msgstr "Thumbnails are cached permanently without time expiration (never auto-deleted by age). Server and client maintain a strict 1GB cap with LRU eviction."
+
 #: src/features/reader/settings/behaviour/components/ReaderSettingScrollAmount.tsx
 msgid "Tiny"
 msgstr "Tiny"
@@ -4884,10 +4915,6 @@ msgstr "Tracking"
 msgid "Tree Frog Green"
 msgstr "Tree Frog Green"
 
-#: src/features/backup/component/BackupFormatDialog.tsx
-msgid "Tsundoku"
-msgstr "Tsundoku"
-
 #: src/features/library/screens/LibraryShare.tsx
 msgid "Two-way request declined"
 msgstr "Two-way request declined"
@@ -4943,7 +4970,6 @@ msgstr "Ultra-compact"
 #: src/features/reader/screens/Reader.tsx
 #: src/features/reader/settings/screens/GlobalReaderSettings.tsx
 #: src/features/reader/viewer/ReaderChapterViewer.tsx
-#: src/features/settings/screens/About.tsx
 #: src/features/settings/screens/Appearance.tsx
 #: src/features/settings/screens/ImageProcessingSetting.tsx
 #: src/features/settings/screens/ServerSettings.tsx
@@ -5252,6 +5278,10 @@ msgstr "Where to start the WebUI when starting the server"
 #: src/features/reader/settings/general/components/ReaderSettingBackgroundColor.tsx
 msgid "White"
 msgstr "White"
+
+#: src/features/settings/screens/ImagesSettings.tsx
+msgid "Wipes all cached manga cover thumbnails and reader page caches from both the server and client browser."
+msgstr "Wipes all cached manga cover thumbnails and reader page caches from both the server and client browser."
 
 #: src/features/settings/Settings.constants.ts
 msgid "With \"Completed\" status"

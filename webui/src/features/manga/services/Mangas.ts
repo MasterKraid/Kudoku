@@ -197,6 +197,7 @@ export class Mangas {
         const url = UrlUtil.addParams(rawThumb, {
             fetchedAt: manga.thumbnailUrlLastFetched,
             sourceId: manga.sourceId,
+            inLibrary: manga.inLibrary ? '1' : undefined,
         });
 
         return requestManager.getValidImgUrlFor(url);

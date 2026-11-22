@@ -416,6 +416,7 @@ import { SYNC_SUBSCRIPTION } from '@/lib/graphql/sync/SyncSubscription.ts';
 import { START_SYNC } from '@/lib/graphql/sync/SyncMutation.ts';
 import { GET_SYNC_STATUS } from '@/lib/graphql/sync/SyncQuery.ts';
 import { WEBVIEW_CLEAR_CACHE_COOKIES } from '@/lib/graphql/web-view/WebViewMutation.ts';
+import { noOp } from '@/lib/HelperFunctions.ts';
 
 enum GQLMethod {
     QUERY = 'QUERY',
@@ -1067,6 +1068,31 @@ export class RequestManager {
         return url;
     }
 
+    private static readonly inMemoryImageCache = new Map<string, string>();
+    private static readonly knownCachedUrls = new Set<string>();
+
+    public getCachedImageUrl(url: string): string | undefined {
+        return RequestManager.inMemoryImageCache.get(url);
+    }
+
+    public cacheImageUrl(url: string, resolvedUrl: string): void {
+        // Do not cache non-library thumbnails in persistent memory
+        if (url.includes('/thumbnail') && !url.includes('inLibrary=1')) {
+            return;
+        }
+        if (RequestManager.inMemoryImageCache.size > 10000) {
+            const firstKey = RequestManager.inMemoryImageCache.keys().next().value;
+            if (firstKey) RequestManager.inMemoryImageCache.delete(firstKey);
+        }
+        RequestManager.inMemoryImageCache.set(url, resolvedUrl);
+        RequestManager.knownCachedUrls.add(url);
+    }
+
+    public clearImageMemoryCache(): void {
+        RequestManager.inMemoryImageCache.clear();
+        RequestManager.knownCachedUrls.clear();
+    }
+
     private getSourceIdFromUrl(url: string): string | null {
         try {
             return new URL(url).searchParams.get('sourceId');
@@ -1084,8 +1110,12 @@ export class RequestManager {
         const sourceId = this.getSourceIdFromUrl(url);
 
         try {
-            const isCached = await ImageCache.has(url);
-            if (!!ignoreQueue || isCached) {
+            const isLibraryThumbnail = url.includes('/thumbnail') && url.includes('inLibrary=1');
+            const isCached = RequestManager.knownCachedUrls.has(url) || (await ImageCache.has(url));
+            if (isCached) {
+                RequestManager.knownCachedUrls.add(url);
+            }
+            if (!!ignoreQueue || isCached || isLibraryThumbnail) {
                 return {
                     key: `image-cache-${url}`,
                     promise: request(),
@@ -1133,6 +1163,7 @@ export class RequestManager {
                 img.onload = async () => {
                     try {
                         await this.optionallyDecodeImage(url, shouldDecode);
+                        this.cacheImageUrl(url, url);
                         imgRequest.resolve(url);
                     } catch (error) {
                         imgRequest.reject(error);
@@ -1198,6 +1229,7 @@ export class RequestManager {
                         objectUrl = imageUrl;
 
                         await this.optionallyDecodeImage(imageUrl, shouldDecode, disableCors);
+                        this.cacheImageUrl(url, imageUrl);
 
                         return imageUrl;
                     }),
@@ -1228,6 +1260,16 @@ export class RequestManager {
         url: string,
         options: ImageRequestOptions & { useFetchApi?: boolean } = {},
     ): Promise<ImageRequest> {
+        const cachedUrl = this.getCachedImageUrl(url);
+        if (cachedUrl) {
+            return {
+                response: Promise.resolve(cachedUrl),
+                abortRequest: noOp,
+                cleanup: noOp,
+                fromCache: true,
+            };
+        }
+
         const finalOptions = {
             useFetchApi: !!AuthManager.getAccessToken() || !!AuthManager.isAuthRequired(),
             shouldDecode: false,
