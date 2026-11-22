@@ -210,6 +210,10 @@ const usePreserveOnLeadingPageRender = (
                 return;
             }
 
+            const isShifted = isContinuousVerticalReadingModeActive
+                ? visibleElement.offsetTop > visibleElementOffsetTop
+                : Math.abs(visibleElement.offsetLeft - visibleElementOffsetLeft) > 1;
+
             const entriesBeforeScrollPosition = entries.filter((entry) => {
                 if (!(entry.target instanceof HTMLElement)) {
                     return false;
@@ -221,12 +225,12 @@ const usePreserveOnLeadingPageRender = (
                 }
 
                 if (isContinuousVerticalReadingModeActive) {
-                    return entry.target.offsetTop < top;
+                    return entry.target.offsetTop < top || isShifted;
                 }
 
                 return readingDirection === ReadingDirection.LTR
-                    ? entry.target.offsetLeft < left
-                    : entry.target.offsetLeft > left;
+                    ? entry.target.offsetLeft < left || isShifted
+                    : entry.target.offsetLeft > left || isShifted;
             });
 
             const includesElementsBeforeScrollPosition = !!entriesBeforeScrollPosition.length;
@@ -237,7 +241,15 @@ const usePreserveOnLeadingPageRender = (
             const newLeft = left - visibleElementOffsetLeft + visibleElement.offsetLeft;
             const newTop = top - visibleElementOffsetTop + visibleElement.offsetTop;
 
-            scrollElement.scrollTo(newLeft, newTop);
+            if (isContinuousVerticalReadingModeActive && newTop !== top) {
+                scrollElement.scrollTo(newLeft, newTop);
+                preservationDataRef.current.top = newTop;
+                preservationDataRef.current.visibleElementOffsetTop = visibleElement.offsetTop;
+            } else if (!isContinuousVerticalReadingModeActive && newLeft !== left) {
+                scrollElement.scrollTo(newLeft, newTop);
+                preservationDataRef.current.left = newLeft;
+                preservationDataRef.current.visibleElementOffsetLeft = visibleElement.offsetLeft;
+            }
         };
 
         const updateObservation = (nodes: NodeList, resizeAction: (element: Element) => void) =>

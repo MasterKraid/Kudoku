@@ -76,14 +76,14 @@ const getElementIntersectionInfoHorizontal = (
 ): ElementIntersectionInfo[ReadingMode.CONTINUOUS_HORIZONTAL] => {
     if (readingDirection === ReadingDirection.LTR) {
         return {
-            start: right >= viewportWidth,
-            end: left < 0,
+            start: left > -600 && left <= viewportWidth,
+            end: right >= 0 && right <= viewportWidth + 1200,
         };
     }
 
     return {
-        start: left < 0,
-        end: right >= viewportWidth,
+        start: right >= -600 && right <= viewportWidth + 600,
+        end: left >= -1200 && left <= viewportWidth,
     };
 };
 
@@ -103,8 +103,8 @@ const getElementIntersectionInfo = (
 
     return {
         [ReadingMode.CONTINUOUS_VERTICAL]: {
-            start: bottom >= viewportHeight,
-            end: top < 0,
+            start: top > -600 && top <= viewportHeight,
+            end: bottom >= 0 && bottom <= viewportHeight + 1200,
         },
         [ReadingMode.CONTINUOUS_HORIZONTAL]: getElementIntersectionInfoHorizontal(
             readingDirection,
@@ -303,7 +303,6 @@ export const useReaderInfiniteScrollUpdateChapter = (
         };
 
         scrollElement.addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
         return () => scrollElement.removeEventListener('scroll', onScroll);
     }, [
         readingMode,
@@ -344,11 +343,11 @@ export const useReaderInfiniteScrollUpdateChapter = (
                     return;
                 }
 
-                // the first page only opens the previous chapter in case it hasn't been loaded yet, otherwise, the last
-                // page handles setting the correct chapter
+                // Only the currently active chapter may proactively open adjacent chapters when reaching boundaries
                 const initialOpenPreviousChapter =
-                    pageType === 'first' && isStartIntersecting && !isChapterToOpenVisible;
-                const openNextChapter = pageType === 'last' && isEndIntersecting && !isChapterToOpenVisible;
+                    isCurrentChapter && pageType === 'first' && isStartIntersecting && !isChapterToOpenVisible;
+                const openNextChapter =
+                    isCurrentChapter && pageType === 'last' && isEndIntersecting && !isChapterToOpenVisible;
 
                 const openChapterToOpen = initialOpenPreviousChapter || openNextChapter;
                 if (openChapterToOpen) {
@@ -361,6 +360,7 @@ export const useReaderInfiniteScrollUpdateChapter = (
             [
                 pageType,
                 chapterToOpenId,
+                isCurrentChapter,
                 isChapterToOpenVisible,
                 readingMode,
                 readingDirection,
