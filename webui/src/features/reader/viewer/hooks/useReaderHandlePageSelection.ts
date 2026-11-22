@@ -46,13 +46,18 @@ export const useReaderHandlePageSelection = (
             const doScroll = () => {
                 let imageRef = imageRefs.current[pageToScrollTo.pagesIndex];
                 if (!imageRef && scrollElementRef.current) {
-                    imageRef = (scrollElementRef.current.querySelector(
+                    const { currentChapter } = getReaderChaptersStore();
+                    const currentChapterEl = currentChapter
+                        ? scrollElementRef.current.querySelector(`[data-chapter-id="${currentChapter.id}"]`)
+                        : null;
+                    const searchRoot = currentChapterEl ?? scrollElementRef.current;
+                    imageRef = (searchRoot.querySelector(
                         `img[alt="Page #${pageToScrollTo.primary.index + 1}"]`,
                     ) ||
-                        scrollElementRef.current.querySelector(
+                        searchRoot.querySelector(
                             `[data-reader-page="true"][alt="Page #${pageToScrollTo.primary.index + 1}"]`,
                         ) ||
-                        scrollElementRef.current.querySelectorAll('[data-reader-page="true"]')[
+                        searchRoot.querySelectorAll('[data-reader-page="true"]')[
                             pageToScrollTo.pagesIndex
                         ]) as HTMLElement | null;
                 }

@@ -348,7 +348,6 @@ export const useReaderInfiniteScrollUpdateChapter = (
                 // page handles setting the correct chapter
                 const initialOpenPreviousChapter =
                     pageType === 'first' && isStartIntersecting && !isChapterToOpenVisible;
-                const openPreviousChapter = pageType === 'last' && !isCurrentChapter && isEndIntersecting;
                 const openNextChapter = pageType === 'last' && isEndIntersecting && !isChapterToOpenVisible;
 
                 const openChapterToOpen = initialOpenPreviousChapter || openNextChapter;
@@ -357,21 +356,11 @@ export const useReaderInfiniteScrollUpdateChapter = (
                         doTransitionCheck: !isChapterToOpenVisible,
                         scrollIntoView: false,
                     });
-                    return;
-                }
-
-                if (openPreviousChapter) {
-                    ReaderControls.openChapter(chapterId, {
-                        doTransitionCheck: false,
-                        scrollIntoView: false,
-                    });
                 }
             },
             [
                 pageType,
-                chapterId,
                 chapterToOpenId,
-                isCurrentChapter,
                 isChapterToOpenVisible,
                 readingMode,
                 readingDirection,

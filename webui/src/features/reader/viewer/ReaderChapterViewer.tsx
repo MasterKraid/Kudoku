@@ -160,6 +160,7 @@ const BaseReaderChapterViewer = ({
         [chapterId, setChapterElementRef],
     );
     const isCurrentChapterRef = useRef(isCurrentChapter);
+    const hasInitialScrolledRef = useRef(false);
     const imageRefs = useRef<(HTMLElement | null)[]>(pages.map(() => null));
     const pagerRef = useRef<HTMLDivElement>(null);
 
@@ -356,7 +357,9 @@ const BaseReaderChapterViewer = ({
             ),
         (value) => updateState(value, noOp, getReaderPagesStore().setCurrentPageIndex.bind(getReaderPagesStore())),
         (value) => {
-            if (isCurrentChapter && (isInitialChapter || scrollIntoView)) {
+            const shouldScroll = scrollIntoView || (isInitialChapter && !hasInitialScrolledRef.current);
+            if (isCurrentChapter && shouldScroll) {
+                hasInitialScrolledRef.current = true;
                 getReaderPagesStore().setPageToScrollToIndex(value);
                 getReaderChaptersStore().setReaderStateChapters((prevState) => ({
                     ...prevState,
@@ -471,6 +474,7 @@ const BaseReaderChapterViewer = ({
     return (
         <Stack
             ref={setChapterRef}
+            data-chapter-id={chapterId}
             sx={{
                 width: 'fit-content',
                 height: 'fit-content',

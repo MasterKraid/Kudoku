@@ -379,11 +379,11 @@ const usePreserveOnInfiniteScrollPreviousChapterInitialRender = (
 
 export const useReaderPreserveScrollPosition = (
     scrollElementRef: RefObject<HTMLElement | null>,
-    currentChapterId: ChapterIdInfo['id'] | undefined,
-    currentChapterIndex: number,
+    _currentChapterId: ChapterIdInfo['id'] | undefined,
+    _currentChapterIndex: number,
     currentPageIndex: number,
-    chaptersToRender: TChapterReader[],
-    visibleChapters: ReaderStateChapters['visibleChapters'],
+    _chaptersToRender: TChapterReader[],
+    _visibleChapters: ReaderStateChapters['visibleChapters'],
     readingMode: ReadingMode,
     readingDirection: ReadingDirection,
     pageScaleMode: ReaderPageScaleMode,
@@ -391,15 +391,10 @@ export const useReaderPreserveScrollPosition = (
     readerWidth: IReaderSettingsManga['readerWidth'],
     readerZoom?: IReaderSettingsManga['readerZoom'],
 ) => {
-    usePreserveOnInfiniteScrollPreviousChapterInitialRender(
-        scrollElementRef,
-        currentChapterId,
-        currentChapterIndex,
-        currentPageIndex,
-        chaptersToRender,
-        visibleChapters,
-        isContinuousReadingMode(readingMode),
-    );
+    // Note: usePreserveOnInfiniteScrollPreviousChapterInitialRender was removed because
+    // it triggered on forward continuous chapter transitions, incorrectly calculating
+    // scroll offset from the previous chapter's trailing pages and bouncing the viewport backward.
+    // Prepending layout shift is already cleanly handled by usePreserveOnLeadingPageRender.
     usePreserveOnLeadingPageRender(scrollElementRef, readingMode, readingDirection);
     usePreserveOnWindowResize(readingMode, pageScaleMode, currentPageIndex);
     usePreserveOnValueChange(readingDirection, currentPageIndex);

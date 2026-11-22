@@ -295,10 +295,12 @@ class ReaderControlsClass {
                 ReaderService.navigateToChapter(chapterToOpen, {
                     resumeMode:
                         resumeMode ??
-                        getReaderOpenChapterResumeMode(
-                            isSpecificChapterMode || !keepRenderedChapters,
-                            isPreviousChapter,
-                        ),
+                        (!scrollIntoView
+                            ? undefined
+                            : getReaderOpenChapterResumeMode(
+                                  isSpecificChapterMode || !keepRenderedChapters,
+                                  isPreviousChapter,
+                              )),
                     updateInitialChapter: !keepRenderedChapters,
                 });
             } catch (error) {

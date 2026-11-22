@@ -402,7 +402,9 @@ export const updateReaderStateVisibleChapters = (
                     ? isTrailingChapterPreloadMode
                     : state.visibleChapters.isTrailingChapterPreloadMode,
             scrollIntoView,
-            resumeMode: isPreviousChapter ? ReaderResumeMode.END : ReaderResumeMode.START,
+            resumeMode: scrollIntoView
+                ? (isPreviousChapter ? ReaderResumeMode.END : ReaderResumeMode.START)
+                : undefined,
         },
     };
 };
