@@ -48,5 +48,5 @@ export type BackupSettingsType = Pick<
     | 'autoBackupIncludeTracking'
 >;
 
-/** Tsundoku: a full backup of this app. Suwayomi: one the official Suwayomi server can restore too. */
-export type BackupFormat = 'tsundoku' | 'suwayomi';
+/** Kudoku: a full backup of this app. Suwayomi: one the official Suwayomi server can restore too. */
+export type BackupFormat = 'kudoku' | 'suwayomi';

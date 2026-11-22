@@ -1434,13 +1434,10 @@ msgstr "Could not log in to {0}"
 msgid "Could not log in to {trackerName}"
 msgstr "Could not log in to {trackerName}"
 
+#: src/features/authentication/components/UserAccountsDialog.tsx
 #: src/features/authentication/screens/LoginPage.tsx
 msgid "Could not log in to Kudoku"
 msgstr "Could not log in to Kudoku"
-
-#: src/features/authentication/components/UserAccountsDialog.tsx
-msgid "Could not log in to tsundoku"
-msgstr "Could not log in to tsundoku"
 
 #. placeholder {0}: tracker.name
 #: src/features/tracker/components/cards/SettingsTrackerCard.tsx

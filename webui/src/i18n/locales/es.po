@@ -3696,11 +3696,11 @@ msgstr "Mostrar en las listas de fuentes y extensiones"
 #: src/features/chapter/Chapter.constants.ts
 msgid ""
 "{count, plural, one {You are about to download one chapter} other {You are about to download # chapters.\n"
-"tsundoku is not a mass downloader and too many downloads can get you banned from sources and/or cause performance issues.}}"
+"kudoku is not a mass downloader and too many downloads can get you banned from sources and/or cause performance issues.}}"
 msgstr ""
 "{count, plural,one {Estás a punto de descargar un capítulo} other {Estás a "
 "punto de descargar # capítulos.\n"
-"tsundoku no es un descargador masivo y descargar demasiados capítulos puede "
+"kudoku no es un descargador masivo y descargar demasiados capítulos puede "
 "hacer que las fuentes te bloqueen o provocar problemas de rendimiento.}\n"
 "}"
 
@@ -3851,10 +3851,10 @@ msgstr ""
 
 #: src/features/settings/screens/ServerSettings.tsx
 msgid ""
-"Controls the MimeType that tsundoku sends in OPDS entries for CBZ archives. Also affects global CBZ download.\n"
+"Controls the MimeType that kudoku sends in OPDS entries for CBZ archives. Also affects global CBZ download.\n"
 "Modern follows recent IANA standard (2017), while LEGACY (deprecated mimetype for .cbz) and COMPATIBLE (deprecated mimetype for all comic archives) might be more compatible with older clients."
 msgstr ""
-"Controla el tipo MIME que tsundoku envía en las entradas OPDS para los "
+"Controla el tipo MIME que kudoku envía en las entradas OPDS para los "
 "archivos CBZ. También afecta la descarga global de archivos CBZ.\n"
 " **Moderno** sigue el estándar más reciente de la IANA (2017), mientras que "
 "**Legado** (tipo MIME obsoleto para archivos .cbz) y **Compatible** (tipo "
@@ -3898,8 +3898,8 @@ msgid "Could not log in to {trackerName}"
 msgstr "No se pudo iniciar sesión en {{trackerName}}"
 
 #: src/features/authentication/screens/LoginPage.tsx
-msgid "Could not log in to tsundoku"
-msgstr "No se pudo iniciar sesión en tsundoku"
+msgid "Could not log in to kudoku"
+msgstr "No se pudo iniciar sesión en kudoku"
 
 #. placeholder {0}: tracker.name
 #: src/features/tracker/components/cards/SettingsTrackerCard.tsx

@@ -36,7 +36,7 @@ class MyAnimeListInterceptor(
             originalRequest
                 .newBuilder()
                 .addHeader("Authorization", "Bearer ${oauth!!.accessToken}")
-                .header("User-Agent", "tsundoku v${AppInfo.getVersionName()}")
+                .header("User-Agent", "kudoku v${AppInfo.getVersionName()}")
                 .build()
 
         return chain.proceed(authRequest)

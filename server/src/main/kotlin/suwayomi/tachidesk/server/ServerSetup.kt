@@ -196,7 +196,7 @@ fun applicationSetup() {
 
     setupLogLevelUpdating(serverConfig.debugLogsEnabled, listOf(BASE_LOGGER_NAME))
 
-    logger.info { "Running tsundoku ${BuildConfig.VERSION}" }
+    logger.info { "Running Kudoku ${BuildConfig.VERSION}" }
 
     logger.debug {
         "Loaded config:\n" +

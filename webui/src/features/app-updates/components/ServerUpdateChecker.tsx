@@ -61,8 +61,8 @@ export const ServerUpdateChecker = () => {
 
     const changelogUrl =
         aboutServer?.buildType.toLowerCase() === 'stable'
-            ? `https://github.com/jt-ito/tsundoku/releases/tag/${aboutServer.version}`
-            : 'https://github.com/jt-ito/tsundoku/releases';
+            ? `https://github.com/MasterKraid/Kudoku/releases/tag/${aboutServer.version}`
+            : 'https://github.com/MasterKraid/Kudoku/releases';
 
     // the announced version lives on the server, so every browser and device announces a release only once
     const saveVersion = (newVersion: string) => {

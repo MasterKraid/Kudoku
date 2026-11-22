@@ -26,7 +26,7 @@ object SettingsController {
         handler(
             documentWith = {
                 withOperation {
-                    summary("About tsundoku")
+                    summary("About Kudoku")
                     description("Returns some static info about the current app build")
                 }
             },
@@ -44,7 +44,7 @@ object SettingsController {
         handler(
             documentWith = {
                 withOperation {
-                    summary("tsundoku update check")
+                    summary("Kudoku update check")
                     description("Check for app updates")
                 }
             },

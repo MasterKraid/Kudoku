@@ -64,7 +64,7 @@ export function About() {
             revision: '1',
             buildType: 'STABLE',
             buildTime: Date.now(),
-            github: 'https://github.com/jt-ito/tsundoku',
+            github: 'https://github.com/MasterKraid/Kudoku',
             discord: '',
             isDocker: true,
         },

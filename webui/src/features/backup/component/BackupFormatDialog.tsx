@@ -32,7 +32,7 @@ export const BackupFormatDialog = ({
 
     const options: { format: BackupFormat; title: string; description: string }[] = [
         {
-            format: 'tsundoku',
+            format: 'kudoku',
             title: t`Kudoku`,
             description: t`Everything in this app, including the extensions and repositories`,
         },

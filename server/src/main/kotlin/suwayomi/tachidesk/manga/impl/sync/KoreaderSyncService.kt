@@ -385,7 +385,7 @@ object KoreaderSyncService {
                     document = chapterHash,
                     progress = (chapterInfo.lastPageRead + 1).toString(),
                     percentage = (chapterInfo.lastPageRead + 1).toFloat() / chapterInfo.pageCount.toFloat(),
-                    device = "tsundoku (${Platform.current.os.name})",
+                    device = "kudoku (${Platform.current.os.name})",
                     device_id = deviceId,
                 )
 

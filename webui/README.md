@@ -1,8 +1,8 @@
-<h1><img src="public/favicon.svg" alt="" width="40" align="top"> tsundoku-WebUI</h1>
+<h1><img src="public/favicon.svg" alt="" width="40" align="top"> kudoku-WebUI</h1>
 
-The web interface of [tsundoku](https://github.com/jt-ito/tsundoku), a self-hosted manga reader server.
+The web interface of [kudoku](https://github.com/MasterKraid/Kudoku), a self-hosted manga reader server.
 
-**This is a fork of [Suwayomi-WebUI](https://github.com/Suwayomi/Suwayomi-WebUI)** and works with tsundoku (a fork of [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server)). It keeps everything the Suwayomi WebUI does and adds a redesigned look, account support and a few library features. It is maintained independently and is not affiliated with the Suwayomi project.
+**This is a fork of [Suwayomi-WebUI](https://github.com/Suwayomi/Suwayomi-WebUI)** and works with kudoku (a fork of [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server)). It keeps everything the Suwayomi WebUI does and adds a redesigned look, account support and a few library features. It is maintained independently and is not affiliated with the Suwayomi project.
 
 ## What is different from Suwayomi-WebUI
 
@@ -50,7 +50,7 @@ Every visual change is listed, with how to revert it on its own, in [UI-MODERNIZ
 
 ## Running it
 
-tsundoku serves this interface itself. To host your own build, set `server.webUIFlavor = "CUSTOM"` (or `WEB_UI_FLAVOR=Custom`) on the server and put the build into the `webUI` folder of the server's data folder. Keep the `revision` file that is already in that folder; without it the server cannot read the version and the app stays on the splash screen. Restart the server afterwards.
+kudoku serves this interface itself. To host your own build, set `server.webUIFlavor = "CUSTOM"` (or `WEB_UI_FLAVOR=Custom`) on the server and put the build into the `webUI` folder of the server's data folder. Keep the `revision` file that is already in that folder; without it the server cannot read the version and the app stays on the splash screen. Restart the server afterwards.
 
 ```bash
 pnpm install

@@ -126,7 +126,7 @@ const SwitchAccount = ({ currentUserId, onDone }: { currentUserId: number; onDon
             onDone();
             goToLibrary();
         } catch (e) {
-            makeToast(t`Could not log in to tsundoku`, 'error', getErrorMessage(e));
+            makeToast(t`Could not log in to Kudoku`, 'error', getErrorMessage(e));
         }
     };
 

@@ -61,7 +61,7 @@ class FeedBuilderInternal(
             title = title,
             updated = OpdsDateUtil.formatCurrentInstantForOpds(),
             icon = icon,
-            author = OpdsAuthorXml("tsundoku", "https://github.com/jt-ito/tsundoku"),
+            author = OpdsAuthorXml("kudoku", "https://github.com/MasterKraid/Kudoku"),
             links =
                 buildList {
                     addAll(this@FeedBuilderInternal.links)

@@ -8,13 +8,15 @@ set -e
 if [ "$(id -u)" = 0 ]; then
     PUID="${PUID:-1000}"
     PGID="${PGID:-1000}"
-    [ "$PGID" = "$(id -g tsundoku)" ] || groupmod -o -g "$PGID" tsundoku
-    [ "$PUID" = "$(id -u tsundoku)" ] || usermod -o -u "$PUID" tsundoku
-    for dir in /data /data/downloads /home/tsundoku; do
+    APP_USER="kudoku"
+    id kudoku >/dev/null 2>&1 || APP_USER="tsundoku"
+    [ "$PGID" = "$(id -g "$APP_USER")" ] || groupmod -o -g "$PGID" "$APP_USER"
+    [ "$PUID" = "$(id -u "$APP_USER")" ] || usermod -o -u "$PUID" "$APP_USER"
+    for dir in /data /data/downloads "/home/$APP_USER"; do
         mkdir -p "$dir"
         [ "$(stat -c %u:%g "$dir")" = "$PUID:$PGID" ] || chown "$PUID:$PGID" "$dir"
     done
-    export HOME=/home/tsundoku
+    export HOME="/home/$APP_USER"
     exec setpriv --reuid="$PUID" --regid="$PGID" --init-groups "$0" "$@"
 fi
 
@@ -75,8 +77,13 @@ fi
 
 # The WebUI that was built into the image replaces the copy in the data volume on every start, so an image update
 # also updates the interface (the volume would otherwise keep serving an old one).
+WEBUI_SRC="/opt/kudoku/webUI"
+[ -d "$WEBUI_SRC" ] || WEBUI_SRC="/opt/tsundoku/webUI"
 rm -rf /data/webUI
-cp -r /opt/tsundoku/webUI /data/webUI
+cp -r "$WEBUI_SRC" /data/webUI
+
+JAR_FILE="/opt/kudoku/kudoku.jar"
+[ -f "$JAR_FILE" ] || JAR_FILE="/opt/tsundoku/tsundoku.jar"
 
 # Settings come from the environment variables listed in the README (AUTH_MODE, BIND_PORT, DATABASE_TYPE, ...).
 # shellcheck disable=SC2086
@@ -86,4 +93,4 @@ exec java \
     -Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false \
     -Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false \
     $JAVA_OPTS \
-    -jar /opt/tsundoku/tsundoku.jar
+    -jar "$JAR_FILE"

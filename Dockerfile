@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.7
 #
-# tsundoku: builds the server jar and the tsundoku-WebUI, and runs them together.
+# kudoku: builds the server jar and the tsundoku-WebUI, and runs them together.
 #
-#   docker build -t tsundoku .
+#   docker build -t kudoku .
 #   docker run -p 4567:4567 -v tsundoku-data:/data tsundoku
 #
 # The WebUI (branch master of tsundoku-WebUI) is cloned and built here. Pick another repository or branch with
@@ -28,7 +28,7 @@ COPY . .
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew :server:shadowJar --no-daemon -Dorg.gradle.jvmargs=-Xmx3g \
     && mkdir -p /out \
-    && cp "$(ls server/build/*.jar | head -n 1)" /out/tsundoku.jar
+    && cp "$(ls server/build/*.jar | head -n 1)" /out/kudoku.jar
 
 # ---------------------------------------------------------------- runtime
 FROM eclipse-temurin:21-jre-noble
@@ -44,16 +44,19 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     # the server runs as an unprivileged user (the built-in PostgreSQL refuses to start as root)
     && (userdel -r ubuntu 2>/dev/null || true) \
-    && groupadd -g 1000 tsundoku \
-    && useradd -u 1000 -g 1000 -m -d /home/tsundoku -s /usr/sbin/nologin tsundoku \
-    && mkdir -p /data /opt/tsundoku \
+    && groupadd -g 1000 kudoku \
+    && useradd -u 1000 -g 1000 -m -d /home/kudoku -s /usr/sbin/nologin kudoku \
+    && mkdir -p /data /opt/kudoku /opt/tsundoku \
     && mkdir -m 1777 /tmp/.X11-unix \
-    && chown tsundoku:tsundoku /data
+    && chown kudoku:kudoku /data
 
-COPY --from=server --chown=tsundoku:tsundoku /out/tsundoku.jar /opt/tsundoku/tsundoku.jar
-COPY --from=webui --chown=tsundoku:tsundoku /webui/build /opt/tsundoku/webUI
-COPY --chown=tsundoku:tsundoku docker-entrypoint.sh /opt/tsundoku/docker-entrypoint.sh
-RUN chmod +x /opt/tsundoku/docker-entrypoint.sh
+COPY --from=server --chown=kudoku:kudoku /out/kudoku.jar /opt/kudoku/kudoku.jar
+RUN ln -s /opt/kudoku/kudoku.jar /opt/tsundoku/tsundoku.jar
+COPY --from=webui --chown=kudoku:kudoku /webui/build /opt/kudoku/webUI
+RUN ln -s /opt/kudoku/webUI /opt/tsundoku/webUI
+COPY --chown=kudoku:kudoku docker-entrypoint.sh /opt/kudoku/docker-entrypoint.sh
+RUN chmod +x /opt/kudoku/docker-entrypoint.sh && ln -s /opt/kudoku/docker-entrypoint.sh /opt/tsundoku/docker-entrypoint.sh
+
 
 ENV TZ=Etc/UTC \
     BIND_IP=0.0.0.0 \
@@ -61,9 +64,9 @@ ENV TZ=Etc/UTC \
     WEB_UI_FLAVOR=CUSTOM \
     JAVA_OPTS=""
 
-LABEL org.opencontainers.image.title="tsundoku" \
+LABEL org.opencontainers.image.title="kudoku" \
       org.opencontainers.image.description="Self-hosted manga reader server (a fork of Suwayomi-Server)" \
-      org.opencontainers.image.source="https://github.com/jt-ito/tsundoku" \
+      org.opencontainers.image.source="https://github.com/MasterKraid/Kudoku" \
       org.opencontainers.image.licenses="MPL-2.0"
 
 # starts as root only to fix the ownership of /data and /data/downloads, then runs as tsundoku (see the entrypoint)
@@ -75,4 +78,4 @@ EXPOSE 4567
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD curl -fsS "http://localhost:${BIND_PORT}/login.html" > /dev/null || exit 1
 
-ENTRYPOINT ["/opt/tsundoku/docker-entrypoint.sh"]
+ENTRYPOINT ["/opt/kudoku/docker-entrypoint.sh"]

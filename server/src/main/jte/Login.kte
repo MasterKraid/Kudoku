@@ -147,7 +147,7 @@
 </head>
 <body>
     <header>
-        <h1>tsundoku</h1>
+        <h1>Kudoku</h1>
     </header>
     <main>
         <div class="error">${error}</div>
@@ -165,7 +165,7 @@
         </form>
     </main>
     <footer>
-        <p>tsundoku: ${MR.strings.label_version.localized(locale, BuildConfig.VERSION)}</p>
+        <p>Kudoku: ${MR.strings.label_version.localized(locale, BuildConfig.VERSION)}</p>
     </footer>
     <script>
         document.querySelector('form').addEventListener('submit', function(e) {

@@ -37,7 +37,7 @@ class BangumiInterceptor(
             .newBuilder()
             .header(
                 "User-Agent",
-                "jt-ito/tsundoku/${BuildConfig.VERSION} (${BuildConfig.GITHUB})",
+                "MasterKraid/Kudoku/${BuildConfig.VERSION} (${BuildConfig.GITHUB})",
             ).apply {
                 addHeader("Authorization", "Bearer ${currAuth.accessToken}")
             }.build()

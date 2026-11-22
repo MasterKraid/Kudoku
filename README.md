@@ -1,4 +1,4 @@
-<h1><img src="docs/images/icon.svg" alt="" width="40" align="top"> tsundoku</h1>
+<h1><img src="docs/images/icon.svg" alt="" width="40" align="top"> kudoku</h1>
 
 > [!IMPORTANT]
 > **PERSONAL FORK NOTICE**
@@ -6,7 +6,7 @@
 
 A self-hosted manga reader server that runs [Mihon (Tachiyomi)](https://mihon.app/) extensions, with accounts, a first-run setup flow, a built-in PostgreSQL option and a faster in-app WebView.
 
-**tsundoku is a fork of [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server).** It keeps Suwayomi's extension support, library, downloads, backups, trackers and APIs, and adds the features below. The web interface lives in [tsundoku-WebUI](https://github.com/jt-ito/tsundoku-WebUI), a fork of [Suwayomi-WebUI](https://github.com/Suwayomi/Suwayomi-WebUI).
+**kudoku is a fork of [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server).** It keeps Suwayomi's extension support, library, downloads, backups, trackers and APIs, and adds the features below. The web interface lives in [kudoku-WebUI](https://github.com/MasterKraid/Kudoku-WebUI), a fork of [Suwayomi-WebUI](https://github.com/Suwayomi/Suwayomi-WebUI).
 
 > [!NOTE]
 > This is an independent fork maintained by one person. It is not affiliated with the Suwayomi project, and Suwayomi's own support channels do not cover it. Please report problems here.
@@ -26,7 +26,7 @@ A self-hosted manga reader server that runs [Mihon (Tachiyomi)](https://mihon.ap
 
 ## What is different from Suwayomi
 
-| Area | Suwayomi | tsundoku |
+| Area | Suwayomi | kudoku |
 | --- | --- | --- |
 | Authentication | Off by default, one shared login | **On by default** (`ui_login`), real accounts, first-run setup page |
 | Users | Single user | **Multiple accounts** (admin and member), each with their own library, categories, reading progress and trackers |
@@ -46,16 +46,16 @@ A self-hosted manga reader server that runs [Mihon (Tachiyomi)](https://mihon.ap
 
 ## Getting started
 
-Download an archive from the [releases page](https://github.com/jt-ito/tsundoku/releases), unpack it and start the launcher:
+Download an archive from the [releases page](https://github.com/MasterKraid/Kudoku/releases), unpack it and start the launcher:
 
 | Platform | Archive | Start |
 | --- | --- | --- |
-| Windows (x64) | `tsundoku-<version>-windows-x64.zip` | `tsundoku.bat` |
-| macOS (Apple silicon) | `tsundoku-<version>-macOS-arm64.tar.gz` | `tsundoku.command` |
-| macOS (Intel) | `tsundoku-<version>-macOS-x64.tar.gz` | `tsundoku.command` |
-| Linux (x64) | `tsundoku-<version>-linux-x64.tar.gz` | `tsundoku.sh` |
+| Windows (x64) | `kudoku-<version>-windows-x64.zip` | `kudoku.bat` |
+| macOS (Apple silicon) | `kudoku-<version>-macOS-arm64.tar.gz` | `kudoku.command` |
+| macOS (Intel) | `kudoku-<version>-macOS-x64.tar.gz` | `kudoku.command` |
+| Linux (x64) | `kudoku-<version>-linux-x64.tar.gz` | `kudoku.sh` |
 
-Each archive brings its own Java runtime and the tsundoku interface, so nothing else needs installing. The archives are not signed: Windows SmartScreen and macOS Gatekeeper ask for confirmation the first time. There is also a plain `tsundoku-<version>.jar` (needs JDK 21), and a [Docker image](#docker). Then open `http://localhost:4567`. Installers (.msi, AppImage, .deb) are not offered yet.
+Each archive brings its own Java runtime and the kudoku interface, so nothing else needs installing. The archives are not signed: Windows SmartScreen and macOS Gatekeeper ask for confirmation the first time. There is also a plain `kudoku-<version>.jar` (needs JDK 21), and a [Docker image](#docker). Then open `http://localhost:4567`. Installers (.msi, AppImage, .deb) are not offered yet.
 
 The server checks the releases page for updates and treats "no release yet" as "up to date".
 
@@ -69,10 +69,10 @@ To build from source you need JDK 21:
 ### Docker
 
 ```bash
-docker run -d --name tsundoku -p 4567:4567 -v tsundoku-data:/data jteaito/tsundoku:latest
+docker run -d --name kudoku -p 4567:4567 -v kudoku-data:/data MasterKraid/Kudoku:latest
 ```
 
-Or use the [docker-compose.yml](docker-compose.yml). Images: `jteaito/tsundoku` on [Docker Hub](https://hub.docker.com/r/jteaito/tsundoku) and `ghcr.io/jt-ito/tsundoku`.
+Or use the [docker-compose.yml](docker-compose.yml). Images: `MasterKraid/Kudoku` on [Docker Hub](https://hub.docker.com/r/MasterKraid/Kudoku) and `ghcr.io/MasterKraid/Kudoku`.
 
 **Volumes**
 
@@ -94,15 +94,15 @@ Or use the [docker-compose.yml](docker-compose.yml). Images: `jteaito/tsundoku` 
 
 **Good to know**
 - The image runs as an unprivileged user and hands the two folders above to it on start, so a host folder needs no `chown`.
-- It bundles [tsundoku-WebUI](https://github.com/jt-ito/tsundoku-WebUI), refreshed on every start, so updating the image updates the interface.
+- It bundles [kudoku-WebUI](https://github.com/MasterKraid/Kudoku-WebUI), refreshed on every start, so updating the image updates the interface.
 
 **Build it yourself**
 
 ```bash
-docker build -t tsundoku .
+docker build -t kudoku .
 ```
 
-This needs the `.git` folder (the version number is the commit count). The WebUI comes from the `master` branch of tsundoku-WebUI; use `--build-arg WEBUI_REPO=...` and `--build-arg WEBUI_REF=...` to build another one.
+This needs the `.git` folder (the version number is the commit count). The WebUI comes from the `master` branch of kudoku-WebUI; use `--build-arg WEBUI_REPO=...` and `--build-arg WEBUI_REF=...` to build another one.
 
 **Publishing** is done by `.github/workflows/docker_publish.yml`: a `v*` tag publishes `:latest` and the version, a push to `master` publishes `:edge`.
 
@@ -137,7 +137,7 @@ Known limits: CORS reflects the caller's origin, which is needed so a WebUI serv
 
 ## Database: H2, built-in PostgreSQL and the migration page
 
-The default is the embedded **H2** file database, as in Suwayomi. tsundoku can also run its own **PostgreSQL**, with no separate install:
+The default is the embedded **H2** file database, as in Suwayomi. kudoku can also run its own **PostgreSQL**, with no separate install:
 
 - **Built-in PostgreSQL.** The PostgreSQL binaries ship inside the server, so there is nothing extra to install. It starts PostgreSQL on a free local port, keeps its data in the data folder, protects it with a random password (stored next to the data, not in `server.conf`) and stops it with the server.
 - **Automatic major-version upgrades.** When a new server release bundles a newer PostgreSQL, the old data is upgraded in a staging copy and a backup is kept. If anything fails, the original data is left untouched.
@@ -152,7 +152,7 @@ PostgreSQL is a good choice for larger libraries. H2 is simpler and fine for a p
 
 ## WebView
 
-The WebView opens a page in a Chromium that runs on the server (via KCEF), for sources that need a real browser to pass a challenge. In tsundoku it:
+The WebView opens a page in a Chromium that runs on the server (via KCEF), for sources that need a real browser to pass a challenge. In kudoku it:
 
 - streams the page as **WebRTC video** instead of JPEG pictures, with the old JPEG stream as an automatic fallback;
 - uses **less CPU** while idle;
@@ -197,15 +197,15 @@ A complete setup with a login, FlareSolverr (which you run yourself) and the bui
 
 ```yaml
 services:
-  tsundoku:
-    image: jteaito/tsundoku:latest
-    container_name: tsundoku
+  kudoku:
+    image: MasterKraid/Kudoku:latest
+    container_name: kudoku
     restart: unless-stopped
     ports:
       - "4567:4567"
     volumes:
-      - tsundoku-data:/data                      # database, settings, extensions, backups, logs
-      - tsundoku-downloads:/data/downloads       # or a host folder, for example /mnt/manga:/data/downloads
+      - kudoku-data:/data                      # database, settings, extensions, backups, logs
+      - kudoku-downloads:/data/downloads       # or a host folder, for example /mnt/manga:/data/downloads
     environment:
       - TZ=Etc/UTC
       - PUID=1000                                # the user and group the server runs as
@@ -223,8 +223,8 @@ services:
       - FLARESOLVERR_ENABLED=true
       - FLARESOLVERR_URL=http://flaresolverr:8191
 volumes:
-  tsundoku-data:
-  tsundoku-downloads:
+  kudoku-data:
+  kudoku-downloads:
 ```
 
 Without `AUTH_USERNAME` and `AUTH_PASSWORD` the server shows the `/setup` page instead. `AUTH_MODE=none` turns the login off, which is only sensible on a network you trust.
@@ -232,7 +232,7 @@ Without `AUTH_USERNAME` and `AUTH_PASSWORD` the server shows the `/setup` page i
 **Differences from Suwayomi's Docker image**
 - `AUTH_MODE` defaults to `ui_login`.
 - `JWT_REFRESH_EXPIRY` defaults to `180d`.
-- The image sets `WEB_UI_FLAVOR=CUSTOM`, so it serves its bundled tsundoku-WebUI.
+- The image sets `WEB_UI_FLAVOR=CUSTOM`, so it serves its bundled kudoku-WebUI.
 
 The complete reference is in [docs/Configuring-Suwayomi‐Server.md](docs/Configuring-Suwayomi‐Server.md).
 
@@ -247,11 +247,11 @@ The complete reference is in [docs/Configuring-Suwayomi‐Server.md](docs/Config
 ### Recommended: start fresh and import a backup
 
 1. In Suwayomi, create a backup (Settings > Backup).
-2. Start tsundoku with its **own new, empty data folder** (the [compose example](#configuration-and-docker-environment-variables) above). Do not point it at Suwayomi's folders.
+2. Start kudoku with its **own new, empty data folder** (the [compose example](#configuration-and-docker-environment-variables) above). Do not point it at Suwayomi's folders.
 3. Create the admin account with `AUTH_USERNAME` and `AUTH_PASSWORD`, or on the `/setup` page. A new folder is also the moment to choose the built-in PostgreSQL (`DATABASE=postgres`) if you want it; it cannot be added to an existing H2 folder this way.
-4. In tsundoku, open Settings > Backup and restore the file. Your library, categories, chapters, reading progress and trackers come back, and missing extensions are installed during the restore.
+4. In kudoku, open Settings > Backup and restore the file. Your library, categories, chapters, reading progress and trackers come back, and missing extensions are installed during the restore.
 
-This leaves your Suwayomi folder untouched, so you can always go back. There is no database upgrade to undo, and none of Suwayomi's old settings are carried over. Suwayomi's own backups can be restored here, and tsundoku's backups can be restored there.
+This leaves your Suwayomi folder untouched, so you can always go back. There is no database upgrade to undo, and none of Suwayomi's old settings are carried over. Suwayomi's own backups can be restored here, and kudoku's backups can be restored there.
 
 ### Or keep using the existing data folder
 
@@ -262,20 +262,20 @@ This also works and keeps everything as it is, but the first start upgrades the 
 
 Switching only the image is **not enough**. These settings of your existing compose file have to change:
 
-| Setting | Suwayomi | tsundoku |
+| Setting | Suwayomi | kudoku |
 | --- | --- | --- |
-| `image` | the Suwayomi image you use now | `jteaito/tsundoku:latest` |
+| `image` | the Suwayomi image you use now | `MasterKraid/Kudoku:latest` |
 | Data volume | `<your folder>:/home/suwayomi/.local/share/Tachidesk` | `<your folder>:/data` |
 | Downloads volume | `<your downloads>:/home/suwayomi/.local/share/Tachidesk/downloads` | `<your downloads>:/data/downloads` |
 | Volume order | downloads **first** | does not matter |
-| `WEBUI_FLAVOR` | sometimes set | remove it; the image serves the tsundoku-WebUI by itself |
+| `WEBUI_FLAVOR` | sometimes set | remove it; the image serves the kudoku-WebUI by itself |
 
 Keep the same host folders on the left of each volume line, so your library and downloads are picked up. Stay on H2 for now: do not add `DATABASE=postgres` (or the two PostgreSQL variables) to this folder: it would start an empty PostgreSQL and your library would look gone. To switch to PostgreSQL later, open `/database` and migrate. Everything else carries over: `TZ`, `PUID`, `PGID`, `AUTH_MODE`, `AUTH_USERNAME`, `AUTH_PASSWORD`, `FLARESOLVERR_ENABLED`, `FLARESOLVERR_URL`, `network_mode`, `depends_on` and the other variables work with the same names.
 
 ```yaml
 services:
-  tsundoku:
-    image: jteaito/tsundoku:latest                  # was the Suwayomi image
+  kudoku:
+    image: MasterKraid/Kudoku:latest                  # was the Suwayomi image
     volumes:
       - /your/downloads:/data/downloads             # was .../Tachidesk/downloads
       - /your/suwayomi/data:/data                   # was .../.local/share/Tachidesk
@@ -288,7 +288,7 @@ After the first start check `docker logs`: it should say that the admin account 
 
 ### Coming from a bare install
 
-Restore a backup into a fresh install (recommended), or point tsundoku at the same data folder (it is the same location, see [Data folder](#data-folder)). Set `AUTH_USERNAME` and `AUTH_PASSWORD`, or use `/setup`, before you expose the server.
+Restore a backup into a fresh install (recommended), or point kudoku at the same data folder (it is the same location, see [Data folder](#data-folder)). Set `AUTH_USERNAME` and `AUTH_PASSWORD`, or use `/setup`, before you expose the server.
 
 ## Development
 
@@ -299,11 +299,11 @@ Restore a backup into a fresh install (recommended), or point tsundoku at the sa
 ./gradlew :server:run             # run on :4567 (restart after Kotlin or .kte changes)
 ```
 
-The server is Kotlin on JDK 21 with Javalin, GraphQL (graphql-kotlin), Exposed, JTE templates for the server-rendered pages (`/setup`, `/database`, the WebView page, `login.html`), and a bundled web interface from [tsundoku-WebUI](https://github.com/jt-ito/tsundoku-WebUI). See [CONTRIBUTING.md](CONTRIBUTING.md). Settings reference pages are in [docs/](docs/).
+The server is Kotlin on JDK 21 with Javalin, GraphQL (graphql-kotlin), Exposed, JTE templates for the server-rendered pages (`/setup`, `/database`, the WebView page, `login.html`), and a bundled web interface from [kudoku-WebUI](https://github.com/MasterKraid/Kudoku-WebUI). See [CONTRIBUTING.md](CONTRIBUTING.md). Settings reference pages are in [docs/](docs/).
 
 ## Credit and license
 
-tsundoku exists because of the [Suwayomi](https://github.com/Suwayomi) project and its contributors, whose server this is forked from. Suwayomi in turn is a spiritual successor of [TachiWeb-Server](https://github.com/Tachiweb/TachiWeb-server). The `AndroidCompat` module was originally developed by [@null-dev](https://github.com/null-dev) for TachiWeb-Server and parts of [Mihon (Tachiyomi)](https://github.com/mihonapp/mihon) are adopted into this codebase; both are licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) (`Copyright 2015 Javier Tomás` for Mihon). Changes to both are licensed under MPL 2.0 like the rest of the project.
+kudoku exists because of the [Suwayomi](https://github.com/Suwayomi) project and its contributors, whose server this is forked from. Suwayomi in turn is a spiritual successor of [TachiWeb-Server](https://github.com/Tachiweb/TachiWeb-server). The `AndroidCompat` module was originally developed by [@null-dev](https://github.com/null-dev) for TachiWeb-Server and parts of [Mihon (Tachiyomi)](https://github.com/mihonapp/mihon) are adopted into this codebase; both are licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) (`Copyright 2015 Javier Tomás` for Mihon). Changes to both are licensed under MPL 2.0 like the rest of the project.
 
     Copyright (C) Contributors to the Suwayomi project
 

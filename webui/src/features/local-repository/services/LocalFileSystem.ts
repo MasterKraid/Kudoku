@@ -27,7 +27,7 @@ export interface LocalChapterItem {
 
 // ─── IndexedDB helpers ───────────────────────────────────────────────────────
 
-const DB_NAME = 'tsundoku-local-fs';
+const DB_NAME = 'kudoku-local-fs';
 const DB_VERSION = 2;
 const HANDLE_STORE = 'directory-handle';
 const OFFLINE_STORE = 'offline-chapters';

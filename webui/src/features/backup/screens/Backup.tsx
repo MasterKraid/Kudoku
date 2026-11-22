@@ -218,8 +218,8 @@ export function Backup() {
     }, [data?.restoreStatus?.state]);
 
     const createBackup = async (isServerBackup = false) => {
-        // a backup of an account is either a full tsundoku backup, or one the official Suwayomi server can restore too
-        const format = isServerBackup ? 'tsundoku' : await AwaitableComponent.show(BackupFormatDialog, {});
+        // a backup of an account is either a full kudoku backup, or one the official Suwayomi server can restore too
+        const format = isServerBackup ? 'kudoku' : await AwaitableComponent.show(BackupFormatDialog, {});
 
         const flags = await AwaitableComponent.show(BackupFlagInclusionDialog, {
             title: isServerBackup ? t`Create server backup` : t`Create backup`,

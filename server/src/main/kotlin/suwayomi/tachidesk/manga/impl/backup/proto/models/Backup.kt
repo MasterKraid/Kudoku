@@ -44,7 +44,7 @@ data class Backup(
         fun getServerFilename(): String {
             val date = SimpleDateFormat("yyyy-MM-dd_HH-mm").format(Date())
 
-            return "tsundoku-server-backup_$date.zip"
+            return "kudoku-server-backup_$date.zip"
         }
     }
 }

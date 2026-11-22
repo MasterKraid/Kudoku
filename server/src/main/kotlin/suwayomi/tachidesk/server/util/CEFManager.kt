@@ -578,11 +578,11 @@ object CEFManager {
     /**
      * Containers and servers without a display have no graphics card to use, so CEF is told not to try (#1486). On a
      * machine with a GPU the browser uses it: pages render faster, and challenge pages see a real graphics renderer
-     * instead of a software one. `TSUNDOKU_WEBVIEW_GPU=true|false` overrides the detection.
+     * instead of a software one. `KUDOKU_WEBVIEW_GPU=true|false` overrides the detection.
      */
     private fun gpuArguments(): Array<String> {
         val useGpu =
-            System.getenv("TSUNDOKU_WEBVIEW_GPU")?.toBooleanStrictOrNull()
+            System.getenv("KUDOKU_WEBVIEW_GPU")?.toBooleanStrictOrNull()
                 ?: !isContainer()
 
         logger.info { "WebView GPU acceleration: $useGpu" }

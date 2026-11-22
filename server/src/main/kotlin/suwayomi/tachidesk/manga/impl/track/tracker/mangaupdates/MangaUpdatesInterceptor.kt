@@ -20,7 +20,7 @@ class MangaUpdatesInterceptor(
             originalRequest
                 .newBuilder()
                 .addHeader("Authorization", "Bearer $token")
-                .header("User-Agent", "tsundoku ${BuildConfig.VERSION} (${BuildConfig.REVISION})")
+                .header("User-Agent", "kudoku ${BuildConfig.VERSION} (${BuildConfig.REVISION})")
                 .build()
 
         return chain.proceed(authRequest)

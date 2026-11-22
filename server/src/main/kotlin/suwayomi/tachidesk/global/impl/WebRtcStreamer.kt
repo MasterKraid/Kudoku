@@ -66,11 +66,11 @@ class WebRtcStreamer(
         /**
          * STUN/TURN servers help clients that are not on the same network as the server. Without them only direct
          * (same network) connections work, anything else falls back to the JPEG stream.
-         * `TSUNDOKU_WEBRTC_ICE_SERVERS`: comma separated urls, e.g. `stun:stun.l.google.com:19302`.
+         * `KUDOKU_WEBRTC_ICE_SERVERS`: comma separated urls, e.g. `stun:stun.l.google.com:19302`.
          */
         private val iceServerUrls: List<String> =
             System
-                .getenv("TSUNDOKU_WEBRTC_ICE_SERVERS")
+                .getenv("KUDOKU_WEBRTC_ICE_SERVERS")
                 .orEmpty()
                 .split(',')
                 .map { it.trim() }
